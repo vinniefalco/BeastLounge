@@ -1,21 +1,21 @@
 //
-// Copyright (c) 2018 Vinnie Falco (vinnie dot falco at gmail dot com)
+// Copyright (c) 2018-2019 Vinnie Falco (vinnie dot falco at gmail dot com)
 //
 // Distributed under the Boost Software License, Version 1.0. (See accompanying
 // file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
 //
-// Official repository: https://github.com/vinniefalco/CppCon2018
+// Official repository: https://github.com/vinniefalco/BeastLounge
 //
 
 #include "websocket_session.hpp"
-
+#include <boost/beast/core/buffers_to_string.hpp>
 #include <iostream>
 
 websocket_session::
 websocket_session(
-    tcp::socket socket,
+    beast::tcp_stream stream,
     std::shared_ptr<shared_state> const& state)
-    : ws_(std::move(socket))
+    : ws_(std::move(stream))
     , state_(state)
 {
 }
@@ -29,7 +29,7 @@ websocket_session::
 
 void
 websocket_session::
-fail(error_code ec, char const* what)
+fail(beast::error_code ec, char const* what)
 {
     // Don't report these
     if( ec == net::error::operation_aborted ||
@@ -41,7 +41,7 @@ fail(error_code ec, char const* what)
 
 void
 websocket_session::
-on_accept(error_code ec)
+on_accept(beast::error_code ec)
 {
     // Handle the error, if any
     if(ec)
@@ -54,7 +54,7 @@ on_accept(error_code ec)
     ws_.async_read(
         buffer_,
         [sp = shared_from_this()](
-            error_code ec, std::size_t bytes)
+            beast::error_code ec, std::size_t bytes)
         {
             sp->on_read(ec, bytes);
         });
@@ -62,7 +62,7 @@ on_accept(error_code ec)
 
 void
 websocket_session::
-on_read(error_code ec, std::size_t)
+on_read(beast::error_code ec, std::size_t)
 {
     // Handle the error, if any
     if(ec)
@@ -78,7 +78,7 @@ on_read(error_code ec, std::size_t)
     ws_.async_read(
         buffer_,
         [sp = shared_from_this()](
-            error_code ec, std::size_t bytes)
+            beast::error_code ec, std::size_t bytes)
         {
             sp->on_read(ec, bytes);
         });
@@ -99,7 +99,7 @@ send(std::shared_ptr<std::string const> const& ss)
     ws_.async_write(
         net::buffer(*queue_.front()),
         [sp = shared_from_this()](
-            error_code ec, std::size_t bytes)
+            beast::error_code ec, std::size_t bytes)
         {
             sp->on_write(ec, bytes);
         });
@@ -107,7 +107,7 @@ send(std::shared_ptr<std::string const> const& ss)
 
 void
 websocket_session::
-on_write(error_code ec, std::size_t)
+on_write(beast::error_code ec, std::size_t)
 {
     // Handle the error, if any
     if(ec)
@@ -121,7 +121,7 @@ on_write(error_code ec, std::size_t)
         ws_.async_write(
             net::buffer(*queue_.front()),
             [sp = shared_from_this()](
-                error_code ec, std::size_t bytes)
+                beast::error_code ec, std::size_t bytes)
             {
                 sp->on_write(ec, bytes);
             });

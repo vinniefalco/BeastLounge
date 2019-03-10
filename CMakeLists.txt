@@ -1,16 +1,19 @@
 #
-# Copyright (c) 2018 Vinnie Falco (vinnie dot falco at gmail dot com)
+# Copyright (c) 2018-2019 Vinnie Falco (vinnie dot falco at gmail dot com)
 #
 # Distributed under the Boost Software License, Version 1.0. (See accompanying
 # file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
 #
-# Official repository: https://github.com/boostorg/beast
+# Official repository: https://github.com/vinniefalco/BeastLounge
 #
 
 cmake_minimum_required (VERSION 3.13 FATAL_ERROR)
 cmake_policy (SET CMP0074 NEW)
 
 project (beast-lounge VERSION 0.1.0 LANGUAGES CXX)
+
+set_property (GLOBAL PROPERTY USE_FOLDERS ON)
+set_property (GLOBAL PROPERTY PREDEFINED_TARGETS_FOLDER build)
 
 set (CMAKE_CXX_STANDARD 11)
 set (CMAKE_CXX_STANDARD_REQUIRED ON)
@@ -30,9 +33,6 @@ else()
   set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -Wextra -Wpedantic")
 endif()
 
-set_property (GLOBAL PROPERTY USE_FOLDERS ON)
-set_property (GLOBAL PROPERTY PREDEFINED_TARGETS_FOLDER build)
-
 find_package (Boost REQUIRED COMPONENTS system)
 include_directories (${Boost_INCLUDE_DIRS})
 link_directories (${Boost_LIBRARY_DIRS})
@@ -44,6 +44,35 @@ file (GLOB_RECURSE BEAST_FILES
 file (GLOB_RECURSE BEAST_EXTRA_FILES
   ${PROJECT_SOURCE_DIR}/include/boost/beast/*.hpp
   ${PROJECT_SOURCE_DIR}/include/boost/beast/*.ipp)
+
+file (GLOB_RECURSE NLOHMANN_FILES
+  ${PROJECT_SOURCE_DIR}/nlohmann/include/*.hpp
+  )
+
+#-------------------------------------------------------------------------------
+
+function (DoGroupSources curdir rootdir folder)
+    file (GLOB children RELATIVE ${PROJECT_SOURCE_DIR}/${curdir} ${PROJECT_SOURCE_DIR}/${curdir}/*)
+    foreach (child ${children})
+        if (IS_DIRECTORY ${PROJECT_SOURCE_DIR}/${curdir}/${child})
+            DoGroupSources (${curdir}/${child} ${rootdir} ${folder})
+        elseif (${child} STREQUAL "CMakeLists.txt")
+            source_group("" FILES ${PROJECT_SOURCE_DIR}/${curdir}/${child})
+        else()
+            string (REGEX REPLACE ^${rootdir} ${folder} groupname ${curdir})
+            string (REPLACE "/" "\\" groupname ${groupname})
+            source_group (${groupname} FILES ${PROJECT_SOURCE_DIR}/${curdir}/${child})
+        endif()
+    endforeach()
+endfunction()
+
+function (GroupSources curdir folder)
+    DoGroupSources (${curdir} ${curdir} ${folder})
+endfunction()
+
+#-------------------------------------------------------------------------------
+
+add_definitions (-DBOOST_BEAST_SPLIT_COMPILATION)
 
 include_directories (${PROJECT_SOURCE_DIR}/include)
 

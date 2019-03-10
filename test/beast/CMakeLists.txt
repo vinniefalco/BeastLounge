@@ -7,4 +7,4 @@
 # Official repository: https://github.com/boostorg/beast
 #
 
-add_subdirectory (beast)
+add_subdirectory (json)

@@ -1,14 +1,15 @@
 //
-// Copyright (c) 2018 Vinnie Falco (vinnie dot falco at gmail dot com)
+// Copyright (c) 2018-2019 Vinnie Falco (vinnie dot falco at gmail dot com)
 //
 // Distributed under the Boost Software License, Version 1.0. (See accompanying
 // file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
 //
-// Official repository: https://github.com/vinniefalco/CppCon2018
+// Official repository: https://github.com/vinniefalco/BeastLounge
 //
 
 #include "listener.hpp"
 #include "http_session.hpp"
+#include <boost/asio/strand.hpp>
 #include <iostream>
 
 listener::
@@ -16,11 +17,12 @@ listener(
     net::io_context& ioc,
     tcp::endpoint endpoint,
     std::shared_ptr<shared_state> const& state)
-    : acceptor_(ioc)
+    : ioc_(ioc)
+    , acceptor_(ioc)
     , socket_(ioc)
     , state_(state)
 {
-    error_code ec;
+    beast::error_code ec;
 
     // Open the acceptor
     acceptor_.open(endpoint.protocol(), ec);
@@ -61,18 +63,13 @@ listener::
 run()
 {
     // Start accepting a connection
-    acceptor_.async_accept(
-        socket_,
-        [self = shared_from_this()](error_code ec)
-        {
-            self->on_accept(ec);
-        });
+    do_accept();
 }
 
 // Report a failure
 void
 listener::
-fail(error_code ec, char const* what)
+fail(beast::error_code ec, char const* what)
 {
     // Don't report on canceled operations
     if(ec == net::error::operation_aborted)
@@ -80,24 +77,30 @@ fail(error_code ec, char const* what)
     std::cerr << what << ": " << ec.message() << "\n";
 }
 
+void
+listener::
+do_accept()
+{
+    acceptor_.async_accept(
+        net::make_strand(ioc_),
+        beast::bind_front_handler(
+            &listener::on_accept,
+            shared_from_this()));
+}
+
 // Handle a connection
 void
 listener::
-on_accept(error_code ec)
+on_accept(beast::error_code ec, tcp::socket sock)
 {
     if(ec)
         return fail(ec, "accept");
     else
         // Launch a new session for this connection
         std::make_shared<http_session>(
-            std::move(socket_),
+            std::move(sock),
             state_)->run();
 
     // Accept another connection
-    acceptor_.async_accept(
-        socket_,
-        [self = shared_from_this()](error_code ec)
-        {
-            self->on_accept(ec);
-        });
+    do_accept();
 }

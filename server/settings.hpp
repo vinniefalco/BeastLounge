@@ -7,4 +7,20 @@
 // Official repository: https://github.com/vinniefalco/BeastLounge
 //
 
-// Test that header file is self-contained.
+#ifndef LOUNGE_SETTINGS_HPP
+#define LOUNGE_SETTINGS_HPP
+
+#include "config.hpp"
+#include <boost/beast/core/error.hpp>
+#include <memory>
+
+struct settings
+{
+    static
+    std::shared_ptr<settings>
+    load_from_file(
+        char const* path,
+        beast::error_code& ec);
+};
+
+#endif

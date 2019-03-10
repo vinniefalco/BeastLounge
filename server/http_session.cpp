@@ -1,28 +1,29 @@
 //
-// Copyright (c) 2018 Vinnie Falco (vinnie dot falco at gmail dot com)
+// Copyright (c) 2018-2019 Vinnie Falco (vinnie dot falco at gmail dot com)
 //
 // Distributed under the Boost Software License, Version 1.0. (See accompanying
 // file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
 //
-// Official repository: https://github.com/vinniefalco/CppCon2018
+// Official repository: https://github.com/vinniefalco/BeastLounge
 //
 
 #include "http_session.hpp"
 #include "websocket_session.hpp"
+#include <boost/beast/http/file_body.hpp>
 #include <iostream>
 
 //------------------------------------------------------------------------------
 
 // Return a reasonable mime type based on the extension of a file.
-boost::beast::string_view
-mime_type(boost::beast::string_view path)
+beast::string_view
+mime_type(beast::string_view path)
 {
-    using boost::beast::iequals;
+    using beast::iequals;
     auto const ext = [&path]
     {
         auto const pos = path.rfind(".");
-        if(pos == boost::beast::string_view::npos)
-            return boost::beast::string_view{};
+        if(pos == beast::string_view::npos)
+            return beast::string_view{};
         return path.substr(pos);
     }();
     if(iequals(ext, ".htm"))  return "text/html";
@@ -53,8 +54,8 @@ mime_type(boost::beast::string_view path)
 // The returned path is normalized for the platform.
 std::string
 path_cat(
-    boost::beast::string_view base,
-    boost::beast::string_view path)
+    beast::string_view base,
+    beast::string_view path)
 {
     if(base.empty())
         return path.to_string();
@@ -85,13 +86,13 @@ template<
     class Send>
 void
 handle_request(
-    boost::beast::string_view doc_root,
+    beast::string_view doc_root,
     http::request<Body, http::basic_fields<Allocator>>&& req,
     Send&& send)
 {
     // Returns a bad request response
     auto const bad_request =
-    [&req](boost::beast::string_view why)
+    [&req](beast::string_view why)
     {
         http::response<http::string_body> res{http::status::bad_request, req.version()};
         res.set(http::field::server, BOOST_BEAST_VERSION_STRING);
@@ -104,7 +105,7 @@ handle_request(
 
     // Returns a not found response
     auto const not_found =
-    [&req](boost::beast::string_view target)
+    [&req](beast::string_view target)
     {
         http::response<http::string_body> res{http::status::not_found, req.version()};
         res.set(http::field::server, BOOST_BEAST_VERSION_STRING);
@@ -117,7 +118,7 @@ handle_request(
 
     // Returns a server error response
     auto const server_error =
-    [&req](boost::beast::string_view what)
+    [&req](beast::string_view what)
     {
         http::response<http::string_body> res{http::status::internal_server_error, req.version()};
         res.set(http::field::server, BOOST_BEAST_VERSION_STRING);
@@ -136,7 +137,7 @@ handle_request(
     // Request path must be absolute and not contain "..".
     if( req.target().empty() ||
         req.target()[0] != '/' ||
-        req.target().find("..") != boost::beast::string_view::npos)
+        req.target().find("..") != beast::string_view::npos)
         return send(bad_request("Illegal request-target"));
 
     // Build the path to the requested file
@@ -145,9 +146,9 @@ handle_request(
         path.append("index.html");
 
     // Attempt to open the file
-    boost::beast::error_code ec;
+    beast::error_code ec;
     http::file_body::value_type body;
-    body.open(path.c_str(), boost::beast::file_mode::scan, ec);
+    body.open(path.c_str(), beast::file_mode::scan, ec);
 
     // Handle the case where the file doesn't exist
     if(ec == boost::system::errc::no_such_file_or_directory)
@@ -187,9 +188,9 @@ handle_request(
 
 http_session::
 http_session(
-    tcp::socket socket,
+    tcp::socket sock,
     std::shared_ptr<shared_state> const& state)
-    : socket_(std::move(socket))
+    : stream_(std::move(sock))
     , state_(state)
 {
 }
@@ -199,9 +200,9 @@ http_session::
 run()
 {
     // Read a request
-    http::async_read(socket_, buffer_, req_,
+    http::async_read(stream_, buffer_, req_,
         [self = shared_from_this()]
-            (error_code ec, std::size_t bytes)
+            (beast::error_code ec, std::size_t bytes)
         {
             self->on_read(ec, bytes);
         });
@@ -210,7 +211,7 @@ run()
 // Report a failure
 void
 http_session::
-fail(error_code ec, char const* what)
+fail(beast::error_code ec, char const* what)
 {
     // Don't report on canceled operations
     if(ec == net::error::operation_aborted)
@@ -221,12 +222,12 @@ fail(error_code ec, char const* what)
 
 void
 http_session::
-on_read(error_code ec, std::size_t)
+on_read(beast::error_code ec, std::size_t)
 {
     // This means they closed the connection
     if(ec == http::error::end_of_stream)
     {
-        socket_.shutdown(tcp::socket::shutdown_send, ec);
+        stream_.socket().shutdown(tcp::socket::shutdown_send, ec);
         return;
     }
 
@@ -239,7 +240,7 @@ on_read(error_code ec, std::size_t)
     {
         // Create a WebSocket session by transferring the socket
         std::make_shared<websocket_session>(
-            std::move(socket_), state_)->run(std::move(req_));
+            std::move(stream_), state_)->run(std::move(req_));
         return;
     }
 
@@ -256,18 +257,18 @@ on_read(error_code ec, std::size_t)
 #if 0
             // NOTE This causes an ICE in gcc 7.3
             // Write the response
-            http::async_write(this->socket_, *sp,
+            http::async_write(this->stream_, *sp,
 				[self = shared_from_this(), sp](
-					error_code ec, std::size_t bytes)
+					beast::error_code ec, std::size_t bytes)
 				{
 					self->on_write(ec, bytes, sp->need_eof()); 
 				});
 #else
             // Write the response
             auto self = shared_from_this();
-            http::async_write(this->socket_, *sp,
+            http::async_write(this->stream_, *sp,
 				[self, sp](
-					error_code ec, std::size_t bytes)
+					beast::error_code ec, std::size_t bytes)
 				{
 					self->on_write(ec, bytes, sp->need_eof()); 
 				});
@@ -277,7 +278,7 @@ on_read(error_code ec, std::size_t)
 
 void
 http_session::
-on_write(error_code ec, std::size_t, bool close)
+on_write(beast::error_code ec, std::size_t, bool close)
 {
     // Handle the error, if any
     if(ec)
@@ -287,7 +288,7 @@ on_write(error_code ec, std::size_t, bool close)
     {
         // This means we should close the connection, usually because
         // the response indicated the "Connection: close" semantic.
-        socket_.shutdown(tcp::socket::shutdown_send, ec);
+        stream_.socket().shutdown(tcp::socket::shutdown_send, ec);
         return;
     }
 
@@ -296,9 +297,9 @@ on_write(error_code ec, std::size_t, bool close)
     req_ = {};
 
     // Read another request
-    http::async_read(socket_, buffer_, req_,
+    http::async_read(stream_, buffer_, req_,
         [self = shared_from_this()]
-            (error_code ec, std::size_t bytes)
+            (beast::error_code ec, std::size_t bytes)
         {
             self->on_read(ec, bytes);
         });
