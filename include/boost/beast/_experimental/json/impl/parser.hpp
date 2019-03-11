@@ -19,14 +19,14 @@ void
 parser::
 assign(T&& t)
 {
-    auto& jv = *stack_.back();
+    auto& jv = *stack_.front();
     if(jv.is_object())
     {
         BOOST_ASSERT(! key().empty());
         jv.raw_object().emplace(
             key(), std::forward<T>(t));
     }
-    else if(stack_.back()->is_array())
+    else if(stack_.front()->is_array())
     {
         BOOST_ASSERT(key().empty());
         jv.raw_array().emplace_back(

@@ -22,6 +22,7 @@ class tcp;
 
 namespace beast {
 namespace http {}
+namespace json {}
 namespace websocket {}
 namespace ssl {}
 } // beast
@@ -30,8 +31,10 @@ namespace ssl {}
 
 namespace net = boost::asio;
 namespace beast = boost::beast;
+namespace json = boost::beast::json;
 namespace http = boost::beast::http;
 namespace websocket = boost::beast::websocket;
+
 using tcp = net::ip::tcp;
 
 #endif

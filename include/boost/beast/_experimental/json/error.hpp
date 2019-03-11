@@ -32,13 +32,47 @@ enum class error
     exponent_overflow,
 
     /// The parser's maximum depth limit was reached
-    too_deep
+    too_deep,
+
+    /// Expected a value of kind object
+    expected_object,
+
+    /// Expected a value of kind array
+    expected_array,
+
+    /// Expected a value of kind string
+    expected_string,
+
+    /// Expected a value of kind signed
+    expected_signed,
+
+    /// Expected a value of kind unsigned
+    expected_unsigned,
+
+    /// Expected a value of kind floating
+    expected_floating,
+
+    /// Expected a value of kind boolean
+    expected_bool,
+
+    /// Expected a value of kind boolean
+    expected_null,
+
+    /// An integer assignment would overflow
+    integer_overflow,
+
+    /// The key was not found in the object
+    key_not_found
 };
 
 /// Error conditions corresponding to JSON errors
 enum class condition
 {
-    parse_error = 1
+    /// A parser-related error
+    parse_error = 1,
+
+    /// An error on assignment to or from a JSON value
+    assign_error
 };
 
 } // websocket

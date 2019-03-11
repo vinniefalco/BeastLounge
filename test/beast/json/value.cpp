@@ -12,6 +12,7 @@
 
 #include <boost/beast/_experimental/unit_test/suite.hpp>
 #include <memory>
+#include <vector>
 
 namespace boost {
 namespace beast {
@@ -19,9 +20,7 @@ namespace json {
 
 class value_test : public unit_test::suite
 {
-public:
-    BOOST_STATIC_ASSERT(
-        is_exchange_type<int>::value);
+public:     
     void
     testMembers()
     {
@@ -146,9 +145,55 @@ public:
         }
     }
 
+    BOOST_STATIC_ASSERT(
+        detail::is_range<std::vector<int>>::value);
+
+    BOOST_STATIC_ASSERT(
+        detail::is_range<std::initializer_list<int>>::value);
+
+    void
+    testAssign()
+    {
+#if 0
+        {
+            value jv = std::vector<int>({1, 2, 3});
+            log << jv << "\n";
+        }
+#endif
+#if 0
+        {
+            value jv({ 6,7,8,9,0 });
+            log << jv << "\n";
+        }
+#endif
+#if 0
+        {
+            std::vector<std::vector<int>> v;
+            v.push_back(std::vector<int>({1, 2, 3}));
+            v.push_back(std::vector<int>({4, 5}));
+            v.push_back(std::vector<int>({6, 7, 8, 9}));
+            value jv = v;
+            log << jv << std::endl;
+        }
+#endif
+        {
+            array_type v(allocator<char>{
+                get_default_storage_ptr()});
+            v.emplace_back(array);
+            BEAST_EXPECT(v.size() == 1);
+        }
+        {
+            array_type v(allocator<char>{
+                get_default_storage_ptr()});
+            v.push_back(array);
+            BEAST_EXPECT(v.size() == 1);
+        }
+    }
+
     void run() override
     {
         testMembers();
+        testAssign();
     }
 };
 

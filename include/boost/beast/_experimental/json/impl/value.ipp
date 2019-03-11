@@ -18,276 +18,38 @@ namespace boost {
 namespace beast {
 namespace json {
 
-namespace detail {
-
-// unchecked
-void
-value_impl::
-move(
-    storage_ptr sp,
-    value_impl&& other)
-{
-    switch(other.kind_)
-    {
-    case kind::object:
-    #ifndef BOOST_NO_EXCEPTIONS
-        try
-        {
-    #endif
-            ::new(&obj_) object_type(
-                std::move(other.obj_), typename
-                object_type::allocator_type(
-                    std::move(sp)));
-    #ifndef BOOST_NO_EXCEPTIONS
-        } 
-        catch(...)
-        {
-            kind_ = kind::null;
-            ::new(&nat_.sp_)
-                storage_ptr(std::move(sp));
-            throw;
-        }
-    #endif
-        other.set_kind(kind::null);
-        break;
-
-    case kind::array:
-    #ifndef BOOST_NO_EXCEPTIONS
-        try
-        {
-    #endif
-            ::new(&arr_) array_type(
-                std::move(other.arr_), typename
-                array_type::allocator_type(
-                    std::move(sp)));
-    #ifndef BOOST_NO_EXCEPTIONS
-        } 
-        catch(...)
-        {
-            kind_ = kind::null;
-            ::new(&nat_.sp_)
-                storage_ptr(std::move(sp));
-            throw;
-        }
-    #endif
-        other.set_kind(kind::null);
-        break;
-
-    case kind::string:
-    #ifndef BOOST_NO_EXCEPTIONS
-        try
-        {
-    #endif
-            ::new(&arr_) string_type(
-                std::move(other.str_), typename
-                string_type::allocator_type(
-                    std::move(sp)));
-    #ifndef BOOST_NO_EXCEPTIONS
-        } 
-        catch(...)
-        {
-            kind_ = kind::null;
-            ::new(&nat_.sp_)
-                storage_ptr(std::move(sp));
-            throw;
-        }
-    #endif
-        other.set_kind(kind::null);
-        break;
-
-    case kind::signed64:
-        ::new(&nat_.sp_)
-            storage_ptr(std::move(sp));
-        nat_.int64_ = other.nat_.int64_;
-        other.kind_ = kind::null;
-        break;
-
-    case kind::unsigned64:
-        ::new(&nat_.sp_)
-            storage_ptr(std::move(sp));
-        nat_.uint64_ = other.nat_.uint64_;
-        other.kind_ = kind::null;
-        break;
-
-    case kind::boolean:
-        ::new(&nat_.sp_)
-            storage_ptr(std::move(sp));
-        nat_.bool_ = other.nat_.bool_;
-        other.kind_ = kind::null;
-        break;
-
-    case kind::null:
-        ::new(&nat_.sp_)
-            storage_ptr(std::move(sp));
-        other.kind_ = kind::null;
-        break;
-    }
-    kind_ = other.kind_;
-}
-
-// unchecked
-void
-value_impl::
-copy(
-    storage_ptr sp,
-    value_impl const& other)
-{
-    switch(other.kind_)
-    {
-    case kind::object:
-    #ifndef BOOST_NO_EXCEPTIONS
-        try
-        {
-    #endif
-            ::new(&obj_) object_type(
-                other.obj_, typename
-                object_type::allocator_type(
-                    std::move(sp)));
-    #ifndef BOOST_NO_EXCEPTIONS
-        } 
-        catch(...)
-        {
-            kind_ = kind::null;
-            ::new(&nat_.sp_)
-                storage_ptr(std::move(sp));
-            throw;
-        }
-    #endif
-        break;
-
-    case kind::array:
-    #ifndef BOOST_NO_EXCEPTIONS
-        try
-        {
-    #endif
-            ::new(&arr_) array_type(
-                other.arr_, typename
-                array_type::allocator_type(
-                    std::move(sp)));
-    #ifndef BOOST_NO_EXCEPTIONS
-        } 
-        catch(...)
-        {
-            kind_ = kind::null;
-            ::new(&nat_.sp_)
-                storage_ptr(std::move(sp));
-            throw;
-        }
-    #endif
-        break;
-
-    case kind::string:
-    #ifndef BOOST_NO_EXCEPTIONS
-        try
-        {
-    #endif
-            ::new(&arr_) string_type(
-                other.str_, typename
-                string_type::allocator_type(
-                    std::move(sp)));
-    #ifndef BOOST_NO_EXCEPTIONS
-        } 
-        catch(...)
-        {
-            kind_ = kind::null;
-            ::new(&nat_.sp_)
-                storage_ptr(std::move(sp));
-            throw;
-        }
-    #endif
-        break;
-
-    case kind::signed64:
-        ::new(&nat_.sp_)
-            storage_ptr(std::move(sp));
-        nat_.int64_ = other.nat_.int64_;
-        break;
-
-    case kind::unsigned64:
-        ::new(&nat_.sp_)
-            storage_ptr(std::move(sp));
-        nat_.uint64_ = other.nat_.uint64_;
-        break;
-
-    case kind::boolean:
-        ::new(&nat_.sp_)
-            storage_ptr(std::move(sp));
-        nat_.bool_ = other.nat_.bool_;
-        break;
-
-    case kind::null:
-        ::new(&nat_.sp_)
-            storage_ptr(std::move(sp));
-        break;
-    }
-    kind_ = other.kind_;
-}
-
-// doesn't set kind_
-void
-value_impl::
-clear() noexcept
-{
-    switch(kind_)
-    {
-    case kind::object:
-        obj_.~object_type();
-        break;
-
-    case kind::array:
-        arr_.~array_type();
-        break;
-
-    case kind::string:
-        str_.~string_type();
-        break;
-
-    case kind::signed64:
-    case kind::unsigned64:
-    case kind::boolean:
-    case kind::null:
-        nat_.sp_.~storage_ptr();
-        break;
-    }
-}
-
 //------------------------------------------------------------------------------
+//
+// special members
+//
 
-value_impl::
-~value_impl()
+value::
+~value()
 {
     clear();
 }
 
-value_impl::
-value_impl()
-    : value_impl(get_default_storage_ptr())
+value::
+value()
+    : value(get_default_storage_ptr())
 {
 }
 
-value_impl::
-value_impl(storage_ptr sp)
-    : kind_(kind::null)
-{
-    ::new(&nat_.sp_)
-        storage_ptr(std::move(sp));
-}
-
-value_impl::
-value_impl(value_impl&& other)
+value::
+value(value&& other)
 {
     move(other.get_storage(), std::move(other));
 }
 
-value_impl::
-value_impl(value_impl const& other)
+value::
+value(value const& other)
 {
     copy(other.get_storage(), other);
 }
 
-value_impl&
-value_impl::
-operator=(value_impl&& other)
+value&
+value::
+operator=(value&& other)
 {
     auto sp = release_storage();
     clear();
@@ -295,9 +57,9 @@ operator=(value_impl&& other)
     return *this;
 }
 
-value_impl&
-value_impl::
-operator=(value_impl const& other)
+value&
+value::
+operator=(value const& other)
 {
     if(this != &other)
     {
@@ -308,8 +70,18 @@ operator=(value_impl const& other)
     return *this;
 }
 
+value::
+value(storage_ptr sp)
+    : kind_(kind::null)
+{
+    ::new(&nat_.sp_)
+        storage_ptr(std::move(sp));
+}
+
+//------------------------------------------------------------------------------
+
 void
-value_impl::
+value::
 set_kind(kind k) noexcept
 {
     auto sp = release_storage();
@@ -339,6 +111,7 @@ set_kind(kind k) noexcept
 
     case kind::signed64:
     case kind::unsigned64:
+    case kind::floating:
     case kind::boolean:
     case kind::null:
         ::new(&nat_.sp_)
@@ -348,8 +121,65 @@ set_kind(kind k) noexcept
     kind_ = k;
 }
 
-storage_ptr const&
-value_impl::
+//------------------------------------------------------------------------------
+
+// modifiers
+
+value&
+value::
+operator[](key_param key)
+{
+    // implicit conversion to object from null
+    if(is_null())
+        set_kind(kind::object);
+    else
+        BOOST_ASSERT(is_object());
+    // VFALCO unnecessary string conversion
+    auto s = key.str.to_string();
+    auto it = obj_.find(s);
+    if(it == obj_.end())
+        it = obj_.emplace(s, null);
+    return it->second;
+}
+
+value const&
+value::
+operator[](key_param key) const
+{
+    BOOST_ASSERT(is_object());
+    // VFALCO unnecessary string conversion
+    auto s = key.str.to_string();
+    auto it = obj_.find(s);
+    if(it == obj_.end())
+        BOOST_THROW_EXCEPTION(system_error{
+            error_code{error::key_not_found}});
+    return it->second;
+}
+
+value&
+value::
+operator[](std::size_t i) noexcept
+{
+    BOOST_ASSERT(is_array());
+    BOOST_ASSERT(raw_array().size() > i);
+    return raw_array()[i];
+}
+
+value const&
+value::
+operator[](std::size_t i) const noexcept
+{
+    BOOST_ASSERT(is_array());
+    BOOST_ASSERT(raw_array().size() > i);
+    return raw_array()[i];
+}
+
+//------------------------------------------------------------------------------
+
+// private
+
+storage_ptr
+value::
 get_storage() const noexcept
 {
     switch(kind_)
@@ -362,18 +192,12 @@ get_storage() const noexcept
 
     case kind::string:
         return str_.get_allocator().get_storage();
-
-    case kind::signed64:
-    case kind::unsigned64:
-    case kind::boolean:
-    case kind::null:
-        break;
     }
     return nat_.sp_;
 }
 
 storage_ptr
-value_impl::
+value::
 release_storage() noexcept
 {
     switch(kind_)
@@ -386,79 +210,257 @@ release_storage() noexcept
 
     case kind::string:
         return str_.get_allocator().get_storage();
-
-    case kind::signed64:
-    case kind::unsigned64:
-    case kind::boolean:
-    case kind::null:
-        break;
     }
     return std::move(nat_.sp_);
 }
 
-} // detail
-
-//------------------------------------------------------------------------------
-
-// special
-
+// doesn't set kind_
+void
 value::
-value(storage_ptr sp)
-    : impl_(std::move(sp))
+clear() noexcept
 {
-}
-
-// modifiers
-
-value&
-value::
-operator[](key_param key)
-{
-    // VFALCO unnecessary string conversion
-    auto s = key.str.to_string();
-    auto it = impl_.obj_.find(s);
-    if(it == impl_.obj_.end())
-        it = impl_.obj_.emplace(s, null);
-    return it->second;
-}
-
-#if 0
-ref
-value::
-operator[](std::size_t i)
-{
-}
-#endif
-
-
-// observers
-
-bool
-value::
-is_number() const noexcept
-{
-    switch(get_kind())
+    switch(kind_)
     {
+    case kind::object:
+        obj_.~object_type();
+        break;
+
+    case kind::array:
+        arr_.~array_type();
+        break;
+
+    case kind::string:
+        str_.~string_type();
+        break;
+
     case kind::signed64:
     case kind::unsigned64:
     case kind::floating:
-        return true;
+    case kind::boolean:
+    case kind::null:
+        nat_.sp_.~storage_ptr();
+        break;
     }
-    return false;
 }
 
-bool
+// unchecked
+void
 value::
-is_primitive() const noexcept
+move(
+    storage_ptr sp,
+    value&& other)
 {
-    switch(get_kind())
+    switch(other.kind_)
     {
     case kind::object:
+    #ifndef BOOST_NO_EXCEPTIONS
+        try
+        {
+    #endif
+            ::new(&obj_) object_type(
+                std::move(other.obj_), typename
+                object_type::allocator_type(sp));
+    #ifndef BOOST_NO_EXCEPTIONS
+        } 
+        catch(...)
+        {
+            kind_ = kind::null;
+            ::new(&nat_.sp_)
+                storage_ptr(std::move(sp));
+            throw;
+        }
+    #endif
+        sp = other.get_storage();
+        other.obj_.~object_type();
+        ::new(&other.nat_.sp_)
+            storage_ptr(std::move(sp));
+        break;
+
     case kind::array:
-        return false;
+    #ifndef BOOST_NO_EXCEPTIONS
+        try
+        {
+    #endif
+            ::new(&arr_) array_type(
+                std::move(other.arr_), typename
+                array_type::allocator_type(sp));
+    #ifndef BOOST_NO_EXCEPTIONS
+        } 
+        catch(...)
+        {
+            kind_ = kind::null;
+            ::new(&nat_.sp_)
+                storage_ptr(std::move(sp));
+            throw;
+        }
+    #endif
+        sp = other.get_storage();
+        other.arr_.~array_type();
+        ::new(&other.nat_.sp_)
+            storage_ptr(std::move(sp));
+        break;
+
+    case kind::string:
+    #ifndef BOOST_NO_EXCEPTIONS
+        try
+        {
+    #endif
+            ::new(&arr_) string_type(
+                std::move(other.str_), typename
+                string_type::allocator_type(sp));
+    #ifndef BOOST_NO_EXCEPTIONS
+        } 
+        catch(...)
+        {
+            kind_ = kind::null;
+            ::new(&nat_.sp_)
+                storage_ptr(std::move(sp));
+            throw;
+        }
+    #endif
+        sp = other.get_storage();
+        other.str_.~string_type();
+        ::new(&other.nat_.sp_)
+            storage_ptr(std::move(sp));
+        break;
+
+    case kind::signed64:
+        ::new(&nat_.sp_)
+            storage_ptr(std::move(sp));
+        nat_.int64_ = other.nat_.int64_;
+        break;
+
+    case kind::unsigned64:
+        ::new(&nat_.sp_)
+            storage_ptr(std::move(sp));
+        nat_.uint64_ = other.nat_.uint64_;
+        break;
+
+    case kind::floating:
+        ::new(&nat_.sp_)
+            storage_ptr(std::move(sp));
+        nat_.double_ = other.nat_.double_;
+        break;
+
+    case kind::boolean:
+        ::new(&nat_.sp_)
+            storage_ptr(std::move(sp));
+        nat_.bool_ = other.nat_.bool_;
+        break;
+
+    case kind::null:
+        ::new(&nat_.sp_)
+            storage_ptr(std::move(sp));
+        break;
     }
-    return true;
+    kind_ = other.kind_;
+    other.kind_ = kind::null;
 }
+
+// unchecked
+void
+value::
+copy(
+    storage_ptr sp,
+    value const& other)
+{
+    switch(other.kind_)
+    {
+    case kind::object:
+    #ifndef BOOST_NO_EXCEPTIONS
+        try
+        {
+    #endif
+            ::new(&obj_) object_type(
+                other.obj_, typename
+                object_type::allocator_type(sp));
+    #ifndef BOOST_NO_EXCEPTIONS
+        } 
+        catch(...)
+        {
+            kind_ = kind::null;
+            ::new(&nat_.sp_)
+                storage_ptr(std::move(sp));
+            throw;
+        }
+    #endif
+        break;
+
+    case kind::array:
+    #ifndef BOOST_NO_EXCEPTIONS
+        try
+        {
+    #endif
+            ::new(&arr_) array_type(
+                other.arr_, typename
+                array_type::allocator_type(sp));
+    #ifndef BOOST_NO_EXCEPTIONS
+        } 
+        catch(...)
+        {
+            kind_ = kind::null;
+            ::new(&nat_.sp_)
+                storage_ptr(std::move(sp));
+            throw;
+        }
+    #endif
+        break;
+
+    case kind::string:
+    #ifndef BOOST_NO_EXCEPTIONS
+        try
+        {
+    #endif
+            ::new(&arr_) string_type(
+                other.str_, typename
+                string_type::allocator_type(sp));
+    #ifndef BOOST_NO_EXCEPTIONS
+        } 
+        catch(...)
+        {
+            kind_ = kind::null;
+            ::new(&nat_.sp_)
+                storage_ptr(std::move(sp));
+            throw;
+        }
+    #endif
+        break;
+
+    case kind::signed64:
+        ::new(&nat_.sp_)
+            storage_ptr(std::move(sp));
+        nat_.int64_ = other.nat_.int64_;
+        break;
+
+    case kind::unsigned64:
+        ::new(&nat_.sp_)
+            storage_ptr(std::move(sp));
+        nat_.uint64_ = other.nat_.uint64_;
+        break;
+
+    case kind::floating:
+        ::new(&nat_.sp_)
+            storage_ptr(std::move(sp));
+        nat_.double_ = other.nat_.double_;
+        break;
+
+    case kind::boolean:
+        ::new(&nat_.sp_)
+            storage_ptr(std::move(sp));
+        nat_.bool_ = other.nat_.bool_;
+        break;
+
+    case kind::null:
+        ::new(&nat_.sp_)
+            storage_ptr(std::move(sp));
+        break;
+    }
+    kind_ = other.kind_;
+}
+
+//------------------------------------------------------------------------------
+
+// friends
 
 std::ostream&
 operator<<(std::ostream& os, value const& jv)

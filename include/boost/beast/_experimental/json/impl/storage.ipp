@@ -45,6 +45,7 @@ storage_ptr&
 storage_ptr::
 operator=(storage_ptr&& other) noexcept
 {
+    BOOST_ASSERT(this != &other);
     if(p_)
         p_->release();
     p_ = boost::exchange(other.p_, nullptr);

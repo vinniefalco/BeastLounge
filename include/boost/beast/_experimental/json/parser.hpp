@@ -24,12 +24,13 @@ namespace json {
 
 class parser : public basic_parser
 {
-    static unsigned long constexpr
-        default_max_depth = 50;
+    static std::size_t const
+        default_max_depth = 32;
 
     storage_ptr store_;
     value jv_;
-    std::vector<value*> stack_;
+    detail::stack<value*,
+        default_max_depth> stack_;
     std::string s_;
     unsigned long max_depth_ =
         default_max_depth;

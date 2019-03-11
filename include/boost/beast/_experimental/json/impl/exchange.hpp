@@ -11,7 +11,6 @@
 #define BOOST_BEAST_JSON_DETAIL_EXCHANGE_HPP
 
 #include <boost/beast/_experimental/json/exchange.hpp>
-#include <boost/beast/_experimental/json/detail/access.hpp>
 #include <cstddef>
 #include <type_traits>
 
@@ -20,20 +19,20 @@ namespace beast {
 namespace json {
 
 template<>
-struct exchange<object_t> : detail::access
+struct exchange<object_t>
 {
     static void assign(value& jv, object_t)
     {
-        impl(jv).set_kind(kind::object);
+        jv.set_kind(kind::object);
     }
 };
 
 template<>
-struct exchange<array_t> : detail::access
+struct exchange<array_t>
 {
     static void assign(value& jv, array_t)
     {
-        impl(jv).set_kind(kind::array);
+        jv.set_kind(kind::array);
     }
 };
 
@@ -42,11 +41,11 @@ struct exchange<array_t> : detail::access
 //
 
 template<std::size_t N>
-struct exchange<char[N]> : detail::access
+struct exchange<char[N]>
 {
     static void assign(value& jv, string_view v)
     {
-        impl(jv).set_kind(kind::string);
+        jv.set_kind(kind::string);
         jv.raw_string().assign(
             v.data(), v.size());
     }
@@ -55,12 +54,12 @@ struct exchange<char[N]> : detail::access
 template<class Traits, class Allocator>
 struct exchange<
     std::basic_string<char, Traits, Allocator>>
-    : detail::access
+   
 {
     static void assign(value& jv,
         std::basic_string<char, Traits, Allocator> const& v)
     {
-        impl(jv).set_kind(kind::string);
+        jv.set_kind(kind::string);
         jv.raw_string().assign(
             v.data(), v.size());
     }
@@ -71,41 +70,41 @@ struct exchange<
 //
 
 template<>
-struct exchange<short> : detail::access
+struct exchange<short>
 {
     static void assign(value& jv, short v)
     {
-        impl(jv).set_kind(kind::signed64);
+        jv.set_kind(kind::signed64);
         jv.raw_signed() = v;
     }
 };
 
 template<>
-struct exchange<int> : detail::access
+struct exchange<int>
 {
     static void assign(value& jv, int v)
     {
-        impl(jv).set_kind(kind::signed64);
+        jv.set_kind(kind::signed64);
         jv.raw_signed() = v;
     }
 };
 
 template<>
-struct exchange<long> : detail::access
+struct exchange<long>
 {
     static void assign(value& jv, long v)
     {
-        impl(jv).set_kind(kind::signed64);
+        jv.set_kind(kind::signed64);
         jv.raw_signed() = v;
     }
 };
 
 template<>
-struct exchange<long long> : detail::access
+struct exchange<long long>
 {
     static void assign(value& jv, long long v)
     {
-        impl(jv).set_kind(kind::signed64);
+        jv.set_kind(kind::signed64);
         jv.raw_signed() = v;
     }
 };
@@ -115,41 +114,41 @@ struct exchange<long long> : detail::access
 //
 
 template<>
-struct exchange<unsigned short> : detail::access
+struct exchange<unsigned short>
 {
     static void assign(value& jv, unsigned short v)
     {
-        impl(jv).set_kind(kind::unsigned64);
+        jv.set_kind(kind::unsigned64);
         jv.raw_unsigned() = v;
     }
 };
 
 template<>
-struct exchange<unsigned int> : detail::access
+struct exchange<unsigned int>
 {
     static void assign(value& jv, unsigned int v)
     {
-        impl(jv).set_kind(kind::unsigned64);
+        jv.set_kind(kind::unsigned64);
         jv.raw_unsigned() = v;
     }
 };
 
 template<>
-struct exchange<unsigned long> : detail::access
+struct exchange<unsigned long>
 {
     static void assign(value& jv, unsigned long v)
     {
-        impl(jv).set_kind(kind::unsigned64);
+        jv.set_kind(kind::unsigned64);
         jv.raw_unsigned() = v;
     }
 };
 
 template<>
-struct exchange<unsigned long long> : detail::access
+struct exchange<unsigned long long>
 {
     static void assign(value& jv, unsigned long long v)
     {
-        impl(jv).set_kind(kind::unsigned64);
+        jv.set_kind(kind::unsigned64);
         jv.raw_unsigned() = v;
     }
 };
@@ -159,21 +158,21 @@ struct exchange<unsigned long long> : detail::access
 //
 
 template<>
-struct exchange<float> : detail::access
+struct exchange<float>
 {
     static void assign(value& jv, float v)
     {
-        impl(jv).set_kind(kind::floating);
+        jv.set_kind(kind::floating);
         jv.raw_floating() = v;
     }
 };
 
 template<>
-struct exchange<double> : detail::access
+struct exchange<double>
 {
     static void assign(value& jv, double v)
     {
-        impl(jv).set_kind(kind::floating);
+        jv.set_kind(kind::floating);
         jv.raw_floating() = v;
     }
 };
@@ -183,11 +182,11 @@ struct exchange<double> : detail::access
 //
 
 template<>
-struct exchange<bool> : detail::access
+struct exchange<bool>
 {
     static void assign(value& jv, bool v)
     {
-        impl(jv).set_kind(kind::boolean);
+        jv.set_kind(kind::boolean);
         jv.raw_bool() = v;
     }
 };
@@ -197,11 +196,11 @@ struct exchange<bool> : detail::access
 //
 
 template<>
-struct exchange<std::nullptr_t> : detail::access
+struct exchange<std::nullptr_t>
 {
     static void assign(value& jv, std::nullptr_t)
     {
-        impl(jv).set_kind(kind::null);
+        jv.set_kind(kind::null);
     }
 };
 

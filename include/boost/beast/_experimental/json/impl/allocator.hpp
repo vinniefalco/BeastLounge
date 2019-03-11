@@ -7,11 +7,11 @@
 // Official repository: https://github.com/boostorg/beast
 //
 
-#include <memory>
-#include <utility>
-
 #ifndef BOOST_BEAST_JSON_IMPL_ALLOCATOR_HPP
 #define BOOST_BEAST_JSON_IMPL_ALLOCATOR_HPP
+
+#include <memory>
+#include <utility>
 
 namespace boost {
 namespace beast {

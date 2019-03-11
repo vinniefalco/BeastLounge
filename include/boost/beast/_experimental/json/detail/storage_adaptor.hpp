@@ -13,6 +13,8 @@
 #include <boost/beast/core/detail/config.hpp>
 #include <boost/beast/core/detail/allocator.hpp>
 #include <boost/beast/_experimental/json/storage.hpp>
+#include <boost/align/align_up.hpp>
+#include <boost/assert.hpp>
 #include <boost/core/empty_value.hpp>
 #include <atomic>
 #include <cstddef>
@@ -38,11 +40,15 @@ struct storage_adaptor
     std::atomic<unsigned> count_;
 
     explicit
-    storage_adaptor(Allocator const& a)
+    storage_adaptor(Allocator const& alloc)
         : boost::empty_value<
             allocator_of_char<Allocator>>(
-                boost::empty_init_t{}, a)
+                boost::empty_init_t{}, alloc)
         , count_(1)
+    {
+    }
+
+    ~storage_adaptor()
     {
     }
 
@@ -63,9 +69,12 @@ struct storage_adaptor
     void*
     allocate(
         std::size_t n,
-        std::size_t) override
+        std::size_t align) override
     {
-        return this->get().allocate(n);
+        auto const n1 =
+            boost::alignment::align_up(n, align);
+        BOOST_ASSERT(n1 >= n);
+        return this->get().allocate(n1);
     }
     
     void

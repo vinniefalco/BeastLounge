@@ -24,12 +24,9 @@ public:
     void
     run()
     {
-        error_code ec;
-        parser p;
-        json::parse_file(
-            "C:\\Users\\Vinnie\\src\\lounge\\client\\test.json",
-            p, ec);
-        log << p.get() << "\n";
+        log <<
+            "sizeof(parser) == " <<
+            sizeof(parser) << "\n";
         pass();
     }
 };

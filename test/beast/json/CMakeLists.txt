@@ -22,10 +22,13 @@ add_executable (beast-json-tests
     ${BEAST_FILES}
     ${BEAST_EXTRA_FILES}
     ${TEST_MAIN}
+    _detail_stack.cpp
     allocator.cpp
+    assign_string.cpp
+    assign_vector.cpp
     basic_parser.cpp
+    json.cpp
     error.cpp
-    exchange.cpp
     key_param.cpp
     kind.cpp
     parse_file.cpp

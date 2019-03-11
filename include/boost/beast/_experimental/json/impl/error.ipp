@@ -44,6 +44,28 @@ public:
             "An exponent overflowed while parsing";
         case error::too_deep: return
             "The parser reached the maximum allowed depth";
+
+        case error::integer_overflow: return
+            "An integer assignment overflowed";
+        case error::expected_object: return
+            "Expected a value of kind object";
+        case error::expected_array: return
+            "Expected a value of kind array";
+        case error::expected_string: return
+            "Expected a value of kind string";
+        case error::expected_signed: return
+            "Expected a value of kind signed";
+        case error::expected_unsigned: return
+            "Expected a value of kind unsigned";
+        case error::expected_floating: return
+            "Expected a value of kind floating";
+        case error::expected_bool: return
+            "Expected a value of kind bool";
+        case error::expected_null: return
+            "Expected a value of kind null";
+
+        case error::key_not_found: return
+            "The key was not found in the object";
         }
     }
 
@@ -54,12 +76,25 @@ public:
         switch(static_cast<error>(ev))
         {
         default:
+            return {ev, *this};
+
         case error::syntax:
         case error::extra_data:
         case error::mantissa_overflow:
         case error::exponent_overflow:
         case error::too_deep:
             return condition::parse_error;
+
+        case error::integer_overflow:
+        case error::expected_object:
+        case error::expected_array:
+        case error::expected_string:
+        case error::expected_signed:
+        case error::expected_unsigned:
+        case error::expected_floating:
+        case error::expected_bool:
+        case error::expected_null:
+            return condition::assign_error;
         }
     }
 };
@@ -83,6 +118,8 @@ public:
         default:
         case condition::parse_error:
             return "A JSON parsing error occurred";
+        case condition::assign_error:
+            return "An error occurred during assignment";
         }
     }
 };

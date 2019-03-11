@@ -50,6 +50,18 @@ public:
         check(condition::parse_error, error::mantissa_overflow);
         check(condition::parse_error, error::exponent_overflow);
         check(condition::parse_error, error::too_deep);
+
+        check(condition::assign_error, error::integer_overflow);
+        check(condition::assign_error, error::expected_object);
+        check(condition::assign_error, error::expected_array);
+        check(condition::assign_error, error::expected_string);
+        check(condition::assign_error, error::expected_signed);
+        check(condition::assign_error, error::expected_unsigned);
+        check(condition::assign_error, error::expected_floating);
+        check(condition::assign_error, error::expected_bool);
+        check(condition::assign_error, error::expected_null);
+        
+        check(error::key_not_found);
     }
 };
 

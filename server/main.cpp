@@ -40,21 +40,27 @@ main(int argc, char* argv[])
 #endif
 
     // Check command line arguments.
-    if (argc != 5)
+    if (argc != 2)
     {
         std::cerr <<
-            "Usage: websocket-chat-server <settings-path> <address> <port> <doc_root>\n" <<
-            "Example:\n" <<
-            "    websocket-chat-server 0.0.0.0 8080 .\n";
+            "Usage: lounge-server <settings-path>\n";
         return EXIT_FAILURE;
     }
     auto settings_path = argv[1];
-    auto address = net::ip::make_address(argv[2]);
-    auto port = static_cast<unsigned short>(std::atoi(argv[3]));
-    auto doc_root = argv[4];
 
     beast::error_code ec;
     auto st = settings::load_from_file(settings_path, ec);
+    if(ec)
+    {
+        std::cerr <<
+            "load settings: " << ec.message() << "\n";
+        return EXIT_FAILURE;
+    }
+
+#if 0
+    auto address = net::ip::make_address(argv[2]);
+    auto port = static_cast<unsigned short>(std::atoi(argv[3]));
+    auto doc_root = argv[4];
 
     // The io_context is required for all I/O
     net::io_context ioc;
@@ -80,6 +86,7 @@ main(int argc, char* argv[])
     ioc.run();
 
     // (If we get here, it means we got a SIGINT or SIGTERM)
+#endif
 
     return EXIT_SUCCESS;
 }

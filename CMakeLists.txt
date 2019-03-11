@@ -43,7 +43,9 @@ file (GLOB_RECURSE BEAST_FILES
 
 file (GLOB_RECURSE BEAST_EXTRA_FILES
   ${PROJECT_SOURCE_DIR}/include/boost/beast/*.hpp
-  ${PROJECT_SOURCE_DIR}/include/boost/beast/*.ipp)
+  ${PROJECT_SOURCE_DIR}/include/boost/beast/*.ipp
+  ${PROJECT_SOURCE_DIR}/include/boost/beast/*.*
+  )
 
 file (GLOB_RECURSE NLOHMANN_FILES
   ${PROJECT_SOURCE_DIR}/nlohmann/include/*.hpp

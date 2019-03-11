@@ -7,26 +7,29 @@
 // Official repository: https://github.com/boostorg/beast
 //
 
-#ifndef BOOST_BEAST_JSON_DETAIL_ACCESS_HPP
-#define BOOST_BEAST_JSON_DETAIL_ACCESS_HPP
+#ifndef BOOST_BEAST_JSON_DETAIL_IS_SPECIALIZED_HPP
+#define BOOST_BEAST_JSON_DETAIL_IS_SPECIALIZED_HPP
 
-#include <boost/beast/_experimental/json/value.hpp>
+#include <type_traits>
 
 namespace boost {
 namespace beast {
 namespace json {
 namespace detail {
 
-class access
+struct primary_template
 {
-protected:
-    static
-    detail::value_impl&
-    impl(value& v) noexcept
-    {
-        return v.impl_;
-    }
 };
+
+template<class T>
+using is_specialized =
+    std::integral_constant<bool,
+        ! std::is_base_of<primary_template, T>::value>;
+
+template<class T>
+using remove_cr =
+    typename std::remove_const<
+    typename std::remove_reference<T>::type>::type;
 
 } // detail
 } // json

@@ -14,6 +14,7 @@
 #include <boost/beast/core/error.hpp>
 #include <boost/beast/core/string.hpp>
 #include <boost/beast/_experimental/json/detail/basic_parser.hpp>
+#include <boost/beast/_experimental/json/detail/stack.hpp>
 #include <boost/asio/buffer.hpp>
 #include <cstdint>
 
@@ -31,6 +32,41 @@ class basic_parser
     : private detail::parser_base
 #endif
 {
+protected:
+    /** The representation of parsed numbers.
+    */
+    struct number
+    {
+        unsigned long long mant = 0;
+        unsigned exp = 0;   // integer exponent
+        bool neg = false;   // true if mantissa is negative
+        bool pos = true;    // true if exponent is positive
+
+        bool
+        is_integral() const noexcept
+        {
+            return exp == 0;
+        }
+    };
+
+private:
+    enum class state : char;
+
+    /// Depth to which the stack does not require dynamic allocation
+    static std::size_t const stack_capacity = 64;
+
+    detail::stack<
+        state, stack_capacity> stack_;
+    std::string key_;
+    number n_;
+
+    template<class Unsigned>
+    static
+    bool
+    append_digit(
+        Unsigned* value,
+        char digit);
+
 public:
     /// Returns `true` if the parser has completed without error
     BOOST_BEAST_DECL
@@ -61,22 +97,6 @@ public:
     write_eof(error_code& ec);
 
 protected:
-    /** The representation of parsed numbers.
-    */
-    struct number
-    {
-        unsigned long long mant = 0;
-        unsigned exp = 0;   // integer exponent
-        bool neg = false;   // true if mantissa is negative
-        bool pos = true;    // true if exponent is positive
-
-        bool
-        is_integral() const noexcept
-        {
-            return exp == 0;
-        }
-    };
-
     /// Constructor (default)
     BOOST_BEAST_DECL
     basic_parser();
@@ -131,20 +151,6 @@ protected:
     virtual
     void
     on_null(error_code& ec) = 0;
-
-private:
-    template<class Unsigned>
-    static
-    bool
-    append_digit(
-        Unsigned* value,
-        char digit);
-
-    enum class state : char;
-
-    std::vector<state> stack_;
-    std::string key_;
-    number n_;
 };
 
 } // json

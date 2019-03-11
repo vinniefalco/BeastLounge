@@ -12,10 +12,21 @@
 
 #include "config.hpp"
 #include <boost/beast/core/error.hpp>
+#include <boost/asio/ip/address.hpp>
 #include <memory>
+#include <vector>
 
 struct settings
 {
+    struct port
+    {
+        std::string name;       // name of this port
+        net::ip::address addr;  // address to bind to
+        unsigned short number;  // port number
+    };
+
+    std::vector<port> ports;
+
     static
     std::shared_ptr<settings>
     load_from_file(

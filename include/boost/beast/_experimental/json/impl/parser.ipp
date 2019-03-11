@@ -11,6 +11,7 @@
 #define BOOST_BEAST_JSON_IMPL_PARSER_IPP
 
 #include <boost/beast/_experimental/json/parser.hpp>
+#include <boost/beast/_experimental/json/error.hpp>
 #include <boost/core/ignore_unused.hpp>
 #include <boost/assert.hpp>
 
@@ -48,27 +49,32 @@ parser::
 on_document_begin(error_code&)
 {
     stack_.clear();
-    stack_.emplace_back(&jv_);
+    stack_.push_front(&jv_);
     s_.clear();
 }
 
 void
 parser::
-on_object_begin(error_code&)
+on_object_begin(error_code& ec)
 {
-    auto& jv = *stack_.back();
+    if(stack_.size() >= max_depth_)
+    {
+        ec = error::too_deep;
+        return;
+    }
+    auto& jv = *stack_.front();
     if(jv.is_object())
     {
         BOOST_ASSERT(! key().empty());
         auto it = jv.raw_object().emplace(
             key(), object);
-        stack_.push_back(&it->second);
+        stack_.push_front(&it->second);
     }
     else if(jv.is_array())
     {
         BOOST_ASSERT(key().empty());
         jv.raw_array().emplace_back(object);
-        stack_.push_back(&jv.raw_array().back());
+        stack_.push_front(&jv.raw_array().back());
     }
     else
     {
@@ -81,27 +87,32 @@ void
 parser::
 on_object_end(error_code&)
 {
-    BOOST_ASSERT(stack_.back()->is_object());
-    stack_.pop_back();
+    BOOST_ASSERT(stack_.front()->is_object());
+    stack_.pop_front();
 }
 
 void
 parser::
-on_array_begin(error_code&)
+on_array_begin(error_code& ec)
 {
-    auto& jv = *stack_.back();
+    if(stack_.size() >= max_depth_)
+    {
+        ec = error::too_deep;
+        return;
+    }
+    auto& jv = *stack_.front();
     if(jv.is_object())
     {
         BOOST_ASSERT(! key().empty());
         auto it = jv.raw_object().emplace(
             key(), array);
-        stack_.push_back(&it->second);
+        stack_.push_front(&it->second);
     }
     else if(jv.is_array())
     {
         BOOST_ASSERT(key().empty());
         jv.raw_array().emplace_back(array);
-        stack_.push_back(&jv.raw_array().back());
+        stack_.push_front(&jv.raw_array().back());
     }
     else
     {
@@ -114,8 +125,8 @@ void
 parser::
 on_array_end(error_code&)
 {
-    BOOST_ASSERT(stack_.back()->is_array());
-    stack_.pop_back();
+    BOOST_ASSERT(stack_.front()->is_array());
+    stack_.pop_front();
 }
 
 void

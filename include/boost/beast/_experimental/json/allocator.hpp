@@ -54,10 +54,16 @@ public:
     bool
     operator!=(allocator const&) const noexcept;
 
-    storage_ptr const&
-    get_storage() const noexcept
+    storage_ptr
+    get_storage() const & noexcept
     {
         return sp_;
+    }
+
+    storage_ptr
+    get_storage() && noexcept
+    {
+        return std::move(sp_);
     }
 };
 

@@ -61,7 +61,7 @@ basic_parser()
 bool
 basic_parser::is_done() const noexcept
 {
-    return stack_.back() == state::end;
+    return stack_.front() == state::end;
 }
 
 void
@@ -69,8 +69,8 @@ basic_parser::
 reset()
 {
     stack_.clear();
-    stack_.push_back(state::end);
-    stack_.push_back(state::json);
+    stack_.push_front(state::end);
+    stack_.push_front(state::json);
     key_.clear();
     n_ = {};
 }
@@ -111,25 +111,25 @@ write_eof(error_code& ec)
             BOOST_ASSERT(ec);
         };
 
-    while(stack_.back() != state::end)
+    while(stack_.front() != state::end)
     {
         // pop all states that
         // allow "" (empty string)
-        switch(stack_.back())
+        switch(stack_.front())
         {
         case state::number_mant2:
         case state::number_fract1:
         case state::number_fract3:
         case state::number_exp:
         case state::number_exp_digits2:
-            stack_.back() = state::number_end;
+            stack_.front() = state::number_end;
             write(boost::asio::const_buffer(), ec);
             if(ec)
                 return;
             break;
 
         case state::ws:
-            stack_.pop_back();
+            stack_.pop_front();
             break;
 
         default:
@@ -150,21 +150,21 @@ write(boost::asio::const_buffer buffer, error_code& ec)
     auto const p0 = p;
     auto const p1 = p0 + n;
     ec.assign(0, ec.category());
-    BOOST_ASSERT(stack_.back() != state::end);
+    BOOST_ASSERT(stack_.front() != state::end);
 loop:
-    switch(stack_.back())
+    switch(stack_.front())
     {
     case state::json:
         this->on_document_begin(ec);
         if(ec)
             goto finish;
-        stack_.back() = state::element;
+        stack_.front() = state::element;
         goto loop;
 
     case state::element:
-        stack_.back() = state::ws;
-        stack_.push_back(state::value);
-        stack_.push_back(state::ws);
+        stack_.front() = state::ws;
+        stack_.push_front(state::value);
+        stack_.push_front(state::ws);
         goto loop;
 
     case state::ws:
@@ -172,7 +172,7 @@ loop:
         {
             if(! is_ws(*p))
             {
-                stack_.pop_back();
+                stack_.pop_front();
                 goto loop;
             }
             ++p;
@@ -188,7 +188,7 @@ loop:
         // object
         case '{':
             ++p;
-            stack_.back() = state::object1;
+            stack_.front() = state::object1;
             this->on_object_begin(ec);
             if(ec)
                 goto finish;
@@ -198,7 +198,7 @@ loop:
         // array
         case '[':
             ++p;
-            stack_.back() = state::array1;
+            stack_.front() = state::array1;
             this->on_array_begin(ec);
             key_.clear();
             goto loop;
@@ -206,7 +206,7 @@ loop:
         // string
         case '"':
             ++p;
-            stack_.back() = state::string2;
+            stack_.front() = state::string2;
             goto loop;
 
         // number
@@ -215,7 +215,7 @@ loop:
         case '4': case '5': case '6':
         case '7': case '8': case '9':
         case '-':
-            stack_.back() = state::number;
+            stack_.front() = state::number;
             goto loop;
 
         // true
@@ -231,11 +231,11 @@ loop:
                     goto finish;
                 }
                 p = p + 4;
-                stack_.back() = state::true4;
+                stack_.front() = state::true4;
                 goto loop;
             }
             ++p;
-            stack_.back() = state::true1;
+            stack_.front() = state::true1;
             goto loop;
 
         // false
@@ -252,11 +252,11 @@ loop:
                     goto finish;
                 }
                 p = p + 5;
-                stack_.back() = state::false5;
+                stack_.front() = state::false5;
                 goto loop;
             }
             ++p;
-            stack_.back() = state::false1;
+            stack_.front() = state::false1;
             goto loop;
 
         // null
@@ -272,11 +272,11 @@ loop:
                     goto finish;
                 }
                 p = p + 4;
-                stack_.back() = state::null4;
+                stack_.front() = state::null4;
                 goto loop;
             }
             ++p;
-            stack_.back() = state::null1;
+            stack_.front() = state::null1;
             goto loop;
 
         default:
@@ -291,8 +291,8 @@ loop:
     //
 
     case state::object1:
-        stack_.back() = state::object2;
-        stack_.push_back(state::ws);
+        stack_.front() = state::object2;
+        stack_.push_front(state::ws);
         goto loop;
 
     case state::object2:
@@ -301,7 +301,7 @@ loop:
         if(*p == '}')
         {
             ++p;
-            stack_.back() = state::object4;
+            stack_.front() = state::object4;
             goto loop;
         }
         if(*p != '"')
@@ -310,11 +310,11 @@ loop:
             goto finish;
         }
         ++p;
-        stack_.back() = state::object3;
-        stack_.push_back(state::element);
-        stack_.push_back(state::colon);
-        stack_.push_back(state::ws);
-        stack_.push_back(state::key2);
+        stack_.front() = state::object3;
+        stack_.push_front(state::element);
+        stack_.push_front(state::colon);
+        stack_.push_front(state::ws);
+        stack_.push_front(state::key2);
         key_.clear();
         goto loop;
 
@@ -324,7 +324,7 @@ loop:
         if(*p == '}')
         {
             ++p;
-            stack_.back() = state::object4;
+            stack_.front() = state::object4;
             goto loop;
         }
         if(*p != ',')
@@ -333,19 +333,19 @@ loop:
             goto finish;
         }
         ++p;
-        stack_.back() = state::object3;
-        stack_.push_back(state::element);
-        stack_.push_back(state::colon);
-        stack_.push_back(state::ws);
-        stack_.push_back(state::key1);
-        stack_.push_back(state::ws);
+        stack_.front() = state::object3;
+        stack_.push_front(state::element);
+        stack_.push_front(state::colon);
+        stack_.push_front(state::ws);
+        stack_.push_front(state::key1);
+        stack_.push_front(state::ws);
         goto loop;
 
     case state::object4:
         this->on_object_end(ec);
         if(ec)
             goto finish;
-        stack_.pop_back();
+        stack_.pop_front();
         goto loop;
 
     case state::colon:
@@ -357,7 +357,7 @@ loop:
             goto finish;
         }
         ++p;
-        stack_.pop_back();
+        stack_.pop_front();
         goto loop;
 
     //
@@ -365,8 +365,8 @@ loop:
     //
 
     case state::array1:
-        stack_.back() = state::array2;
-        stack_.push_back(state::ws);
+        stack_.front() = state::array2;
+        stack_.push_front(state::ws);
         goto loop;
 
     case state::array2:
@@ -375,11 +375,11 @@ loop:
         if(*p == ']')
         {
             ++p;
-            stack_.back() = state::array4;
+            stack_.front() = state::array4;
             goto loop;
         }
-        stack_.back() = state::array3;
-        stack_.push_back(state::element);
+        stack_.front() = state::array3;
+        stack_.push_front(state::element);
         goto loop;
 
     case state::array3:
@@ -388,7 +388,7 @@ loop:
         if(*p == ']')
         {
             ++p;
-            stack_.back() = state::array4;
+            stack_.front() = state::array4;
             goto loop;
         }
         if(*p != ',')
@@ -397,16 +397,16 @@ loop:
             goto finish;
         }
         ++p;
-        stack_.back() = state::array3;
-        stack_.push_back(state::element);
-        stack_.push_back(state::ws);
+        stack_.front() = state::array3;
+        stack_.push_front(state::element);
+        stack_.push_front(state::ws);
         goto loop;
 
     case state::array4:
         this->on_array_end(ec);
         if(ec)
             goto finish;
-        stack_.pop_back();
+        stack_.pop_front();
         goto loop;
 
     //
@@ -422,7 +422,7 @@ loop:
             goto finish;
         }
         ++p;
-        stack_.back() = state::key2;
+        stack_.front() = state::key2;
         key_.clear();
         goto loop;
 
@@ -435,7 +435,7 @@ loop:
             {
                 key_.append(first, p);
                 ++p;
-                stack_.pop_back();
+                stack_.pop_front();
                 goto loop;
             }
             if(is_control(*p))
@@ -463,14 +463,14 @@ loop:
             goto finish;
         }
         ++p;
-        stack_.back() = state::string2;
+        stack_.front() = state::string2;
         goto loop;
 
     case state::string2:
         this->on_string_begin(ec);
         if(ec)
             goto finish;
-        stack_.back() = state::string3;
+        stack_.front() = state::string3;
         goto loop;
 
     case state::string3:
@@ -489,7 +489,7 @@ loop:
                 if(ec)
                     goto finish;
                 ++p;
-                stack_.pop_back();
+                stack_.pop_front();
                 goto loop;
             }
             if(is_control(*p))
@@ -515,7 +515,7 @@ loop:
             goto finish;
         }
         ++p;
-        stack_.back() = state::true2;
+        stack_.front() = state::true2;
         BOOST_FALLTHROUGH;
 
     case state::true2:
@@ -527,7 +527,7 @@ loop:
             goto finish;
         }
         ++p;
-        stack_.back() = state::true3;
+        stack_.front() = state::true3;
         BOOST_FALLTHROUGH;
 
     case state::true3:
@@ -539,7 +539,7 @@ loop:
             goto finish;
         }
         ++p;
-        stack_.back() = state::true4;
+        stack_.front() = state::true4;
         BOOST_FALLTHROUGH;
 
     case state::true4:
@@ -547,7 +547,7 @@ loop:
         key_.clear();
         if(ec)
             goto finish;
-        stack_.pop_back();
+        stack_.pop_front();
         goto loop;
 
     //
@@ -563,7 +563,7 @@ loop:
             goto finish;
         }
         ++p;
-        stack_.back() = state::false2;
+        stack_.front() = state::false2;
         BOOST_FALLTHROUGH;
 
     case state::false2:
@@ -575,7 +575,7 @@ loop:
             goto finish;
         }
         ++p;
-        stack_.back() = state::false3;
+        stack_.front() = state::false3;
         BOOST_FALLTHROUGH;
 
     case state::false3:
@@ -587,7 +587,7 @@ loop:
             goto finish;
         }
         ++p;
-        stack_.back() = state::false4;
+        stack_.front() = state::false4;
         BOOST_FALLTHROUGH;
 
     case state::false4:
@@ -599,7 +599,7 @@ loop:
             goto finish;
         }
         ++p;
-        stack_.back() = state::false5;
+        stack_.front() = state::false5;
         BOOST_FALLTHROUGH;
 
     case state::false5:
@@ -607,7 +607,7 @@ loop:
         key_.clear();
         if(ec)
             goto finish;
-        stack_.pop_back();
+        stack_.pop_front();
         goto loop;
 
     //
@@ -623,7 +623,7 @@ loop:
             goto finish;
         }
         ++p;
-        stack_.back() = state::null2;
+        stack_.front() = state::null2;
         BOOST_FALLTHROUGH;
 
     case state::null2:
@@ -635,7 +635,7 @@ loop:
             goto finish;
         }
         ++p;
-        stack_.back() = state::null3;
+        stack_.front() = state::null3;
         BOOST_FALLTHROUGH;
 
     case state::null3:
@@ -647,7 +647,7 @@ loop:
             goto finish;
         }
         ++p;
-        stack_.back() = state::null4;
+        stack_.front() = state::null4;
         BOOST_FALLTHROUGH;
 
     case state::null4:
@@ -655,7 +655,7 @@ loop:
         key_.clear();
         if(ec)
             goto finish;
-        stack_.pop_back();
+        stack_.pop_front();
         goto loop;
 
     //
@@ -670,7 +670,7 @@ loop:
             ++p;
             n_.neg = true;
         }
-        stack_.back() = state::number_mant1;
+        stack_.front() = state::number_mant1;
         goto loop;
 
     case state::number_mant1:
@@ -684,11 +684,11 @@ loop:
         }
         if(*p != '0')
         {
-            stack_.back() = state::number_mant2;
+            stack_.front() = state::number_mant2;
             goto loop;
         }
         ++p;
-        stack_.back() = state::number_fract1;
+        stack_.front() = state::number_fract1;
         goto loop;
 
     case state::number_mant2:
@@ -696,7 +696,7 @@ loop:
         {
             if(! is_digit(*p))
             {
-                stack_.back() = state::number_fract1;
+                stack_.front() = state::number_fract1;
                 goto loop;
             }
             if(! append_digit(&n_.mant, *p++ - '0'))
@@ -713,7 +713,7 @@ loop:
         if(*p == '.')
         {
             ++p;
-            stack_.back() = state::number_fract2;
+            stack_.front() = state::number_fract2;
             goto loop;
         }
         if(is_digit(*p))
@@ -722,7 +722,7 @@ loop:
             ec = error::syntax;
             goto finish;
         }
-        stack_.back() = state::number_exp;
+        stack_.front() = state::number_exp;
         goto loop;
 
     case state::number_fract2:
@@ -734,7 +734,7 @@ loop:
             ec = error::syntax;
             goto finish;
         }
-        stack_.back() = state::number_fract3;
+        stack_.front() = state::number_fract3;
         goto loop;
 
     case state::number_fract3:
@@ -742,7 +742,7 @@ loop:
         {
             if(! is_digit(*p))
             {
-                stack_.back() = state::number_exp;
+                stack_.front() = state::number_exp;
                 goto loop;
             }
             if(! append_digit(&n_.mant, *p++ - '0'))
@@ -761,10 +761,10 @@ loop:
         if(*p == 'e' || *p == 'E')
         {
             ++p;
-            stack_.back() = state::number_exp_sign;
+            stack_.front() = state::number_exp_sign;
             goto loop;
         }
-        stack_.back() = state::number_end;
+        stack_.front() = state::number_end;
         goto loop;
 
     case state::number_exp_sign:
@@ -779,7 +779,7 @@ loop:
             ++p;
             n_.pos = false;
         }
-        stack_.back() = state::number_exp_digits1;
+        stack_.front() = state::number_exp_digits1;
         goto loop;
 
     case state::number_exp_digits1:
@@ -791,7 +791,7 @@ loop:
             ec = error::syntax;
             goto finish;
         }
-        stack_.back() = state::number_exp_digits2;
+        stack_.front() = state::number_exp_digits2;
         goto loop;
 
     case state::number_exp_digits2:
@@ -799,7 +799,7 @@ loop:
         {
             if(! is_digit(*p))
             {
-                stack_.back() = state::number_end;
+                stack_.front() = state::number_end;
                 goto loop;
             }
             if(! append_digit(&n_.exp, *p++ - '0'))
@@ -815,7 +815,7 @@ loop:
         key_.clear();
         if(ec)
             goto finish;
-        stack_.pop_back();
+        stack_.pop_front();
         goto loop;
 
     //
