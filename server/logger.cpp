@@ -35,7 +35,7 @@ class logger_impl : public logger
 
         logger_impl& log_;
         std::string name_;
-        int thresh_ = 2;
+        int thresh_ = 0;
 
     public:
         section_impl(
@@ -54,9 +54,9 @@ class logger_impl : public logger
 
         void
         prepare(
-            int level, line_type& s) override
+            int level, std::ostream& os) override
         {
-            boost::ignore_unused(level, s);
+            os << name_ << "\t" << level << "\t";
         }
 
         void

@@ -8,7 +8,8 @@
     ],
 
     "server": {
-      "threads" : 5
+      "threads" : 1,
+      "doc-root" : "C:\\Users\vinnie\src\lounge\static\wwwroot\"
     },
 
     "log" : {

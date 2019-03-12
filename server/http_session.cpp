@@ -8,11 +8,17 @@
 //
 
 #include "http_session.hpp"
+#include "session.hpp"
 #include "websocket_session.hpp"
+#include <boost/beast/core/stream_traits.hpp>
 #include <boost/beast/http/file_body.hpp>
+#include <boost/asio/coroutine.hpp>
+#include <boost/asio/ip/tcp.hpp>
+#include <boost/asio/post.hpp>
+#include <boost/asio/yield.hpp>
 #include <iostream>
 
-//------------------------------------------------------------------------------
+namespace {
 
 // Return a reasonable mime type based on the extension of a file.
 beast::string_view
@@ -186,121 +192,239 @@ handle_request(
 
 //------------------------------------------------------------------------------
 
-http_session::
-http_session(
-    tcp::socket sock,
-    std::shared_ptr<shared_state> const& state)
-    : stream_(std::move(sock))
-    , state_(state)
+struct http_session_impl
+    : public boost::enable_shared_from_this<http_session_impl>
+    , public asio::coroutine
+    , public http_session
+    , public session
 {
-}
+    server& srv_;
+    agent& ag_;
+    logger::section& log_;
+    stream_type stream_;
+    stream_type::endpoint_type ep_;
+    flat_storage storage_;
+    http::request<http::string_body> req_;
 
-void
-http_session::
-run()
-{
-    // Read a request
-    http::async_read(stream_, buffer_, req_,
-        [self = shared_from_this()]
-            (beast::error_code ec, std::size_t bytes)
-        {
-            self->on_read(ec, bytes);
-        });
-}
-
-// Report a failure
-void
-http_session::
-fail(beast::error_code ec, char const* what)
-{
-    // Don't report on canceled operations
-    if(ec == net::error::operation_aborted)
-        return;
-
-    std::cerr << what << ": " << ec.message() << "\n";
-}
-
-void
-http_session::
-on_read(beast::error_code ec, std::size_t)
-{
-    // This means they closed the connection
-    if(ec == http::error::end_of_stream)
+    http_session_impl(
+        server& srv,
+        agent& ag,
+        stream_type stream,
+        stream_type::endpoint_type ep,
+        flat_storage storage)
+        : srv_(srv)
+        , ag_(ag)
+        , log_(srv_.log().get_section("http_session"))
+        , stream_(std::move(stream))
+        , ep_(ep)
+        , storage_(std::move(storage))
     {
-        stream_.socket().shutdown(tcp::socket::shutdown_send, ec);
-        return;
+        ag_.insert(this);
     }
 
-    // Handle the error, if any
-    if(ec)
-        return fail(ec, "read");
-
-    // See if it is a WebSocket Upgrade
-    if(websocket::is_upgrade(req_))
+    ~http_session_impl()
     {
-        // Create a WebSocket session by transferring the socket
-        std::make_shared<websocket_session>(
-            std::move(stream_), state_)->run(std::move(req_));
-        return;
+        ag_.remove(this);
     }
 
-    // Send the response
-    handle_request(state_->doc_root(), std::move(req_),
-        [this](auto&& response)
+    void
+    run() override
+    {
+        net::post(stream_.get_executor(), self(this));
+    }
+
+    // We only require C++11, this helper is
+    // the equivalent of a C++14 generic lambda.
+    struct send_lambda
+    {
+        http_session_impl& self_;
+
+        template<bool isRequest, class Body, class Fields>
+        void
+        operator()(http::message<isRequest, Body, Fields>&& msg) const
         {
             // The lifetime of the message has to extend
             // for the duration of the async operation so
             // we use a shared_ptr to manage it.
-            using response_type = typename std::decay<decltype(response)>::type;
-            auto sp = std::make_shared<response_type>(std::forward<decltype(response)>(response));
+            auto sp = std::make_shared<
+                http::message<isRequest, Body, Fields>>(
+                    std::move(msg));
 
-#if 0
-            // NOTE This causes an ICE in gcc 7.3
             // Write the response
-            http::async_write(this->stream_, *sp,
-				[self = shared_from_this(), sp](
-					beast::error_code ec, std::size_t bytes)
-				{
-					self->on_write(ec, bytes, sp->need_eof()); 
-				});
-#else
-            // Write the response
-            auto self = shared_from_this();
-            http::async_write(this->stream_, *sp,
-				[self, sp](
-					beast::error_code ec, std::size_t bytes)
-				{
-					self->on_write(ec, bytes, sp->need_eof()); 
-				});
-#endif
-        });
-}
+            auto self = self_.shared_from_this();
+            http::async_write(
+                self_.stream_,
+                *sp,
+                [self, sp](
+                    beast::error_code ec,
+                    std::size_t bytes_transferred)
+                {
+                    (*self)(
+                        ec,
+                        bytes_transferred,
+                        sp->need_eof());
+                });
+        }
+    };
 
-void
-http_session::
-on_write(beast::error_code ec, std::size_t, bool close)
-{
-    // Handle the error, if any
-    if(ec)
-        return fail(ec, "write");
-
-    if(close)
+    template<class Body, class Allocator>
+    bool
+    is_json_rpc(http::request<
+        Body, http::basic_fields<Allocator>> const& req)
     {
-        // This means we should close the connection, usually because
-        // the response indicated the "Connection: close" semantic.
-        stream_.socket().shutdown(tcp::socket::shutdown_send, ec);
-        return;
+        return
+            req.method() == http::verb::get &&
+            req.target() == "/api/http";
     }
 
-    // Clear contents of the request message,
-    // otherwise the read behavior is undefined.
-    req_ = {};
+    template<class Body, class Allocator>
+    void
+    do_json_rpc(http::request<
+        Body, http::basic_fields<Allocator>> const& req)
+    {
+        json::value jv;
+        srv_.stat(jv);
+        http::response<http::string_body> res;
+        res.version(req.version());
+        res.result(http::status::ok);
+        res.set(http::field::server, BOOST_BEAST_VERSION_STRING);
+        res.set(http::field::content_type, "application/json");
+        std::stringstream ss;
+        ss << jv;
+        res.body() = ss.str();
+        res.prepare_payload();
 
-    // Read another request
-    http::async_read(stream_, buffer_, req_,
-        [self = shared_from_this()]
-            (beast::error_code ec, std::size_t bytes)
+        // Write the message asynchronously
+        send_lambda{*this}(std::move(res));
+    }
+
+    void
+    operator()(
+        beast::error_code ec = {},
+        std::size_t bytes_transferred = 0,
+        bool need_eof = false)
+    {
+        boost::ignore_unused(bytes_transferred);
+        reenter(*this)
         {
-            self->on_read(ec, bytes);
-        });
+            // Read the next HTTP request
+            yield http::async_read(
+                stream_,
+                storage_,
+                req_,
+                self(this));
+
+            // This means they closed the connection
+            if(ec == http::error::end_of_stream)
+            {
+                stream_.socket().shutdown(
+                    tcp::socket::shutdown_send, ec);
+                return;
+            }
+
+            // Handle the error, if any
+            if(ec)
+                return fail(ec, "http::async_read");
+
+            // See if it is a WebSocket Upgrade
+            if(websocket::is_upgrade(req_))
+            {
+                // Create a WebSocket session by transferring the socket
+                // ...
+            }
+
+            // See if it is a JSON-RPC request
+            if(is_json_rpc(req_))
+            {
+                // Process it
+                do_json_rpc(req_);
+            }
+            else
+            {
+                // Send the response
+                yield
+                handle_request(
+                    srv_.doc_root(),
+                    std::move(req_),
+                    send_lambda{*this});
+            }
+
+            // Clear contents of the request message,
+            // otherwise the read behavior is undefined.
+            req_ = {};
+
+            // Handle the error, if any
+            if(ec)
+                return fail(ec, "http::async_write");
+
+            if(need_eof)
+            {
+                // This means we should close the connection, usually because
+                // the response indicated the "Connection: close" semantic.
+
+                stream_.socket().shutdown(
+                    tcp::socket::shutdown_send, ec);
+                return;
+            }
+        }
+    }
+
+    // Report a failure
+    void
+    fail(beast::error_code ec, char const* what)
+    {
+        if(ec == net::error::operation_aborted)
+            LOG_TRC(log_, what, '\t', ec.message());
+        else
+            LOG_INF(log_, what, '\t', ec.message());
+    }
+
+    //--------------------------------------------------------------------------
+    //
+    // session
+    //
+
+    boost::weak_ptr<session>
+    get_weak_ptr() override
+    {
+        return this->weak_from_this();
+    }
+
+    void
+    on_stop() override
+    {
+        net::post(
+            stream_.get_executor(),
+            beast::bind_front_handler(
+                &http_session_impl::do_stop,
+                shared_from_this()));
+    }
+
+    void
+    do_stop()
+    {
+        beast::error_code ec;
+        beast::close_socket(
+            beast::get_lowest_layer(stream_));
+    }
+};
+
+} // (anon)
+
+//------------------------------------------------------------------------------
+
+boost::shared_ptr<http_session>
+make_http_session(
+    server& srv,
+    agent& ag,
+    stream_type stream,
+    stream_type::endpoint_type ep,
+    flat_storage storage)
+{
+    return boost::make_shared<http_session_impl>(
+        srv,
+        ag,
+        std::move(stream),
+        ep,
+        std::move(storage));
 }

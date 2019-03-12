@@ -12,11 +12,10 @@
 
 #include "config.hpp"
 #include <boost/beast/core/error.hpp>
-#include <boost/beast/core/static_string.hpp>
 #include <boost/beast/core/string.hpp>
 #include <memory>
 #include <ostream>
-#include <strstream>
+#include <sstream>
 
 struct logger_config
 {
@@ -28,9 +27,6 @@ struct logger_config
 class logger
 {
 public:
-    using line_type =
-        beast::static_string<2048>;
-
     class section;
 
     virtual ~logger() = default;
@@ -63,54 +59,27 @@ class logger::section
     static
     void
     append(
-        line_type& s,
+        std::ostream& os,
         T1 const& t1,
         T2 const& t2,
         TN const&... tn)
     {
-        append(s, t1);
-        append(s, t2, tn...);
+        os << t1;
+        append(os, t2, tn...);
     }
 
-    template<class T
-        ,class = typename std::enable_if<
-            ! std::is_integral<T>::value &&
-            ! std::is_constructible<
-                beast::string_view, T const&>::value>::type>
-    static
-    void
-    append(line_type& s, T const& t)
-    {
-        std::stringstream ss;
-        ss << t;
-        append(s, beast::string_view(
-            ss.str().data(), ss.str().size()));
-    }
-
-    template<class Int>
-    static
-    typename std::enable_if<
-        std::is_integral<Int>::value>::type
-    append(line_type& s, Int v)
-    {
-        auto ss = beast::to_static_string(v);
-        append(s, beast::string_view(
-            ss.data(), ss.size()));
-    }
-
+    template<class T>
     static
     void
     append(
-        line_type& s,
-        beast::string_view v)
+        std::ostream& os,
+        T const& t)
     {
-        s.append(v.data(),
-            (std::min)(v.size(),
-                s.max_size() - s.size()));
+        os << t;
     }
 
     virtual void prepare(
-        int level, line_type& s) = 0;
+        int level, std::ostream& os) = 0;
 
     virtual void do_write(
         beast::string_view s) = 0;
@@ -126,16 +95,15 @@ public:
     void
     write(int level, Args const&... args)
     {
-        line_type s;
-        try
+        std::string s;
         {
-            prepare(level, s);
-            append(s, args...);
+            std::stringstream ss;
+            prepare(level, ss);
+            append(ss, args...);
+            ss << '\n';
+            s = ss.str();
         }
-        catch(std::length_error const&)
-        {
-            // line would be truncated
-        }
+        do_write(s);
     }
 };
 
@@ -166,6 +134,7 @@ public:
 
 /** Create the logger object
 */
+extern
 std::unique_ptr<logger>
 make_logger();
 
