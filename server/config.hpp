@@ -38,4 +38,7 @@ namespace websocket = boost::beast::websocket;
 
 using tcp = net::ip::tcp;
 
+// Define this on to use the system executor
+#define LOUNGE_USE_SYSTEM_EXECUTOR
+
 #endif

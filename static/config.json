@@ -8,7 +8,7 @@
     ],
 
     "server": {
-      "threads" : 5
+      "threads" : 1
     },
 
     "log" : {

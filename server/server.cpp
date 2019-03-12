@@ -14,9 +14,12 @@
 #include <boost/beast/_experimental/json/parse_file.hpp>
 #include <boost/beast/_experimental/json/parser.hpp>
 #include <boost/asio/signal_set.hpp>
+#include <boost/assert.hpp>
 #include <boost/make_unique.hpp>
 #include <boost/throw_exception.hpp>
+#include <condition_variable>
 #include <iostream>
+#include <mutex>
 #include <thread>
 #include <vector>
 
@@ -115,15 +118,41 @@ struct server_config
 
 //------------------------------------------------------------------------------
 
+class server_impl_base : public server
+{
+public:
+    net::io_context ioc_;
+
+    // This function is in a base class because `server_impl`
+    // needs to call it from the ctor-initializer list, which
+    // would be undefined if the member function was in the
+    // derived class.
+
+    executor_type
+    make_executor() override
+    {
+    #ifdef LOUNGE_USE_SYSTEM_EXECUTOR
+        return net::make_strand(
+            net::system_executor{});
+    #else
+        return net::make_strand(
+            ioc_.get_executor());
+    #endif
+    }
+};
+
 class server_impl
-    : public server
+    : public server_impl_base
 {
     server_config cfg_;
-    net::io_context ioc_;
     std::shared_ptr<logger> log_;
-    std::vector<std::shared_ptr<agent>> agents_;
+    std::vector<
+        boost::shared_ptr<agent>> agents_;
     asio::signal_set signals_;
-    bool started_ = false;
+    std::condition_variable cv_;
+    std::mutex mutex_;
+    bool running_ = false;
+    bool stop_ = false;
 
 public:
     explicit
@@ -132,26 +161,23 @@ public:
         std::shared_ptr<logger> log)
         : cfg_(std::move(cfg))
         , log_(std::move(log))
-        , signals_(ioc_, SIGINT, SIGTERM)
+        , signals_(
+            this->make_executor(),
+                SIGINT,
+                SIGTERM)
     {
     }
 
     ~server_impl()
     {
-    }
-
-    executor_type
-    make_executor() override
-    {
-        return net::make_strand(
-            net::system_executor{});
+        BOOST_ASSERT(agents_.empty());
     }
 
     void
     insert(
-        std::shared_ptr<agent> sp) override
+        boost::shared_ptr<agent> sp) override
     {
-        if(started_)
+        if(running_)
             throw std::logic_error(
                 "server already started");
 
@@ -161,70 +187,93 @@ public:
     void
     run() override
     {
-        if(started_)
+        if(running_)
             throw std::logic_error(
-                "server already started");
+                "server already running");
 
-        started_ = true;
+        running_ = true;
+
+        // Start all agents
+        for(auto const& sp : agents_)
+            sp->on_start();
 
         // Capture SIGINT and SIGTERM to perform a clean shutdown
         signals_.async_wait(
             beast::bind_front_handler(
                 &server_impl::on_signal, this));
 
-        // Start all agents
-        for(auto const& sp : agents_)
-            sp->on_start();
+    #ifndef LOUNGE_USE_SYSTEM_EXECUTOR
+        std::vector<std::thread> vt;
+        while(vt.size() < cfg_.num_threads)
+            vt.emplace_back(
+                [this]
+                {
+                    this->ioc_.run();
+                });
+    #endif
+        // Block the main thread until stop() is called
+        {
+            std::unique_lock<std::mutex> lock(mutex_);
+            cv_.wait(lock, [this]{ return stop_; });
+        }
 
-        // Spawn num_threads-1 worker threads
-        std::vector<std::thread> v;
-        while(v.size() < cfg_.num_threads - 1)
-            v.emplace_back([this]{ do_run(); });
+        // Notify all agents to stop
+        auto agents = std::move(agents_);
+        for(auto const& sp : agents)
+            sp->on_stop();
 
-        // Use the caller's thread for the last worker
-        do_run();
+        // agents must be kept alive until after
+        // all executor threads are joined.
 
         // If we get here, then the server has
         // stopped, so join the threads before
         // destroying them.
 
-        for(auto& t : v)
+    #ifdef LOUNGE_USE_SYSTEM_EXECUTOR
+        net::system_executor{}.context().join();
+    #else
+        for(auto& t : vt)
             t.join();
-    }
-
-    void
-    do_run()
-    {
-        try
-        {
-            ioc_.run();
-        }
-        catch(std::exception const& e)
-        {
-            boost::ignore_unused(e);
-            // log e
-            throw;
-        }
+    #endif
     }
 
     void
     on_signal(beast::error_code ec, int signum)
     {
-        boost::ignore_unused(ec, signum);
+        log_->cerr() <<
+            "server_impl::on_signal: #" <<
+            signum << ", " << ec.message() << "\n";
         stop();
     }
 
     void
     stop()
     {
+        net::post(
+            signals_.get_executor(),
+            beast::bind_front_handler(
+                &server_impl::on_stop, this));
+    }
+
+    void
+    on_stop()
+    {
+        // only call once
+        if(stop_)
+            return;
+
+        // Set stop_ and unblock the main thread
+        {
+            std::lock_guard<std::mutex> lock(mutex_);
+            stop_ = true;
+            cv_.notify_all();
+        }
+
+        // Cancel the signal wait operation
         {
             beast::error_code ec;
             signals_.cancel(ec);
         }
-
-        auto agents = std::move(agents_);
-        for(auto const& sp : agents)
-            sp->on_stop();
     }
 
     logger&

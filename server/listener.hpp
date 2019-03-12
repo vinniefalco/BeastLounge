@@ -17,6 +17,10 @@
 #include <memory>
 #include <string>
 
+//------------------------------------------------------------------------------
+
+/** Configuration for a listening socket.
+*/
 struct listener_config
 {
     // name of this port for logs

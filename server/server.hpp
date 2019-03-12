@@ -11,12 +11,10 @@
 #define LOUNGE_SERVER_HPP
 
 #include "config.hpp"
+#include "agent.hpp"
 #include "logger.hpp"
-#include <boost/beast/core/basic_stream.hpp>
-#include <boost/beast/core/error.hpp>
-#include <boost/asio/io_context.hpp>
-#include <boost/asio/strand.hpp>
-#include <boost/asio/system_executor.hpp>
+#include "types.hpp"
+#include <boost/smart_ptr/shared_ptr.hpp>
 #include <memory>
 
 //------------------------------------------------------------------------------
@@ -26,7 +24,7 @@ namespace detail {
 template<class T>
 struct self_handler
 {
-    std::shared_ptr<T> self;
+    boost::shared_ptr<T> self;
 
     template<class... Args>
     void
@@ -57,44 +55,6 @@ self(T* this_)
 class server
 {
 public:
-    /// The type of executor agents and sessions will use
-    using executor_type = net::strand<
-        net::system_executor>;
-
-    /// The type of socket for agents to use
-    using socket_type =
-        net::basic_stream_socket<tcp, executor_type>;
-
-    /// The type of plain stream for agents to use
-    using stream_type =
-        beast::basic_stream<tcp, executor_type>;
-
-    /** Base for polymorphic services
-
-        The lifetime of each agent is the
-        same as the server lifetime.
-    */
-    struct agent
-    {
-        virtual ~agent() = default;
-
-        /** Called when the server starts.
-
-            This will be called at most once.
-        */
-        virtual
-        void
-        on_start() = 0;
-
-        /** Called when the server stops.
-
-            This will be called at most once.
-        */
-        virtual
-        void
-        on_stop() = 0;
-    };
-
     virtual ~server() = default;
 
     /** Return a new executor to use.
@@ -110,7 +70,7 @@ public:
     virtual
     void
     insert(
-        std::shared_ptr<agent> sp) = 0;
+        boost::shared_ptr<agent> sp) = 0;
 
     /** Run the server.
 

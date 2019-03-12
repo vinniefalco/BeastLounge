@@ -11,46 +11,29 @@
 #define LOUNGE_HTTP_SESSION_HPP
 
 #include "config.hpp"
-#include "shared_state.hpp"
-#include <boost/beast/core/flat_buffer.hpp>
-#include <boost/beast/core/tcp_stream.hpp>
-#include <boost/beast/http/message.hpp>
-#include <boost/beast/http/string_body.hpp>
-#include <cstdlib>
+#include "server.hpp"
 #include <memory>
 
-/** Represents an established HTTP connection
+/** Represents an active HTTP connection
 */
 class http_session
-    : public std::enable_shared_from_this<http_session>
 {
-    beast::tcp_stream stream_;
-    beast::flat_buffer buffer_;
-    std::shared_ptr<shared_state> state_;
-    http::request<http::string_body> req_;
-
-    void
-    fail(
-        beast::error_code ec,
-        char const* what);
-
-    void
-    on_read(
-        beast::error_code ec,
-        std::size_t);
-
-    void
-    on_write(
-        beast::error_code ec,
-        std::size_t,
-        bool close);
-
 public:
-    http_session(
-        tcp::socket sock,
-        std::shared_ptr<shared_state> const& state);
+    virtual
+    ~http_session() = default;
 
-    void run();
+    virtual
+    void
+    run() = 0;
 };
+
+extern
+boost::shared_ptr<http_session>
+make_http_session(
+    server& srv,
+    agent& ag,
+    stream_type stream,
+    stream_type::endpoint_type ep,
+    flat_storage storage);
 
 #endif
