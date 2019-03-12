@@ -20,6 +20,7 @@ add_executable (lounge-server
     ${BEAST_FILES}
     ${BEAST_EXTRA_FILES}
     ${NLOHMANN_FILES}
+    README.md
     )
 
 if(NOT WIN32)

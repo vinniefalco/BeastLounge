@@ -9,98 +9,172 @@
 
 #include "listener.hpp"
 #include "http_session.hpp"
-#include <boost/asio/strand.hpp>
+#include <boost/asio/coroutine.hpp>
+#include <boost/asio/yield.hpp>
 #include <iostream>
 
-listener::
-listener(
-    net::io_context& ioc,
-    tcp::endpoint endpoint,
-    std::shared_ptr<shared_state> const& state)
-    : ioc_(ioc)
-    , acceptor_(ioc)
-    , socket_(ioc)
-    , state_(state)
+// Accepts incoming connections and launches the sessions
+class listener
+    : public std::enable_shared_from_this<listener>
+    , public boost::asio::coroutine
+    , public server::agent
 {
-    beast::error_code ec;
+    server& srv_;
+    listener_config cfg_;
+    logger::section& log_;
+    net::basic_socket_acceptor<
+        tcp, server::executor_type> acceptor_;
+    tcp::endpoint ep_;
 
-    // Open the acceptor
-    acceptor_.open(endpoint.protocol(), ec);
-    if(ec)
+public:
+    listener(
+        server& srv,
+        listener_config cfg)
+        : srv_(srv)
+        , cfg_(std::move(cfg))
+        , log_(srv_.log().get_section("listener"))
+        , acceptor_(srv_.make_executor())
     {
-        fail(ec, "open");
-        return;
+        cfg_.kind = listener_config::no_tls;
     }
 
-    // Allow address reuse
-    acceptor_.set_option(net::socket_base::reuse_address(true));
-    if(ec)
+    bool
+    open()
     {
-        fail(ec, "set_option");
-        return;
+        beast::error_code ec;
+        tcp::endpoint ep(cfg_.address, cfg_.port_num);
+
+        // Open the acceptor
+        acceptor_.open(ep.protocol(), ec);
+        if(ec)
+        {
+            srv_.log().cerr() <<
+                "acceptor_.open: " << ec.message() << "\n";
+            return false;
+        }
+
+        // Allow address reuse
+        acceptor_.set_option(
+            net::socket_base::reuse_address(true));
+        if(ec)
+        {
+            srv_.log().cerr() <<
+                "acceptor_.set_option: " << ec.message() << "\n";
+            return false;
+        }
+
+        // Bind to the server address
+        acceptor_.bind(ep, ec);
+        if(ec)
+        {
+            srv_.log().cerr() <<
+                "acceptor_.bind: " << ec.message() << "\n";
+            return false;
+        }
+
+        // Start listening for connections
+        acceptor_.listen(
+            net::socket_base::max_listen_connections, ec);
+        if(ec)
+        {
+            srv_.log().cerr() <<
+                "acceptor_.listen: " << ec.message() << "\n";
+            return false;
+        }
+
+        // Add this agent to the server
+        srv_.insert(shared_from_this());
+
+        return true;
     }
 
-    // Bind to the server address
-    acceptor_.bind(endpoint, ec);
-    if(ec)
+    /// Called when the server starts
+    void
+    on_start() override
     {
-        fail(ec, "bind");
-        return;
+        acceptor_.async_accept(
+            srv_.make_executor(),
+            ep_,
+            self(this));
     }
 
-    // Start listening for connections
-    acceptor_.listen(
-        net::socket_base::max_listen_connections, ec);
-    if(ec)
+    /// Called when the server stops
+    void
+    on_stop() override
     {
-        fail(ec, "listen");
-        return;
+        // Call do_stop from within the strand
+        net::post(
+            acceptor_.get_executor(),
+            beast::bind_front_handler(
+                &listener::do_stop,
+                shared_from_this()));
     }
-}
 
-void
-listener::
-run()
+    void
+    do_stop()
+    {
+        // Cancel the outstanding accept
+        beast::error_code ec;
+        acceptor_.cancel(ec);
+    }
+
+    void
+    operator()(
+        beast::error_code ec,
+        tcp::socket sock)
+    {
+        reenter(*this)
+        {
+            for(;;)
+            {
+                if(ec == net::error::operation_aborted)
+                {
+                    // Happens when the acceptor is canceled
+                    return;
+                }
+
+                // Report any error
+                if(ec)
+                    fail(ec, "accept");
+
+            #if 0
+                // Launch a new session for this connection
+                std::make_shared<http_session>(
+                    std::move(sock),
+                    state_)->run();
+            #endif
+
+                // Accept another connection,
+                // giving it a new strand.
+
+                yield acceptor_.async_accept(
+                    srv_.make_executor(),
+                    ep_,
+                    self(this));
+            }
+        }
+    }
+
+    // Report a failure
+    void
+    fail(beast::error_code ec, char const* what)
+    {
+        // Don't report on canceled operations
+        if(ec == net::error::operation_aborted)
+            return;
+        LOG_INF(log_, what, ": ", ec.message());
+    }
+};
+
+//------------------------------------------------------------------------------
+
+bool
+make_listener(
+    server& srv,
+    listener_config cfg)
 {
-    // Start accepting a connection
-    do_accept();
-}
-
-// Report a failure
-void
-listener::
-fail(beast::error_code ec, char const* what)
-{
-    // Don't report on canceled operations
-    if(ec == net::error::operation_aborted)
-        return;
-    std::cerr << what << ": " << ec.message() << "\n";
-}
-
-void
-listener::
-do_accept()
-{
-    acceptor_.async_accept(
-        net::make_strand(ioc_),
-        beast::bind_front_handler(
-            &listener::on_accept,
-            shared_from_this()));
-}
-
-// Handle a connection
-void
-listener::
-on_accept(beast::error_code ec, tcp::socket sock)
-{
-    if(ec)
-        return fail(ec, "accept");
-    else
-        // Launch a new session for this connection
-        std::make_shared<http_session>(
-            std::move(sock),
-            state_)->run();
-
-    // Accept another connection
-    do_accept();
+    auto sp =
+        std::make_shared<listener>(
+            srv, std::move(cfg));
+    return sp->open();
 }

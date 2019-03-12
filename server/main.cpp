@@ -7,15 +7,11 @@
 // Official repository: https://github.com/vinniefalco/BeastLounge
 //
 
-#include "listener.hpp"
-#include "settings.hpp"
-#include "shared_state.hpp"
-
+#include "logger.hpp"
+#include "server.hpp"
+#include <boost/config.hpp>
 #include <boost/beast/src.hpp>
 #include <boost/beast/src_extra.hpp>
-
-#include <boost/asio/signal_set.hpp>
-#include <boost/config.hpp>
 #include <iostream>
 
 #ifdef BOOST_MSVC
@@ -39,54 +35,33 @@ main(int argc, char* argv[])
     }
 #endif
 
+    // Create the logger
+    auto log = make_logger();
+    if(! log)
+    {
+        log->cerr() <<
+            "make_logger: failed\n";
+        return EXIT_FAILURE;
+    }
+
     // Check command line arguments.
-    if (argc != 2)
+    if(argc != 2)
     {
-        std::cerr <<
-            "Usage: lounge-server <settings-path>\n";
+        log->cerr() <<
+            "Usage: lounge-server <config-path>\n";
         return EXIT_FAILURE;
     }
-    auto settings_path = argv[1];
+    auto const config_path = argv[1];
 
+    // Create the server
     beast::error_code ec;
-    auto st = settings::load_from_file(settings_path, ec);
-    if(ec)
-    {
-        std::cerr <<
-            "load settings: " << ec.message() << "\n";
+    auto srv = make_server(
+        config_path,
+        std::move(log));
+    if(! srv)
         return EXIT_FAILURE;
-    }
 
-#if 0
-    auto address = net::ip::make_address(argv[2]);
-    auto port = static_cast<unsigned short>(std::atoi(argv[3]));
-    auto doc_root = argv[4];
-
-    // The io_context is required for all I/O
-    net::io_context ioc;
-
-    // Create and launch a listening port
-    std::make_shared<listener>(
-        ioc,
-        tcp::endpoint{address, port},
-        std::make_shared<shared_state>(doc_root))->run();
-
-    // Capture SIGINT and SIGTERM to perform a clean shutdown
-    net::signal_set signals(ioc, SIGINT, SIGTERM);
-    signals.async_wait(
-        [&ioc](boost::system::error_code const&, int)
-        {
-            // Stop the io_context. This will cause run()
-            // to return immediately, eventually destroying the
-            // io_context and any remaining handlers in it.
-            ioc.stop();
-        });
-
-    // Run the I/O service on the main thread
-    ioc.run();
-
-    // (If we get here, it means we got a SIGINT or SIGTERM)
-#endif
+    srv->run();
 
     return EXIT_SUCCESS;
 }

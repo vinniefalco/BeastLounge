@@ -1,0 +1,17 @@
+{
+    "listeners": [
+        {
+            "name" : "all",
+            "address" : "127.0.0.1",
+            "port_num" : 8080
+        }
+    ],
+
+    "server": {
+      "threads" : 5
+    },
+
+    "log" : {
+      "path" : "log.txt"
+    }
+}

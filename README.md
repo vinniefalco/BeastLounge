@@ -20,39 +20,10 @@ send direct messages (whispers), and join games together. The lobby
 lists games in progress or games starting and gives users the option
 to join.
 
-## Authentication API
+## Design Goals
 
-    - Don't store passwords
-    - https://openwall.info/wiki/people/solar/algorithms/challenge-response-authentication
+* Clean source file organization
 
-## Persistence
+* Fast build times
 
-    - Abstract storage interface, domain-specific
-    - In-memory implementation (no persistence)
-    - sqlite implementation
-
-JSON-RPC commands:
-
-Sent by the client:
-
-    ListRooms
-
-    JoinRoom
-
-    LeaveRoom
-
-    GetRoomInfo   # Show users in the room
-
-    SayToRoom
-
-WhisperUser
-
-Sent by the server:
-
-    JoinRoom (response)
-
-    LeaveRoom (response)
-
-    SayFromRoom
-
-    WhisperFromUser
+  - Using template heavy, header-only libraries

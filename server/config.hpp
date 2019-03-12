@@ -29,10 +29,11 @@ namespace ssl {}
 
 } // boost
 
-namespace net = boost::asio;
+namespace net   = boost::asio;
+namespace asio  = boost::asio;
 namespace beast = boost::beast;
-namespace json = boost::beast::json;
-namespace http = boost::beast::http;
+namespace json  = boost::beast::json;
+namespace http  = boost::beast::http;
 namespace websocket = boost::beast::websocket;
 
 using tcp = net::ip::tcp;

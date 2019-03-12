@@ -11,34 +11,39 @@
 #define LOUNGE_LISTENER_HPP
 
 #include "config.hpp"
+#include "server.hpp"
 #include <boost/beast/core/error.hpp>
 #include <boost/asio/ip/tcp.hpp>
 #include <memory>
 #include <string>
 
-// Forward declaration
-class shared_state;
-
-// Accepts incoming connections and launches the sessions
-class listener : public std::enable_shared_from_this<listener>
+struct listener_config
 {
-    net::io_context& ioc_;
-    tcp::acceptor acceptor_;
-    tcp::socket socket_;
-    std::shared_ptr<shared_state> state_;
+    // name of this port for logs
+    std::string name;
 
-    void fail(beast::error_code ec, char const* what);
-    void do_accept();
-    void on_accept(beast::error_code ec, tcp::socket sock);
+    // endpoint to bind to
+    net::ip::address address;
 
-public:
-    listener(
-        net::io_context& ioc,
-        tcp::endpoint endpoint,
-        std::shared_ptr<shared_state> const& state);
+    // port number
+    unsigned short port_num;
 
-    // Start accepting incoming connections
-    void run();
+    enum
+    {
+        no_tls,
+        allow_tls,
+        require_tls
+    } kind;
 };
+
+/** Create a listening socket to accept connections.
+
+    @returns `true` on success
+*/
+extern
+bool
+make_listener(
+    server& srv,
+    listener_config cfg);
 
 #endif
