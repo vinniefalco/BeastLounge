@@ -47,10 +47,23 @@ file (GLOB_RECURSE BEAST_EXTRA_FILES
   ${PROJECT_SOURCE_DIR}/include/boost/beast/*.*
   )
 
-file (GLOB_RECURSE NLOHMANN_FILES
-  ${PROJECT_SOURCE_DIR}/nlohmann/include/*.hpp
-  )
+#-------------------------------------------------------------------------------
+#
+# OpenSSL
+#
 
+if (APPLE AND NOT DEFINED ENV{OPENSSL_ROOT_DIR})
+  find_program(HOMEBREW brew)
+  if (NOT HOMEBREW STREQUAL "HOMEBREW-NOTFOUND")
+    execute_process(COMMAND brew --prefix openssl
+      OUTPUT_VARIABLE OPENSSL_ROOT_DIR
+      OUTPUT_STRIP_TRAILING_WHITESPACE)
+  endif()
+endif()
+
+find_package(OpenSSL)
+
+#
 #-------------------------------------------------------------------------------
 
 function (DoGroupSources curdir rootdir folder)

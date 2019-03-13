@@ -24,11 +24,11 @@ struct logger_config
 
 //------------------------------------------------------------------------------
 
+class section;
+
 class logger
 {
 public:
-    class section;
-
     virtual ~logger() = default;
 
     /** Return an output stream to the error device.
@@ -51,7 +51,7 @@ public:
 
 //------------------------------------------------------------------------------
 
-class logger::section
+class section
 {
     friend class logger;
 

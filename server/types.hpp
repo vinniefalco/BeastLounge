@@ -47,4 +47,7 @@ using stream_type = socket_type;
 /// The type of flat storage to use
 using flat_storage = beast::flat_buffer;
 
+/// The type of network endpoint
+using endpoint_type = tcp::endpoint;
+
 #endif

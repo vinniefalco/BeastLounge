@@ -12,6 +12,7 @@
 
 #include "config.hpp"
 #include "server.hpp"
+#include <boost/asio/ssl/context.hpp>
 #include <memory>
 
 /** Represents an active HTTP connection
@@ -33,7 +34,17 @@ make_http_session(
     server& srv,
     agent& ag,
     stream_type stream,
-    stream_type::endpoint_type ep,
+    endpoint_type ep,
+    flat_storage storage);
+
+extern
+boost::shared_ptr<http_session>
+make_https_session(
+    server& srv,
+    agent& ag,
+    asio::ssl::context& ctx,
+    stream_type stream,
+    endpoint_type ep,
     flat_storage storage);
 
 #endif

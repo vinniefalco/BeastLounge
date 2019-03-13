@@ -9,6 +9,7 @@
 
 #include "listener.hpp"
 #include "http_session.hpp"
+#include "server_certificate.hpp"
 #include <boost/beast/core/detect_ssl.hpp>
 #include <boost/asio/coroutine.hpp>
 #include <boost/asio/yield.hpp>
@@ -20,19 +21,128 @@ namespace {
 // a plain HTTP session or a Secure HTTP session.
 
 class detector
-    : public std::enable_shared_from_this<detector>
+    : public boost::enable_shared_from_this<detector>
     , public boost::asio::coroutine
+    , public session
 {
     server& srv_;
+    agent& ag_;
+    section& log_;
+    asio::ssl::context& ctx_;
     stream_type stream_;
+    endpoint_type ep_;
+    flat_storage storage_;
 
 public:
     detector(
         server& srv,
-        socket_type sock)
+        agent& ag,
+        section& log,
+        asio::ssl::context& ctx,
+        socket_type sock,
+        endpoint_type ep)
         : srv_(srv)
+        , ag_(ag)
+        , log_(log)
+        , ctx_(ctx)
         , stream_(std::move(sock))
+        , ep_(ep)
     {
+        ag_.insert(this);
+    }
+
+    ~detector()
+    {
+        ag_.remove(this);
+    }
+
+    void
+    run()
+    {
+        // Use post to get on to our strand.
+        net::post(
+            stream_.get_executor(),
+            self(this));
+    }
+
+    boost::weak_ptr<session>
+    get_weak_ptr() override
+    {
+        return this->weak_from_this();
+    }
+
+    void
+    on_stop() override
+    {
+        net::post(
+            stream_.get_executor(),
+            beast::bind_front_handler(
+                &detector::do_stop,
+                shared_from_this()));
+    }
+
+    void
+    do_stop()
+    {
+        // Cancel pending I/O, this causes an immediate
+        // completion with error::operation_aborted.
+        stream_.cancel();
+    }
+
+    void
+    operator()(
+        beast::error_code ec = {},
+        bool is_tls = false)
+    {
+        reenter(*this)
+        {
+            // Set the expiration
+            stream_.expires_after(
+                std::chrono::seconds(30));
+
+            // See if a TLS handshake is requested
+            yield beast::async_detect_ssl(
+                stream_,
+                storage_,
+                self(this));
+
+            // Report any error
+            if(ec)
+                return fail(ec, "async_detect_ssl");
+
+            if(is_tls)
+            {
+                // launch the HTTPS session
+                auto sp = make_https_session(
+                    srv_,
+                    ag_,
+                    ctx_,
+                    std::move(stream_),
+                    ep_,
+                    std::move(storage_));
+                sp->run();
+            }
+            else
+            {
+                // launch the plain HTTP session
+                auto sp = make_http_session(
+                    srv_,
+                    ag_,
+                    std::move(stream_),
+                    ep_,
+                    std::move(storage_));
+                sp->run();
+            }
+        }
+    }
+
+    void
+    fail(beast::error_code ec, char const* what)
+    {
+        if(ec == net::error::operation_aborted)
+            LOG_TRC(log_, what, '\t', ec.message());
+        else
+            LOG_INF(log_, what, '\t', ec.message());
     }
 };
 
@@ -62,11 +172,11 @@ class listener
 
     server& srv_;
     listener_config cfg_;
-    logger::section& log_;
+    section& log_;
+    asio::ssl::context ctx_;
     net::basic_socket_acceptor<
         tcp_ex, executor_type> acceptor_;
-    tcp::endpoint ep_;
-    flat_storage storage_;
+    endpoint_type ep_;
 
 public:
     listener(
@@ -75,16 +185,20 @@ public:
         : srv_(srv)
         , cfg_(std::move(cfg))
         , log_(srv_.log().get_section("listener"))
+        , ctx_(asio::ssl::context::sslv23)
         , acceptor_(srv_.make_executor())
     {
-        cfg_.kind = listener_config::no_tls;
+        cfg_.kind = listener_config::allow_tls;
+
+        // This holds the self-signed certificate used by the server
+        load_server_certificate(ctx_);
     }
 
     bool
     open()
     {
         beast::error_code ec;
-        tcp::endpoint ep(cfg_.address, cfg_.port_num);
+        endpoint_type ep(cfg_.address, cfg_.port_num);
 
         // Open the acceptor
         acceptor_.open(ep.protocol(), ec);
@@ -170,15 +284,30 @@ public:
                         *this,
                         stream_type(std::move(sock)),
                         ep_,
-                        std::move(storage_));
+                        {});
                     sp->run();
                 }
                 else if(cfg_.kind == listener_config::allow_tls)
                 {
+                    auto sp = boost::make_shared<detector>(
+                        srv_,
+                        *this,
+                        log_,
+                        ctx_,
+                        std::move(sock),
+                        ep_);
+                    sp->run();
                 }
                 else
                 {
-                    // auto sp = make_https_session
+                    auto sp = make_https_session(
+                        srv_,
+                        *this,
+                        ctx_,
+                        stream_type(std::move(sock)),
+                        ep_,
+                        {});
+                    sp->run();
                 }
 
                 // Accept the next connection

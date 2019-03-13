@@ -12,10 +12,12 @@
 #include "websocket_session.hpp"
 #include <boost/beast/core/stream_traits.hpp>
 #include <boost/beast/http/file_body.hpp>
+#include <boost/beast/ssl/ssl_stream.hpp>
 #include <boost/asio/coroutine.hpp>
 #include <boost/asio/ip/tcp.hpp>
 #include <boost/asio/post.hpp>
 #include <boost/asio/yield.hpp>
+#include <boost/optional.hpp>
 #include <iostream>
 
 namespace {
@@ -192,52 +194,54 @@ handle_request(
 
 //------------------------------------------------------------------------------
 
-struct http_session_impl
-    : public boost::enable_shared_from_this<http_session_impl>
-    , public asio::coroutine
+template<class Derived>
+class http_session_base
+    : public asio::coroutine
     , public http_session
     , public session
 {
+protected:
     server& srv_;
     agent& ag_;
-    logger::section& log_;
-    stream_type stream_;
-    stream_type::endpoint_type ep_;
+    section& log_;
+    endpoint_type ep_;
     flat_storage storage_;
-    http::request<http::string_body> req_;
+    boost::optional<
+        http::request_parser<
+            http::string_body>> pr_;
 
-    http_session_impl(
+public:
+    http_session_base(
         server& srv,
         agent& ag,
-        stream_type stream,
-        stream_type::endpoint_type ep,
+        endpoint_type ep,
         flat_storage storage)
         : srv_(srv)
         , ag_(ag)
         , log_(srv_.log().get_section("http_session"))
-        , stream_(std::move(stream))
         , ep_(ep)
         , storage_(std::move(storage))
     {
         ag_.insert(this);
     }
 
-    ~http_session_impl()
+    ~http_session_base()
     {
         ag_.remove(this);
     }
 
-    void
-    run() override
+    // The CRTP pattern
+    Derived*
+    impl()
     {
-        net::post(stream_.get_executor(), self(this));
+        return static_cast<Derived*>(this);
     }
 
     // We only require C++11, this helper is
     // the equivalent of a C++14 generic lambda.
     struct send_lambda
     {
-        http_session_impl& self_;
+        http_session_base& self_;
 
         template<bool isRequest, class Body, class Fields>
         void
@@ -251,9 +255,9 @@ struct http_session_impl
                     std::move(msg));
 
             // Write the response
-            auto self = self_.shared_from_this();
+            auto self = self_.impl()->shared_from_this();
             http::async_write(
-                self_.stream_,
+                self_.impl()->stream(),
                 *sp,
                 [self, sp](
                     beast::error_code ec,
@@ -307,37 +311,45 @@ struct http_session_impl
         boost::ignore_unused(bytes_transferred);
         reenter(*this)
         {
+            // Set the expiration
+            impl()->expires_after(std::chrono::seconds(30));
+
+            // A new HTTP parser is required for each message
+            pr_.emplace();
+
+            // Set some limits to discourage attackers.
+            pr_->body_limit(64 * 1024);
+            pr_->header_limit(2048);
+
             // Read the next HTTP request
             yield http::async_read(
-                stream_,
+                impl()->stream(),
                 storage_,
-                req_,
-                self(this));
+                *pr_,
+                self(impl()));
 
             // This means they closed the connection
             if(ec == http::error::end_of_stream)
             {
-                stream_.socket().shutdown(
-                    tcp::socket::shutdown_send, ec);
-                return;
+                return impl()->do_close();
             }
 
             // Handle the error, if any
             if(ec)
-                return fail(ec, "http::async_read");
+                return impl()->fail(ec, "http::async_read");
 
             // See if it is a WebSocket Upgrade
-            if(websocket::is_upgrade(req_))
+            if(websocket::is_upgrade(pr_->get()))
             {
                 // Create a WebSocket session by transferring the socket
                 // ...
             }
 
             // See if it is a JSON-RPC request
-            if(is_json_rpc(req_))
+            if(is_json_rpc(pr_->get()))
             {
                 // Process it
-                do_json_rpc(req_);
+                do_json_rpc(pr_->get());
             }
             else
             {
@@ -345,28 +357,104 @@ struct http_session_impl
                 yield
                 handle_request(
                     srv_.doc_root(),
-                    std::move(req_),
+                    pr_->release(),
                     send_lambda{*this});
             }
 
-            // Clear contents of the request message,
-            // otherwise the read behavior is undefined.
-            req_ = {};
-
             // Handle the error, if any
             if(ec)
-                return fail(ec, "http::async_write");
+                return impl()->fail(ec, "http::async_write");
 
             if(need_eof)
             {
                 // This means we should close the connection, usually because
                 // the response indicated the "Connection: close" semantic.
-
-                stream_.socket().shutdown(
-                    tcp::socket::shutdown_send, ec);
-                return;
+                return impl()->do_close();
             }
         }
+    }
+
+    //--------------------------------------------------------------------------
+    //
+    // session
+    //
+
+    boost::weak_ptr<session>
+    get_weak_ptr() override
+    {
+        return impl()->weak_from_this();
+    }
+
+    void
+    on_stop() override
+    {
+        net::post(
+            impl()->stream().get_executor(),
+            beast::bind_front_handler(
+                &http_session_base::do_stop,
+                impl()->shared_from_this()));
+    }
+
+    void
+    do_stop()
+    {
+        beast::error_code ec;
+        beast::close_socket(
+            beast::get_lowest_layer(impl()->stream()));
+    }
+};
+
+//------------------------------------------------------------------------------
+
+class plain_http_session_impl
+    : public boost::enable_shared_from_this<
+        plain_http_session_impl>
+    , public http_session_base<
+        plain_http_session_impl>
+{
+    stream_type stream_;
+
+public:
+    plain_http_session_impl(
+        server& srv,
+        agent& ag,
+        stream_type stream,
+        endpoint_type ep,
+        flat_storage storage)
+        : http_session_base(
+            srv, ag, ep, std::move(storage))
+        , stream_(std::move(stream))
+    {
+    }
+
+    stream_type&
+    stream()
+    {
+        return stream_;
+    }
+
+    void
+    expires_after(
+        std::chrono::seconds n)
+    {
+        stream_.expires_after(n);
+    }
+
+    void
+    run() override
+    {
+        // Use post to get on to our strand.
+        net::post(
+            stream_.get_executor(),
+            self(this));
+    }
+
+    void
+    do_close()
+    {
+        beast::error_code ec;
+        stream_.socket().shutdown(
+            tcp::socket::shutdown_send, ec);
     }
 
     // Report a failure
@@ -378,34 +466,136 @@ struct http_session_impl
         else
             LOG_INF(log_, what, '\t', ec.message());
     }
+};
 
-    //--------------------------------------------------------------------------
-    //
-    // session
-    //
+//------------------------------------------------------------------------------
 
-    boost::weak_ptr<session>
-    get_weak_ptr() override
+class ssl_http_session_impl
+    : public boost::enable_shared_from_this<ssl_http_session_impl>
+    , public http_session_base<ssl_http_session_impl>
+{
+    asio::ssl::context& ctx_;
+    beast::ssl_stream<
+        stream_type> stream_;
+
+public:
+    ssl_http_session_impl(
+        server& srv,
+        agent& ag,
+        asio::ssl::context& ctx,
+        stream_type stream,
+        endpoint_type ep,
+        flat_storage storage)
+        : http_session_base(
+            srv, ag, ep, std::move(storage))
+        , ctx_(ctx)
+        , stream_(std::move(stream), ctx)
     {
-        return this->weak_from_this();
+    }
+
+    beast::ssl_stream<stream_type>&
+    stream()
+    {
+        return stream_;
     }
 
     void
-    on_stop() override
+    expires_after(
+        std::chrono::seconds n)
     {
+        stream_.next_layer().expires_after(n);
+    }
+
+    void
+    run() override
+    {
+        // Use post to get on to our strand.
         net::post(
             stream_.get_executor(),
             beast::bind_front_handler(
-                &http_session_impl::do_stop,
+                &ssl_http_session_impl::do_run,
                 shared_from_this()));
     }
 
     void
-    do_stop()
+    do_run()
     {
-        beast::error_code ec;
-        beast::close_socket(
-            beast::get_lowest_layer(stream_));
+        // Set the expiration
+        impl()->expires_after(std::chrono::seconds(30));
+
+        // Perform the TLS handshake in the server role
+        stream_.async_handshake(
+            asio::ssl::stream_base::server,
+            storage_.data(),
+            beast::bind_front_handler(
+                &ssl_http_session_impl::on_handshake,
+                shared_from_this()));
+    }
+
+    void
+    on_handshake(
+        beast::error_code ec,
+        std::size_t bytes_transferred)
+    {
+        // Adjust the buffer for what the handshake used
+        storage_.consume(bytes_transferred);
+
+        // Report the error if any
+        if(ec)
+            return fail(ec, "async_handshake");
+
+        // Process HTTP
+        (*this)();
+    }
+
+    void
+    do_close()
+    {
+        // Set the expiration
+        expires_after(std::chrono::seconds(30));
+
+        // Perform the TLS closing handshake
+        stream_.async_shutdown(
+            beast::bind_front_handler(
+                &ssl_http_session_impl::on_shutdown,
+                shared_from_this()));
+    }
+
+    void
+    on_shutdown(beast::error_code ec)
+    {
+        if(ec)
+            return fail(ec, "async_shutdown");
+    }
+
+    // Report a failure
+    void
+    fail(beast::error_code ec, char const* what)
+    {
+        // ssl::error::stream_truncated, also known as an SSL "short read",
+        // indicates the peer closed the connection without performing the
+        // required closing handshake (for example, Google does this to
+        // improve performance). Generally this can be a security issue,
+        // but if your communication protocol is self-terminated (as
+        // it is with both HTTP and WebSocket) then you may simply
+        // ignore the lack of close_notify.
+        //
+        // https://github.com/boostorg/beast/issues/38
+        //
+        // https://security.stackexchange.com/questions/91435/how-to-handle-a-malicious-ssl-tls-shutdown
+        //
+        // When a short read would cut off the end of an HTTP message,
+        // Beast returns the error beast::http::error::partial_message.
+        // Therefore, if we see a short read here, it has occurred
+        // after the message has been completed, so it is safe to ignore it.
+
+        if(ec == asio::ssl::error::stream_truncated)
+            return;
+
+        if(ec == net::error::operation_aborted)
+            LOG_TRC(log_, what, '\t', ec.message());
+        else
+            LOG_INF(log_, what, '\t', ec.message());
     }
 };
 
@@ -418,12 +608,32 @@ make_http_session(
     server& srv,
     agent& ag,
     stream_type stream,
-    stream_type::endpoint_type ep,
+    endpoint_type ep,
     flat_storage storage)
 {
-    return boost::make_shared<http_session_impl>(
+    return boost::make_shared<
+            plain_http_session_impl>(
         srv,
         ag,
+        std::move(stream),
+        ep,
+        std::move(storage));
+}
+
+boost::shared_ptr<http_session>
+make_https_session(
+    server& srv,
+    agent& ag,
+    asio::ssl::context& ctx,
+    stream_type stream,
+    endpoint_type ep,
+    flat_storage storage)
+{
+    return boost::make_shared<
+            ssl_http_session_impl>(
+        srv,
+        ag,
+        ctx,
         std::move(stream),
         ep,
         std::move(storage));
