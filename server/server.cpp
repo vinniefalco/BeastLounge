@@ -189,7 +189,7 @@ public:
     {
         if(running_)
             throw std::logic_error(
-                "server already started");
+                "server already running");
 
         agents_.emplace_back(std::move(sp));
     }
@@ -384,7 +384,7 @@ make_server(
                     "listener_config: " << ec.message() << "\n";
                 return nullptr;
             }
-            if(! make_listener(*srv, std::move(cfg)))
+            if(! run_listener(*srv, std::move(cfg)))
                 return nullptr;
         }
     }

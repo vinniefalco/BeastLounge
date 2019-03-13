@@ -46,7 +46,7 @@ struct listener_config
 */
 extern
 bool
-make_listener(
+run_listener(
     server& srv,
     listener_config cfg);
 

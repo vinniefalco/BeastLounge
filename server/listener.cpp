@@ -8,12 +8,30 @@
 //
 
 #include "listener.hpp"
-#include "http_session.hpp"
 #include "server_certificate.hpp"
 #include <boost/beast/core/detect_ssl.hpp>
 #include <boost/asio/coroutine.hpp>
 #include <boost/asio/yield.hpp>
 #include <iostream>
+
+extern
+void
+run_http_session(
+    server& srv,
+    agent& ag,
+    stream_type stream,
+    endpoint_type ep,
+    flat_storage storage);
+
+extern
+void
+run_https_session(
+    server& srv,
+    agent& ag,
+    asio::ssl::context& ctx,
+    stream_type stream,
+    endpoint_type ep,
+    flat_storage storage);
 
 namespace {
 
@@ -113,25 +131,23 @@ public:
             if(is_tls)
             {
                 // launch the HTTPS session
-                auto sp = make_https_session(
+                return run_https_session(
                     srv_,
                     ag_,
                     ctx_,
                     std::move(stream_),
                     ep_,
                     std::move(storage_));
-                sp->run();
             }
             else
             {
                 // launch the plain HTTP session
-                auto sp = make_http_session(
+                return run_http_session(
                     srv_,
                     ag_,
                     std::move(stream_),
                     ep_,
                     std::move(storage_));
-                sp->run();
             }
         }
     }
@@ -279,13 +295,12 @@ public:
                 // Launch a new session for this connection
                 if(cfg_.kind == listener_config::no_tls)
                 {
-                    auto sp = make_http_session(
+                    run_http_session(
                         srv_,
                         *this,
                         stream_type(std::move(sock)),
                         ep_,
                         {});
-                    sp->run();
                 }
                 else if(cfg_.kind == listener_config::allow_tls)
                 {
@@ -300,14 +315,13 @@ public:
                 }
                 else
                 {
-                    auto sp = make_https_session(
+                    run_https_session(
                         srv_,
                         *this,
                         ctx_,
                         stream_type(std::move(sock)),
                         ep_,
                         {});
-                    sp->run();
                 }
 
                 // Accept the next connection
@@ -377,7 +391,7 @@ public:
 //------------------------------------------------------------------------------
 
 bool
-make_listener(
+run_listener(
     server& srv,
     listener_config cfg)
 {

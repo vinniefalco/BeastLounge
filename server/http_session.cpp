@@ -7,18 +7,41 @@
 // Official repository: https://github.com/vinniefalco/BeastLounge
 //
 
-#include "http_session.hpp"
+#include "server.hpp"
 #include "session.hpp"
-#include "websocket_session.hpp"
 #include <boost/beast/core/stream_traits.hpp>
 #include <boost/beast/http/file_body.hpp>
+#include <boost/beast/http/read.hpp>
+#include <boost/beast/http/parser.hpp>
+#include <boost/beast/http/write.hpp>
+#include <boost/beast/websocket/rfc6455.hpp>
 #include <boost/beast/ssl/ssl_stream.hpp>
+#include <boost/beast/version.hpp>
 #include <boost/asio/coroutine.hpp>
 #include <boost/asio/ip/tcp.hpp>
 #include <boost/asio/post.hpp>
 #include <boost/asio/yield.hpp>
 #include <boost/optional.hpp>
 #include <iostream>
+
+extern
+void
+run_ws_session(
+    server& srv,
+    agent& ag,
+    stream_type stream,
+    endpoint_type ep,
+    websocket::request_type req);
+
+extern
+void
+run_ws_session(
+    server& srv,
+    agent& ag,
+    beast::ssl_stream<
+        stream_type> stream,
+    endpoint_type ep,
+    websocket::request_type req);
 
 namespace {
 
@@ -197,7 +220,6 @@ handle_request(
 template<class Derived>
 class http_session_base
     : public asio::coroutine
-    , public http_session
     , public session
 {
 protected:
@@ -341,8 +363,16 @@ public:
             // See if it is a WebSocket Upgrade
             if(websocket::is_upgrade(pr_->get()))
             {
+                // Convert the request type
+                websocket::request_type req(pr_->release());
+
                 // Create a WebSocket session by transferring the socket
-                // ...
+                return run_ws_session(
+                    srv_,
+                    ag_,
+                    std::move(impl()->stream()),
+                    ep_,
+                    std::move(req));
             }
 
             // See if it is a JSON-RPC request
@@ -441,7 +471,7 @@ public:
     }
 
     void
-    run() override
+    run()
     {
         // Use post to get on to our strand.
         net::post(
@@ -507,7 +537,7 @@ public:
     }
 
     void
-    run() override
+    run()
     {
         // Use post to get on to our strand.
         net::post(
@@ -603,25 +633,26 @@ public:
 
 //------------------------------------------------------------------------------
 
-boost::shared_ptr<http_session>
-make_http_session(
+void
+run_http_session(
     server& srv,
     agent& ag,
     stream_type stream,
     endpoint_type ep,
     flat_storage storage)
 {
-    return boost::make_shared<
+    auto sp =boost::make_shared<
             plain_http_session_impl>(
         srv,
         ag,
         std::move(stream),
         ep,
         std::move(storage));
+    sp->run();
 }
 
-boost::shared_ptr<http_session>
-make_https_session(
+void
+run_https_session(
     server& srv,
     agent& ag,
     asio::ssl::context& ctx,
@@ -629,7 +660,7 @@ make_https_session(
     endpoint_type ep,
     flat_storage storage)
 {
-    return boost::make_shared<
+    auto sp = boost::make_shared<
             ssl_http_session_impl>(
         srv,
         ag,
@@ -637,4 +668,5 @@ make_https_session(
         std::move(stream),
         ep,
         std::move(storage));
+    sp->run();
 }
