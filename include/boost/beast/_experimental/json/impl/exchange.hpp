@@ -19,18 +19,18 @@ namespace beast {
 namespace json {
 
 template<>
-struct exchange<object_t>
+struct exchange<object_type_t>
 {
-    static void assign(value& jv, object_t)
+    static void assign(value& jv, object_type_t)
     {
         jv.set_kind(kind::object);
     }
 };
 
 template<>
-struct exchange<array_t>
+struct exchange<array_type_t>
 {
-    static void assign(value& jv, array_t)
+    static void assign(value& jv, array_type_t)
     {
         jv.set_kind(kind::array);
     }

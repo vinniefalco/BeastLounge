@@ -90,15 +90,15 @@ set_kind(kind k) noexcept
     {
     case kind::object:
         // requires: noexcept construction
-        ::new(&obj_) object_type(
-            object_type::allocator_type(
+        ::new(&obj_) object(
+            object::allocator_type(
                 std::move(sp)));
         break;
 
     case kind::array:
         // requires: noexcept construction
-        ::new(&arr_) array_type(
-            array_type::allocator_type(
+        ::new(&arr_) array(
+            array::allocator_type(
                 std::move(sp)));
         break;
 
@@ -222,11 +222,11 @@ clear() noexcept
     switch(kind_)
     {
     case kind::object:
-        obj_.~object_type();
+        obj_.~object();
         break;
 
     case kind::array:
-        arr_.~array_type();
+        arr_.~array();
         break;
 
     case kind::string:
@@ -257,9 +257,9 @@ move(
         try
         {
     #endif
-            ::new(&obj_) object_type(
+            ::new(&obj_) object(
                 std::move(other.obj_), typename
-                object_type::allocator_type(sp));
+                object::allocator_type(sp));
     #ifndef BOOST_NO_EXCEPTIONS
         } 
         catch(...)
@@ -271,7 +271,7 @@ move(
         }
     #endif
         sp = other.get_storage();
-        other.obj_.~object_type();
+        other.obj_.~object();
         ::new(&other.nat_.sp_)
             storage_ptr(std::move(sp));
         break;
@@ -281,9 +281,9 @@ move(
         try
         {
     #endif
-            ::new(&arr_) array_type(
+            ::new(&arr_) array(
                 std::move(other.arr_), typename
-                array_type::allocator_type(sp));
+                array::allocator_type(sp));
     #ifndef BOOST_NO_EXCEPTIONS
         } 
         catch(...)
@@ -295,7 +295,7 @@ move(
         }
     #endif
         sp = other.get_storage();
-        other.arr_.~array_type();
+        other.arr_.~array();
         ::new(&other.nat_.sp_)
             storage_ptr(std::move(sp));
         break;
@@ -371,9 +371,9 @@ copy(
         try
         {
     #endif
-            ::new(&obj_) object_type(
+            ::new(&obj_) object(
                 other.obj_, typename
-                object_type::allocator_type(sp));
+                object::allocator_type(sp));
     #ifndef BOOST_NO_EXCEPTIONS
         } 
         catch(...)
@@ -391,9 +391,9 @@ copy(
         try
         {
     #endif
-            ::new(&arr_) array_type(
+            ::new(&arr_) array(
                 other.arr_, typename
-                array_type::allocator_type(sp));
+                array::allocator_type(sp));
     #ifndef BOOST_NO_EXCEPTIONS
         } 
         catch(...)

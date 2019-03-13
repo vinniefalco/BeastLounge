@@ -44,14 +44,14 @@ struct is_range<T, boost::void_t<
 
 inline
 void
-assign(value& v, object_t)
+assign(value& v, object_type_t)
 {
     v.set_kind(kind::object);
 }
 
 inline
 void
-assign(value& v, array_t)
+assign(value& v, array_type_t)
 {
     v.set_kind(kind::array);
 }

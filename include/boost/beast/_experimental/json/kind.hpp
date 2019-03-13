@@ -30,17 +30,17 @@ enum class kind
     null
 };
 
-struct object_t
+struct object_type_t
 {
 };
 
-BOOST_BEAST_INLINE_VARIABLE(object, object_t);
+BOOST_BEAST_INLINE_VARIABLE(object_type, object_type_t);
 
-struct array_t
+struct array_type_t
 {
 };
 
-BOOST_BEAST_INLINE_VARIABLE(array, array_t);
+BOOST_BEAST_INLINE_VARIABLE(array_type, array_type_t);
 
 BOOST_BEAST_INLINE_VARIABLE(null, std::nullptr_t);
 

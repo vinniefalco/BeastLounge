@@ -67,19 +67,19 @@ on_object_begin(error_code& ec)
     {
         BOOST_ASSERT(! key().empty());
         auto it = jv.raw_object().emplace(
-            key(), object);
+            key(), object_type);
         stack_.push_front(&it->second);
     }
     else if(jv.is_array())
     {
         BOOST_ASSERT(key().empty());
-        jv.raw_array().emplace_back(object);
+        jv.raw_array().emplace_back(object_type);
         stack_.push_front(&jv.raw_array().back());
     }
     else
     {
         BOOST_ASSERT(jv.is_null());
-        jv = object;
+        jv = object_type;
     }
 }
 
@@ -105,19 +105,19 @@ on_array_begin(error_code& ec)
     {
         BOOST_ASSERT(! key().empty());
         auto it = jv.raw_object().emplace(
-            key(), array);
+            key(), array_type);
         stack_.push_front(&it->second);
     }
     else if(jv.is_array())
     {
         BOOST_ASSERT(key().empty());
-        jv.raw_array().emplace_back(array);
+        jv.raw_array().emplace_back(array_type);
         stack_.push_front(&jv.raw_array().back());
     }
     else
     {
         BOOST_ASSERT(jv.is_null());
-        jv = array;
+        jv = array_type;
     }
 }
 

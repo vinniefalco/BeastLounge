@@ -57,8 +57,8 @@ public:
 
         // exchange construct
         {
-            value v1(object);
-            value v2(array);
+            value v1(object_type);
+            value v2(array_type);
             value v3("Hello!");
             value(std::string("Hello!"));
             value(short{});
@@ -80,8 +80,8 @@ public:
         // exchange assign
         {
             value jv;
-            jv = object;
-            jv = array;
+            jv = object_type;
+            jv = array_type;
             jv = "Hello!";
             jv = std::string("Hello!");
             jv = short{};
@@ -105,13 +105,13 @@ public:
             value jv;
             value const& jc(jv);
             {
-                jv = object;
+                jv = object_type;
                 BEAST_EXPECT(
                     jv.raw_object().size() == 0);
                 jc.raw_object();
             }
             {
-                jv = array;
+                jv = array_type;
                 BEAST_EXPECT(
                     jv.raw_array().size() == 0);
                 jc.raw_array();
@@ -177,15 +177,15 @@ public:
         }
 #endif
         {
-            array_type v(allocator<char>{
+            array v(allocator<char>{
                 get_default_storage_ptr()});
-            v.emplace_back(array);
+            v.emplace_back(array_type);
             BEAST_EXPECT(v.size() == 1);
         }
         {
-            array_type v(allocator<char>{
+            array v(allocator<char>{
                 get_default_storage_ptr()});
-            v.push_back(array);
+            v.push_back(array_type);
             BEAST_EXPECT(v.size() == 1);
         }
     }

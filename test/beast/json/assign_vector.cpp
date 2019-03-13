@@ -23,7 +23,7 @@ public:
     void
     testAssign()
     {
-        value jv(array);
+        value jv(array_type);
         {
             auto& a = jv.raw_array();
             a.push_back(1);

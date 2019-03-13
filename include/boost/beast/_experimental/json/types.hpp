@@ -23,7 +23,7 @@ namespace json {
 
 class value;
 
-using object_type =
+using object =
     std::unordered_multimap<
         std::string,
         value,
@@ -32,7 +32,7 @@ using object_type =
         allocator<std::pair<
             std::string const, value>>>;
 
-using array_type  =
+using array  =
     std::vector<
         value,
         allocator<value>>;
@@ -43,8 +43,8 @@ using string_type =
         std::char_traits<char>,
         allocator<char>>;
 
-using raw_object_type = object_type;
-using raw_array_type = array_type;
+using raw_object_type = object;
+using raw_array_type = array;
 using raw_string_type = string_type;
 using raw_signed_type = std::int_least64_t;
 using raw_unsigned_type = std::uint_least64_t;

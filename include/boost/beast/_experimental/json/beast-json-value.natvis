@@ -20,12 +20,12 @@
       <ExpandedItem Condition="kind_==kind::boolean">nat_.bool_</ExpandedItem>
     </Expand>
   </Type>
-  <Type Name="boost::beast::json::object_t">
-    <DisplayString>object_t</DisplayString>
+  <Type Name="boost::beast::json::object_type_t">
+    <DisplayString>object_type_t</DisplayString>
     <Expand></Expand>
   </Type>
-  <Type Name="boost::beast::json::array_t">
-    <DisplayString>array_t</DisplayString>
+  <Type Name="boost::beast::json::array_type_t">
+    <DisplayString>array_type_t</DisplayString>
     <Expand></Expand>
   </Type>
   <!--

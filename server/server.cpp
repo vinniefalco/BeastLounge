@@ -295,7 +295,7 @@ public:
     void
     stat(json::value& jv) override
     {
-        jv = json::array;
+        jv = json::array_type;
         std::lock_guard<std::mutex> lock(mutex_);
         for(auto& ag : agents_)
             ag->on_stat(jv);
