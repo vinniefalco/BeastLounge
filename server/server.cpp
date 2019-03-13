@@ -6,7 +6,7 @@
 //
 // Official repository: https://github.com/vinniefalco/BeastLounge
 //
- 
+
 #include "server.hpp"
 #include "listener.hpp"
 #include <boost/beast/_experimental/json/assign_string.hpp>
@@ -98,6 +98,7 @@ struct server_config
 {
     unsigned num_threads = 1;
     std::string doc_root;
+    std::string index_file = "index.html";
 
     void
     assign(
@@ -117,6 +118,9 @@ struct server_config
         jv["doc-root"].assign(doc_root, ec);
         if(ec)
             return;
+
+        //index-file is optional
+        jv["index-file"].assign(index_file, ec);
     }
 };
 
@@ -290,6 +294,12 @@ public:
     doc_root() const override
     {
         return cfg_.doc_root;
+    }
+
+    beast::string_view
+    index_file() const override
+    {
+        return cfg_.index_file;
     }
 
     void

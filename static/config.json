@@ -9,7 +9,8 @@
 
     "server": {
       "threads" : 5,
-      "doc-root" : "C:\\Users\vinnie\src\lounge\static\wwwroot\"
+      "doc-root" : "C:\\Users\vinnie\src\lounge\static\wwwroot\",
+      "index-file" : "index.html"
     },
 
     "log" : {

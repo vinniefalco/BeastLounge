@@ -93,6 +93,11 @@ public:
     beast::string_view
     doc_root() const = 0;
 
+    /// Return the name of index file for directory
+    virtual
+    beast::string_view
+    index_file() const = 0;
+
     /// Perform a stat
     virtual
     void

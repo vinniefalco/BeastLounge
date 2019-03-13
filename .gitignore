@@ -1,3 +1,5 @@
 build/
 *.*#
 static/log.txt
+log.txt
+tags

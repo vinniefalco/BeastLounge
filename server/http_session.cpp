@@ -118,6 +118,7 @@ template<
 void
 handle_request(
     beast::string_view doc_root,
+    beast::string_view index_file,
     http::request<Body, http::basic_fields<Allocator>>&& req,
     Send&& send)
 {
@@ -174,7 +175,7 @@ handle_request(
     // Build the path to the requested file
     std::string path = path_cat(doc_root, req.target());
     if(req.target().back() == '/')
-        path.append("index.html");
+        path.append(index_file.data(), index_file.size());
 
     // Attempt to open the file
     beast::error_code ec;
@@ -387,6 +388,7 @@ public:
                 yield
                 handle_request(
                     srv_.doc_root(),
+                    srv_.index_file(),
                     pr_->release(),
                     send_lambda{*this});
             }
