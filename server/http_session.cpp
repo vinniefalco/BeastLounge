@@ -22,6 +22,7 @@
 #include <boost/asio/post.hpp>
 #include <boost/asio/yield.hpp>
 #include <boost/optional.hpp>
+#include <boost/filesystem.hpp>
 #include <iostream>
 
 extern
@@ -174,8 +175,18 @@ handle_request(
 
     // Build the path to the requested file
     std::string path = path_cat(doc_root, req.target());
-    if(req.target().back() == '/')
+    if (req.target().back() == '/') {
+        path.pop_back();
+    }
+
+    if (boost::filesystem::is_directory(path)) {
+#if BOOST_MSVC
+        path.append("\\");
+#else
+        path.append("/");
+#endif
         path.append(index_file.data(), index_file.size());
+    }
 
     // Attempt to open the file
     beast::error_code ec;
