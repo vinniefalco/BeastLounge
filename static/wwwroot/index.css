@@ -1,0 +1,36 @@
+html {
+    line-height: 1.15; /* 1 */
+    -webkit-text-size-adjust: 100%; /* 2 */
+}
+
+body {
+    display: flex;
+    flex-direction: column;
+    margin: 0;
+}
+
+/* Navigation */
+.nav {
+    display: flex;
+    flex-direction: row;
+    justify-content: space-between;
+    color: white;
+    background: #333;
+    box-shadow: 3px 3px 3px 4px rgba(0, 0, 0, 0.4);
+    font-size: 1.25em;
+}
+
+.nav-title {
+    color: #cc0000;
+}
+
+.nav-logo {
+    width: 4em;
+    height: 4em;
+}
+
+/* Content */
+.content {
+    flex: 1;
+    margin: 1em auto;
+}
