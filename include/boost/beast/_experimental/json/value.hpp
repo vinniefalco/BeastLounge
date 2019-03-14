@@ -14,6 +14,7 @@
 #include <boost/beast/_experimental/json/error.hpp>
 #include <boost/beast/_experimental/json/key_param.hpp>
 #include <boost/beast/_experimental/json/kind.hpp>
+#include <boost/beast/_experimental/json/object.hpp>
 #include <boost/beast/_experimental/json/storage.hpp>
 #include <boost/beast/_experimental/json/types.hpp>
 #include <boost/beast/_experimental/json/detail/has_assign_value.hpp>
@@ -91,52 +92,61 @@ using can_value_from =
 */
 class value
 {
-    struct native_types
+    friend class value_test;
+
+    struct native
     {
-        storage_ptr sp_;
         union
         {
-            std::int64_t    int64_;
-            std::uint64_t   uint64_;
-            double          double_;
-            bool            bool_;
+            signed64    int64_;
+            unsigned64  uint64_;
+            floating    float_;
+            boolean     bool_;
         };
+        storage_ptr sp_;
     };
 
     union
     {
-        object          obj_;
-        array           arr_;
-        string_type     str_;
-        native_types    nat_;
+        object    obj_;
+        array     arr_;
+        string    str_;
+        native    nat_;
     };
 
     kind kind_;
 
 public:
 
+    //--------------------------------------------------------------------------
     //
-    // special members
+    // Special members
     //
+    //--------------------------------------------------------------------------
 
     /// Destroy a value and all of its contents
     BOOST_BEAST_DECL
     ~value();
 
-    /** Default constructor
-
-        A default-constructed value will be a JSON null.
-    */
-    BOOST_BEAST_DECL
-    value();
-
     /// Move constructor
     BOOST_BEAST_DECL
     value(value&& other);
 
+    /// Move construct a value, using the specified storage
+    BOOST_BEAST_DECL
+    value(
+        value&& other,
+        storage_ptr store);
+
     /// Construct a copy of a value
     BOOST_BEAST_DECL
     value(value const& other);
+
+    /// Construct a copy of a value using the specified storage
+    BOOST_BEAST_DECL
+    value(
+        value const& other,
+        storage_ptr store);
 
     /// Move-assign a value
     BOOST_BEAST_DECL
@@ -146,16 +156,180 @@ public:
     BOOST_BEAST_DECL
     value& operator=(value const& other);
 
-    /** Construct a value associated with a storage instance.
+    //--------------------------------------------------------------------------
+    //
+    // Construction and Assignment
+    //
+    //--------------------------------------------------------------------------
 
-        The value and all of its contents will use the specified
-        storage object.
+    /** Construct a null value using the default storage.
+    */
+    BOOST_BEAST_DECL
+    value() noexcept;
+
+    /** Construct a null value using the specified storage.
+
+        The value and all of its contents will use the
+        specified storage object.
     */
     BOOST_BEAST_DECL
     explicit
-    value(storage_ptr store);
+    value(storage_ptr store) noexcept;
 
-    /// Construct a value from T
+    /** Construct a value using the default storage
+
+        The value and all of its contents will use the
+        specified storage object.
+    */
+    BOOST_BEAST_DECL
+    value(json::kind k) noexcept;
+
+    /** Construct a value using the specified storage.
+
+        The value and all of its contents will use the specified
+        storage object.
+
+        @param k The kind of JSON value.
+
+        @param store The storage to use.
+    */
+    BOOST_BEAST_DECL
+    value(
+        json::kind k,
+        storage_ptr store) noexcept;
+
+    /** Construct a value from an object.
+    */
+    BOOST_BEAST_DECL
+    value(object obj) noexcept;
+
+    /** Construct a value from an object using the specified storage.
+    */
+    BOOST_BEAST_DECL
+    value(object obj, storage_ptr store);
+
+    /** Construct a value from an array.
+    */
+    BOOST_BEAST_DECL
+    value(array arr) noexcept;
+
+    /** Construct a value from an array using the specified storage.
+    */
+    BOOST_BEAST_DECL
+    value(array arr, storage_ptr store);
+
+    /** Construct a value from a string.
+    */
+    BOOST_BEAST_DECL
+    value(string str) noexcept;
+
+    /** Construct a value from a string using the specified storage.
+    */
+    BOOST_BEAST_DECL
+    value(string str, storage_ptr store);
+
+    /** Assign a value from an object
+    */
+    BOOST_BEAST_DECL
+    value&
+    operator=(object obj);
+
+    /** Assign a value from an array
+    */
+    BOOST_BEAST_DECL
+    value&
+    operator=(array arr);
+
+    /** Assign a value from a string
+    */
+    BOOST_BEAST_DECL
+    value&
+    operator=(string str);
+
+    //--------------------------------------------------------------------------
+    //
+    // Modifiers
+    //
+    //--------------------------------------------------------------------------
+
+    /** Reset the json to the specified type.
+
+        This changes the value to hold a value of the
+        specified type. Any previous contents are cleared.
+
+        @param k The kind to set. If the new kind is an
+        object, array, or string the resulting value will be
+        empty. Otherwise, the value will be in an undefined,
+        valid state.
+    */
+    BOOST_BEAST_DECL
+    void
+    reset(json::kind k = kind::null) noexcept;
+
+    /** Reset the json to the specified type.
+
+        This changes the value to hold a value of the
+        specified type. Any previous contents are cleared.
+
+        @param k The kind to set. If the new kind is an
+        object, array, or string the resulting value will be
+        empty. Otherwise, the value will be in an undefined,
+        valid state.
+    */
+    BOOST_BEAST_DECL
+    value&
+    operator=(json::kind k) noexcept
+    {
+        reset(k);
+        return *this;
+    }
+
+    /** Set the value to an empty object, and return it.
+
+        This calls `reset(kind::object)` and returns
+        `raw_object()`. The previous contents of the value
+        are destroyed.
+    */
+    object&
+    emplace_object() noexcept
+    {
+        reset(kind::object);
+        return raw_object();
+    }
+
+    /** Set the value to an empty array, and return it.
+
+        This calls `reset(kind::array)` and returns
+        `raw_array()`. The previous contents of the value
+        are destroyed.
+    */
+    array&
+    emplace_array() noexcept
+    {
+        reset(kind::array);
+        return raw_array();
+    }
+
+    /** Set the value to an empty string, and return it.
+
+        This calls `reset(kind::string)` and returns
+        `raw_string()`. The previous contents of the value
+        are destroyed.
+    */
+    string&
+    emplace_string() noexcept
+    {
+        reset(kind::string);
+        return raw_string();
+    }
+
+    //--------------------------------------------------------------------------
+    //
+    // Exchange
+    //
+    //--------------------------------------------------------------------------
+
+    /// Construct a value from another type
     template<
         class T
     #ifndef BOOST_BEAST_DOXYGEN
@@ -171,7 +345,7 @@ public:
                 >::assign(*this, t);
     }
 
-    /// Assign a value from T
+    /// Assign a value from another type
     template<
         class T
     #ifndef BOOST_BEAST_DOXYGEN
@@ -188,38 +362,7 @@ public:
         return *this;
     }
 
-    //--------------------------------------------------------------------------
-
-    /** Set the json type of this value.
-
-        This sets the kind of json this value holds.
-
-        @param k The kind to set. If this is a structured
-        type, the resulting container will be empty.
-    */
-    BOOST_BEAST_DECL
-    void
-    set_kind(kind k) noexcept;
-
-    BOOST_BEAST_DECL
-    value&
-    operator[](key_param key);
-
-    BOOST_BEAST_DECL
-    value const&
-    operator[](key_param key) const;
-
-    BOOST_BEAST_DECL
-    value&
-    value::
-    operator[](std::size_t i) noexcept;
-
-    BOOST_BEAST_DECL
-    value const&
-    value::
-    operator[](std::size_t i) const noexcept;
-
-    /** Assign this json value to another type.
+    /** Try to assign a value to another type
 
         @throws system error Thrown upon failure
     */
@@ -234,7 +377,7 @@ public:
                 system_error{ec});
     }
 
-    /** Assign this json value to another type.
+    /** Try to assign a value to another type
 
         @param ec Set to the error, if any occurred.
     */
@@ -261,13 +404,34 @@ public:
                 detail::remove_cr<T>
                     >::assign(t, *this, ec);
     }
+    //--------------------------------------------------------------------------
 
+    BOOST_BEAST_DECL
+    value&
+    operator[](key_param key);
+
+    BOOST_BEAST_DECL
+    value const&
+    operator[](key_param key) const;
+
+    BOOST_BEAST_DECL
+    value&
+    value::
+    operator[](std::size_t i) noexcept;
+
+    BOOST_BEAST_DECL
+    value const&
+    value::
+    operator[](std::size_t i) const noexcept;
+
+    //--------------------------------------------------------------------------
     //
-    // query
+    // Observers
     //
+    //--------------------------------------------------------------------------
 
     kind
-    get_kind() const noexcept
+    kind() const noexcept
     {
         return kind_;
     }
@@ -363,100 +527,111 @@ public:
         return kind_ == kind::null;
     }
 
-    // raw
+    //--------------------------------------------------------------------------
+    //
+    // Raw access
+    //
+    //--------------------------------------------------------------------------
 
-    raw_object_type&
+    BOOST_BEAST_DECL
+    storage_ptr
+    get_storage() const noexcept;
+
+    object&
     raw_object() noexcept
     {
         return obj_;
     }
 
-    raw_object_type const&
+    object const&
     raw_object() const noexcept
     {
         return obj_;
     }
 
-    raw_array_type&
+    array&
     raw_array() noexcept
     {
         return arr_;
     }
 
-    raw_array_type const&
+    array const&
     raw_array() const noexcept
     {
         return arr_;
     }
 
-    raw_string_type&
+    string&
     raw_string() noexcept
     {
         return str_;
     }
 
-    raw_string_type const&
+    string const&
     raw_string() const noexcept
     {
         return str_;
     }
 
-    raw_signed_type&
+    signed64&
     raw_signed() noexcept
     {
         return nat_.int64_;
     }
 
-    raw_signed_type const&
+    signed64 const&
     raw_signed() const noexcept
     {
         return nat_.int64_;
     }
 
-    raw_unsigned_type&
+    unsigned64&
     raw_unsigned() noexcept
     {
         return nat_.uint64_;
     }
 
-    raw_unsigned_type const&
+    unsigned64 const&
     raw_unsigned() const noexcept
     {
         return nat_.uint64_;
     }
 
-    raw_floating_type&
+    floating&
     raw_floating() noexcept
     {
-        return nat_.double_;
+        return nat_.float_;
     }
 
-    raw_floating_type const&
+    floating const&
     raw_floating() const noexcept
     {
-        return nat_.double_;
+        return nat_.float_;
     }
 
-    raw_bool_type&
+    boolean&
     raw_bool() noexcept
     {
         return nat_.bool_;
     }
 
-    raw_bool_type const&
+    boolean const&
     raw_bool() const noexcept
     {
         return nat_.bool_;
     }
 
+    //--------------------------------------------------------------------------
+
 private:
     BOOST_BEAST_DECL
     storage_ptr
-    get_storage() const noexcept;
+    release_storage() noexcept;
 
     BOOST_BEAST_DECL
-    storage_ptr
-    release_storage() noexcept;
+    void
+    construct(
+        json::kind, storage_ptr) noexcept;
 
     BOOST_BEAST_DECL
     void
@@ -470,6 +645,7 @@ private:
     void
     copy(storage_ptr, value const&);
 
+    BOOST_BEAST_DECL
     friend
     std::ostream&
     operator<<(
@@ -481,8 +657,10 @@ private:
 } // beast
 } // boost
 
+#include <boost/beast/_experimental/json/impl/object.hpp>
 #include <boost/beast/_experimental/json/impl/value.hpp>
 #ifdef BOOST_BEAST_HEADER_ONLY
+#include <boost/beast/_experimental/json/impl/object.ipp>
 #include <boost/beast/_experimental/json/impl/value.ipp>
 #endif
 

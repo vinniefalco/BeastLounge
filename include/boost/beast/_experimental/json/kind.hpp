@@ -25,22 +25,10 @@ enum class kind
     string,
     signed64,
     unsigned64,
-    floating,       // double (scientific?)
+    floating,
     boolean,
     null
 };
-
-struct object_type_t
-{
-};
-
-BOOST_BEAST_INLINE_VARIABLE(object_type, object_type_t);
-
-struct array_type_t
-{
-};
-
-BOOST_BEAST_INLINE_VARIABLE(array_type, array_type_t);
 
 BOOST_BEAST_INLINE_VARIABLE(null, std::nullptr_t);
 

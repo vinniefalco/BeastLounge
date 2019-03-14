@@ -66,20 +66,22 @@ on_object_begin(error_code& ec)
     if(jv.is_object())
     {
         BOOST_ASSERT(! key().empty());
-        auto it = jv.raw_object().emplace(
-            key(), object_type);
-        stack_.push_front(&it->second);
+        auto result =
+            jv.raw_object().emplace(
+                key(), kind::object);
+        stack_.push_front(
+            &result.first->second);
     }
     else if(jv.is_array())
     {
         BOOST_ASSERT(key().empty());
-        jv.raw_array().emplace_back(object_type);
+        jv.raw_array().emplace_back(kind::object);
         stack_.push_front(&jv.raw_array().back());
     }
     else
     {
         BOOST_ASSERT(jv.is_null());
-        jv = object_type;
+        jv = kind::object;
     }
 }
 
@@ -104,20 +106,22 @@ on_array_begin(error_code& ec)
     if(jv.is_object())
     {
         BOOST_ASSERT(! key().empty());
-        auto it = jv.raw_object().emplace(
-            key(), array_type);
-        stack_.push_front(&it->second);
+        auto result =
+            jv.raw_object().emplace(
+                key(), kind::array);
+        stack_.push_front(
+            &result.first->second);
     }
     else if(jv.is_array())
     {
         BOOST_ASSERT(key().empty());
-        jv.raw_array().emplace_back(array_type);
+        jv.raw_array().emplace_back(kind::array);
         stack_.push_front(&jv.raw_array().back());
     }
     else
     {
         BOOST_ASSERT(jv.is_null());
-        jv = array_type;
+        jv = kind::array;
     }
 }
 

@@ -6,7 +6,7 @@
     <DisplayString Condition="kind_==kind::string">string{str_}</DisplayString>
     <DisplayString Condition="kind_==kind::signed64">{nat_.int64_}</DisplayString>
     <DisplayString Condition="kind_==kind::unsigned64">{nat_.uint64_}</DisplayString>
-    <DisplayString Condition="kind_==kind::floating">{nat_.double_}</DisplayString>
+    <DisplayString Condition="kind_==kind::floating">{nat_.float_}</DisplayString>
     <DisplayString Condition="kind_==kind::boolean">{nat_.bool_}</DisplayString>
     <DisplayString Condition="kind_==kind::null">null</DisplayString>
     <Expand>
@@ -16,7 +16,7 @@
       <Item Name="storage" Condition="kind_==kind::signed64||kind_==kind::unsigned64||kind_==kind::floating||kind_==kind::boolean||kind_==kind::null">nat_.sp_</Item>
       <ExpandedItem Condition="kind_==kind::signed64">nat_.int64_</ExpandedItem>
       <ExpandedItem Condition="kind_==kind::unsigned64">nat_.uint64_</ExpandedItem>
-      <ExpandedItem Condition="kind_==kind::floating">nat_.double_</ExpandedItem>
+      <ExpandedItem Condition="kind_==kind::floating">nat_.float_</ExpandedItem>
       <ExpandedItem Condition="kind_==kind::boolean">nat_.bool_</ExpandedItem>
     </Expand>
   </Type>

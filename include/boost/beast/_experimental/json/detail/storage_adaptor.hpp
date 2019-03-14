@@ -96,7 +96,11 @@ struct storage_adaptor
             storage_adaptor const*>(&other);
         if(! p)
             return false;
-        return this->get() == p->get();
+        //return this->get() == p->get();
+        // VFALCO We require pointer equality
+        //        to prevent objects from different
+        //        "documents" getting mixed together.
+        return this == p;
     }
 };
 

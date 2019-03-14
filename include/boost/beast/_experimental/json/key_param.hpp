@@ -18,10 +18,28 @@ namespace boost {
 namespace beast {
 namespace json {
 
+/** Customization point for mapping enums to key strings.
+
+    To use this, specialize the class for the enum type and
+    provide this function signature in the same namespace
+    as the enumeration:
+
+    @code
+    string_view make_key_string(T)
+    @endcode
+*/
+template<class T>
+struct is_key_enum : std::false_type
+{
+};
+
 /** A type passed to functions expecting a key.
 */
-struct key_param
+class key_param
 {
+    string_view str_;
+
+public:
     key_param() = default;
     key_param(key_param const&) = default;
     key_param& operator=(key_param const&) = default;
@@ -34,24 +52,78 @@ struct key_param
 #endif
     >
     key_param(T&& t)
-        : str(t)
+        : str_(t)
     {
     }
 
-    template<class Enum
+    template<class KeyEnum
 #ifndef BOOST_DOXYGEN
         ,class = typename std::enable_if<
-            std::is_enum<Enum>::value>::type
+            is_key_enum<KeyEnum>::value>::type
 #endif
     >
-    key_param(Enum e)
+    key_param(KeyEnum e)
+        : str_(make_key_string(e))
     {
-        // TODO
-        str = "enum";
     }
 
-    string_view str;
+    /** Return the key as a string view
+    */
+    string_view
+    str() const noexcept
+    {
+        return str_;
+    }
+
+    /** Convert to string view
+    */
+    operator string_view() const noexcept
+    {
+        return str_;
+    }
 };
+
+inline
+bool
+operator==(key_param lhs, key_param rhs) noexcept
+{
+    return lhs.str() == rhs.str();
+}
+
+inline
+bool
+operator!=(key_param lhs, key_param rhs) noexcept
+{
+    return lhs.str() != rhs.str();
+}
+
+inline
+bool
+operator<(key_param lhs, key_param rhs) noexcept
+{
+    return lhs.str() < rhs.str();
+}
+
+inline
+bool
+operator<=(key_param lhs, key_param rhs) noexcept
+{
+    return lhs.str() <= rhs.str();
+}
+
+inline
+bool
+operator>(key_param lhs, key_param rhs) noexcept
+{
+    return lhs.str() > rhs.str();
+}
+
+inline
+bool
+operator>=(key_param lhs, key_param rhs) noexcept
+{
+    return lhs.str() >= rhs.str();
+}
 
 } // json
 } // beast

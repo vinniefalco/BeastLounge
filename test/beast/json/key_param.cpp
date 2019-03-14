@@ -16,16 +16,87 @@ namespace boost {
 namespace beast {
 namespace json {
 
+namespace {
+
+enum class te
+{
+    a, b, c
+};
+
+string_view
+make_key_string(te e)
+{
+    switch(e)
+    {
+    case te::a: return "a";
+    case te::b: return "b";
+    case te::c:
+        break;
+    }
+    return "c";
+}
+
+} // (anon)
+
+template<>
+struct is_key_enum<te> : std::true_type
+{
+};
+
 class key_param_test : public unit_test::suite
 {
 public:
+    using kp = key_param;
+
+    BOOST_STATIC_ASSERT(
+        is_key_enum<te>::value);
+
+    static
+    string_view
+    ks(string_view s)
+    {
+        return s;
+    }
+
     void
     testMembers()
     {
-        {
-            key_param("x");
-        }
-        pass();
+        BEAST_EXPECT(kp("x") == "x");
+        BEAST_EXPECT(kp("y") == "y");
+        BEAST_EXPECT(kp(te::a) == "a");
+        BEAST_EXPECT(kp(te::b) == "b");
+        BEAST_EXPECT(kp(te::c) == "c");
+
+        BEAST_EXPECT(! (kp("a") == kp("b")));
+        BEAST_EXPECT(   kp("a") != kp("b"));
+        BEAST_EXPECT(   kp("a") <  kp("b"));
+        BEAST_EXPECT(   kp("a") <= kp("b"));
+        BEAST_EXPECT(! (kp("a") >  kp("b")));
+        BEAST_EXPECT(! (kp("a") >= kp("b")));
+
+        BEAST_EXPECT(! (kp(te::a) == kp("b")));
+        BEAST_EXPECT(   kp(te::a) != kp("b"));
+        BEAST_EXPECT(   kp(te::a) <  kp("b"));
+        BEAST_EXPECT(   kp(te::a) <= kp("b"));
+        BEAST_EXPECT(! (kp(te::a) >  kp("b")));
+        BEAST_EXPECT(! (kp(te::a) >= kp("b")));
+
+        BEAST_EXPECT(! (kp("a") == kp(te::b)));
+        BEAST_EXPECT(   kp("a") != kp(te::b));
+        BEAST_EXPECT(   kp("a") <  kp(te::b));
+        BEAST_EXPECT(   kp("a") <= kp(te::b));
+        BEAST_EXPECT(! (kp("a") >  kp(te::b)));
+        BEAST_EXPECT(! (kp("a") >= kp(te::b)));
+
+        BEAST_EXPECT(! (kp(te::a) == kp(te::b)));
+        BEAST_EXPECT(   kp(te::a) != kp(te::b));
+        BEAST_EXPECT(   kp(te::a) <  kp(te::b));
+        BEAST_EXPECT(   kp(te::a) <= kp(te::b));
+        BEAST_EXPECT(! (kp(te::a) >  kp(te::b)));
+        BEAST_EXPECT(! (kp(te::a) >= kp(te::b)));
+
+        BEAST_EXPECT(ks(kp("a")) == "a");
+        BEAST_EXPECT(ks(kp(te::b)) == "b");
     }
 
     void run() override

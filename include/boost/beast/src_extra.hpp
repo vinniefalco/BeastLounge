@@ -25,18 +25,12 @@ the program, with the macro BOOST_BEAST_SPLIT_COMPILATION defined.
 # error Do not compile Beast library source with BOOST_BEAST_HEADER_ONLY defined
 #endif
 
-//#include <boost/beast/_experimental/json/detail/storage_base.ipp>
-//#include <boost/beast/_experimental/json/detail/variant.ipp>
-//#include <boost/beast/_experimental/json/impl/array_ref.ipp>
+#include <boost/beast/_experimental/json/detail/varint.ipp>
 #include <boost/beast/_experimental/json/impl/basic_parser.ipp>
-//#include <boost/beast/_experimental/json/impl/base.ipp>
 #include <boost/beast/_experimental/json/impl/error.ipp>
-//#include <boost/beast/_experimental/json/impl/init_list.ipp>
-//#include <boost/beast/_experimental/json/impl/object_ref.ipp>
+#include <boost/beast/_experimental/json/impl/object.ipp>
 #include <boost/beast/_experimental/json/impl/parse_file.ipp>
 #include <boost/beast/_experimental/json/impl/parser.ipp>
-//#include <boost/beast/_experimental/json/impl/ptr.ipp>
-//#include <boost/beast/_experimental/json/impl/ref.ipp>
 #include <boost/beast/_experimental/json/impl/storage.ipp>
 #include <boost/beast/_experimental/json/impl/value.ipp>
 

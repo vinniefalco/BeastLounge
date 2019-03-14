@@ -20,6 +20,51 @@ namespace json {
 class storage_test : public unit_test::suite
 {
 public:
+    struct unique_storage : storage
+    {
+        void
+        addref() noexcept override
+        {
+        }
+
+        void
+        release() noexcept override
+        {
+        }
+
+        void*
+        allocate(
+            std::size_t n,
+            std::size_t) override
+        {
+            return std::allocator<
+                char>{}.allocate(n);
+        }
+
+        void
+        deallocate(
+            void* p,
+            std::size_t n,
+            std::size_t) noexcept override
+        {
+            auto cp =
+                reinterpret_cast<char*>(p);
+            return std::allocator<
+                char>{}.deallocate(cp, n);
+        }
+        bool
+        is_equal(
+            storage const& other
+                ) const noexcept override
+        {
+            auto p = dynamic_cast<
+                unique_storage const*>(&other);
+            if(! p)
+                return false;
+            return this == p;
+        }
+    };
+
     void
     testStoragePtr()
     {
@@ -107,6 +152,27 @@ public:
             BEAST_EXPECT(sp == p);
             sp = nullptr;
             BEAST_EXPECT(! sp);
+        }
+
+        // equality
+        {
+            unique_storage us1;
+            unique_storage us2;
+            storage_ptr spu1(&us1);
+            storage_ptr spu2(&us2);
+            storage_ptr sp = make_storage_ptr(
+                std::allocator<void>{});
+            storage_ptr spd =
+                get_default_storage_ptr();
+            BEAST_EXPECT(us1 != us2);
+            BEAST_EXPECT(us1 != *spd);
+            BEAST_EXPECT(us2 != *spd);
+            BEAST_EXPECT(us1 != *sp);
+            BEAST_EXPECT(us2 != *sp);
+            BEAST_EXPECT(
+                *spd == *get_default_storage_ptr());
+            BEAST_EXPECT(
+                *sp != *get_default_storage_ptr());
         }
 
         p->release();

@@ -20,8 +20,9 @@ namespace json {
 
 //------------------------------------------------------------------------------
 //
-// special members
+// Special members
 //
+//------------------------------------------------------------------------------
 
 value::
 ~value()
@@ -30,21 +31,33 @@ value::
 }
 
 value::
-value()
-    : value(get_default_storage_ptr())
+value(value&& other)
+    : value(
+        std::move(other),
+        other.get_storage())
 {
 }
 
 value::
-value(value&& other)
+value(
+    value&& other,
+    storage_ptr store)
 {
-    move(other.get_storage(), std::move(other));
+    move(std::move(store), std::move(other));
 }
 
 value::
 value(value const& other)
+    : value(other, other.get_storage())
 {
-    copy(other.get_storage(), other);
+}
+
+value::
+value(
+    value const& other,
+    storage_ptr store)
+{
+    copy(std::move(store), other);
 }
 
 value&
@@ -70,55 +83,174 @@ operator=(value const& other)
     return *this;
 }
 
+//------------------------------------------------------------------------------
+
 value::
-value(storage_ptr sp)
-    : kind_(kind::null)
+value() noexcept
+    : value(
+        kind::null,
+        get_default_storage_ptr())
 {
-    ::new(&nat_.sp_)
-        storage_ptr(std::move(sp));
+}
+
+value::
+value(storage_ptr store) noexcept
+    : value(
+        kind::null,
+        std::move(store))
+{
+}
+
+value::
+value(json::kind k) noexcept
+    : value(
+        k,
+        get_default_storage_ptr())
+{
+}
+
+value::
+value(
+    json::kind k,
+    storage_ptr store) noexcept
+{
+    construct(k, std::move(store));
+}
+
+value::
+value(object obj) noexcept
+    : obj_(std::move(obj))
+    , kind_(kind::object)
+{
+}
+
+value::
+value(
+    object obj,
+    storage_ptr store)
+    : obj_(
+        std::move(obj),
+        std::move(store))
+    , kind_(kind::object)
+{
+}
+
+value::
+value(array arr) noexcept
+    : arr_(std::move(arr))
+    , kind_(kind::array)
+{
+}
+
+value::
+value(
+    array arr,
+    storage_ptr store)
+    : arr_(std::move(arr),
+        array::allocator_type(
+            std::move(store)))
+    , kind_(kind::array)
+{
+}
+
+value::
+value(string str) noexcept
+    : str_(std::move(str))
+    , kind_(kind::string)
+{
+}
+
+value::
+value(
+    string str,
+    storage_ptr store)
+    : str_(std::move(str),
+        string::allocator_type(
+            std::move(store)))
+    , kind_(kind::string)
+{
+}
+
+value&
+value::
+operator=(object obj)
+{
+    auto sp = release_storage();
+    clear();
+    try
+    {
+        ::new(&obj_) object(
+            std::move(obj),
+            std::move(sp));
+        kind_ = kind::object;
+    }
+    catch(...)
+    {
+        new(&nat_.sp_)
+            storage_ptr(std::move(sp));
+        kind_ = kind::null;
+        throw;
+    }
+    return *this;
+}
+
+value&
+value::
+operator=(array arr)
+{
+    auto sp = release_storage();
+    clear();
+    try
+    {
+        ::new(&arr_) array(
+            std::move(arr),
+            array::allocator_type(
+                std::move(sp)));
+        kind_ = kind::array;
+    }
+    catch(...)
+    {
+        new(&nat_.sp_)
+            storage_ptr(std::move(sp));
+        kind_ = kind::null;
+        throw;
+    }
+    return *this;
+}
+
+value&
+value::
+operator=(string str)
+{
+    auto sp = release_storage();
+    clear();
+    try
+    {
+        ::new(&str_) string(
+            std::move(str),
+            string::allocator_type(
+                std::move(sp)));
+        kind_ = kind::string;
+    }
+    catch(...)
+    {
+        new(&nat_.sp_)
+            storage_ptr(std::move(sp));
+        kind_ = kind::null;
+        throw;
+    }
+    return *this;
 }
 
 //------------------------------------------------------------------------------
 
 void
 value::
-set_kind(kind k) noexcept
+reset(json::kind k) noexcept
 {
     auto sp = release_storage();
     clear();
-    switch(k)
-    {
-    case kind::object:
-        // requires: noexcept construction
-        ::new(&obj_) object(
-            object::allocator_type(
-                std::move(sp)));
-        break;
-
-    case kind::array:
-        // requires: noexcept construction
-        ::new(&arr_) array(
-            array::allocator_type(
-                std::move(sp)));
-        break;
-
-    case kind::string:
-        // requires: noexcept construction
-        ::new(&str_) string_type(
-            string_type::allocator_type(
-                std::move(sp)));
-        break;
-
-    case kind::signed64:
-    case kind::unsigned64:
-    case kind::floating:
-    case kind::boolean:
-    case kind::null:
-        ::new(&nat_.sp_)
-            storage_ptr(std::move(sp));
-        break;
-    }
-    kind_ = k;
+    construct(k, std::move(sp));
 }
 
 //------------------------------------------------------------------------------
@@ -131,14 +263,14 @@ operator[](key_param key)
 {
     // implicit conversion to object from null
     if(is_null())
-        set_kind(kind::object);
+        reset(kind::object);
     else
         BOOST_ASSERT(is_object());
     // VFALCO unnecessary string conversion
-    auto s = key.str.to_string();
+    auto s = key.str().to_string();
     auto it = obj_.find(s);
     if(it == obj_.end())
-        it = obj_.emplace(s, null);
+        it = obj_.emplace(s, null).first;
     return it->second;
 }
 
@@ -148,7 +280,7 @@ operator[](key_param key) const
 {
     BOOST_ASSERT(is_object());
     // VFALCO unnecessary string conversion
-    auto s = key.str.to_string();
+    auto s = key.str().to_string();
     auto it = obj_.find(s);
     if(it == obj_.end())
         BOOST_THROW_EXCEPTION(system_error{
@@ -185,7 +317,7 @@ get_storage() const noexcept
     switch(kind_)
     {
     case kind::object:
-        return obj_.get_allocator().get_storage();
+        return obj_.get_storage();
 
     case kind::array:
         return arr_.get_allocator().get_storage();
@@ -203,7 +335,7 @@ release_storage() noexcept
     switch(kind_)
     {
     case kind::object:
-        return obj_.get_allocator().get_storage();
+        return obj_.get_storage();
 
     case kind::array:
         return arr_.get_allocator().get_storage();
@@ -212,6 +344,45 @@ release_storage() noexcept
         return str_.get_allocator().get_storage();
     }
     return std::move(nat_.sp_);
+}
+
+void
+value::
+construct(
+    json::kind k,
+    storage_ptr sp) noexcept
+{
+    switch(k)
+    {
+    case kind::object:
+        // requires: noexcept construction
+        ::new(&obj_) object(std::move(sp));
+        break;
+
+    case kind::array:
+        // requires: noexcept construction
+        ::new(&arr_) array(
+            array::allocator_type(
+                std::move(sp)));
+        break;
+
+    case kind::string:
+        // requires: noexcept construction
+        ::new(&str_) string(
+            string::allocator_type(
+                std::move(sp)));
+        break;
+
+    case kind::signed64:
+    case kind::unsigned64:
+    case kind::floating:
+    case kind::boolean:
+    case kind::null:
+        ::new(&nat_.sp_)
+            storage_ptr(std::move(sp));
+        break;
+    }
+    kind_ = k;
 }
 
 // doesn't set kind_
@@ -230,7 +401,7 @@ clear() noexcept
         break;
 
     case kind::string:
-        str_.~string_type();
+        str_.~string();
         break;
 
     case kind::signed64:
@@ -258,8 +429,7 @@ move(
         {
     #endif
             ::new(&obj_) object(
-                std::move(other.obj_), typename
-                object::allocator_type(sp));
+                std::move(other.obj_), sp);
     #ifndef BOOST_NO_EXCEPTIONS
         } 
         catch(...)
@@ -305,9 +475,9 @@ move(
         try
         {
     #endif
-            ::new(&arr_) string_type(
+            ::new(&arr_) string(
                 std::move(other.str_), typename
-                string_type::allocator_type(sp));
+                string::allocator_type(sp));
     #ifndef BOOST_NO_EXCEPTIONS
         } 
         catch(...)
@@ -319,7 +489,7 @@ move(
         }
     #endif
         sp = other.get_storage();
-        other.str_.~string_type();
+        other.str_.~string();
         ::new(&other.nat_.sp_)
             storage_ptr(std::move(sp));
         break;
@@ -339,7 +509,7 @@ move(
     case kind::floating:
         ::new(&nat_.sp_)
             storage_ptr(std::move(sp));
-        nat_.double_ = other.nat_.double_;
+        nat_.float_ = other.nat_.float_;
         break;
 
     case kind::boolean:
@@ -372,8 +542,7 @@ copy(
         {
     #endif
             ::new(&obj_) object(
-                other.obj_, typename
-                object::allocator_type(sp));
+                other.obj_, sp);
     #ifndef BOOST_NO_EXCEPTIONS
         } 
         catch(...)
@@ -411,9 +580,9 @@ copy(
         try
         {
     #endif
-            ::new(&arr_) string_type(
+            ::new(&arr_) string(
                 other.str_, typename
-                string_type::allocator_type(sp));
+                string::allocator_type(sp));
     #ifndef BOOST_NO_EXCEPTIONS
         } 
         catch(...)
@@ -441,7 +610,7 @@ copy(
     case kind::floating:
         ::new(&nat_.sp_)
             storage_ptr(std::move(sp));
-        nat_.double_ = other.nat_.double_;
+        nat_.float_ = other.nat_.float_;
         break;
 
     case kind::boolean:
@@ -465,7 +634,7 @@ copy(
 std::ostream&
 operator<<(std::ostream& os, value const& jv)
 {
-    switch(jv.get_kind())
+    switch(jv.kind())
     {
     case kind::object:
         os << '{';

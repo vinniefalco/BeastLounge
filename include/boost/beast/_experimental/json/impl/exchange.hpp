@@ -18,24 +18,6 @@ namespace boost {
 namespace beast {
 namespace json {
 
-template<>
-struct exchange<object_type_t>
-{
-    static void assign(value& jv, object_type_t)
-    {
-        jv.set_kind(kind::object);
-    }
-};
-
-template<>
-struct exchange<array_type_t>
-{
-    static void assign(value& jv, array_type_t)
-    {
-        jv.set_kind(kind::array);
-    }
-};
-
 //
 // strings
 //
@@ -45,7 +27,7 @@ struct exchange<char[N]>
 {
     static void assign(value& jv, string_view v)
     {
-        jv.set_kind(kind::string);
+        jv.reset(kind::string);
         jv.raw_string().assign(
             v.data(), v.size());
     }
@@ -59,7 +41,7 @@ struct exchange<
     static void assign(value& jv,
         std::basic_string<char, Traits, Allocator> const& v)
     {
-        jv.set_kind(kind::string);
+        jv.reset(kind::string);
         jv.raw_string().assign(
             v.data(), v.size());
     }
@@ -74,7 +56,7 @@ struct exchange<short>
 {
     static void assign(value& jv, short v)
     {
-        jv.set_kind(kind::signed64);
+        jv.reset(kind::signed64);
         jv.raw_signed() = v;
     }
 };
@@ -84,7 +66,7 @@ struct exchange<int>
 {
     static void assign(value& jv, int v)
     {
-        jv.set_kind(kind::signed64);
+        jv.reset(kind::signed64);
         jv.raw_signed() = v;
     }
 };
@@ -94,7 +76,7 @@ struct exchange<long>
 {
     static void assign(value& jv, long v)
     {
-        jv.set_kind(kind::signed64);
+        jv.reset(kind::signed64);
         jv.raw_signed() = v;
     }
 };
@@ -104,7 +86,7 @@ struct exchange<long long>
 {
     static void assign(value& jv, long long v)
     {
-        jv.set_kind(kind::signed64);
+        jv.reset(kind::signed64);
         jv.raw_signed() = v;
     }
 };
@@ -118,7 +100,7 @@ struct exchange<unsigned short>
 {
     static void assign(value& jv, unsigned short v)
     {
-        jv.set_kind(kind::unsigned64);
+        jv.reset(kind::unsigned64);
         jv.raw_unsigned() = v;
     }
 };
@@ -128,7 +110,7 @@ struct exchange<unsigned int>
 {
     static void assign(value& jv, unsigned int v)
     {
-        jv.set_kind(kind::unsigned64);
+        jv.reset(kind::unsigned64);
         jv.raw_unsigned() = v;
     }
 };
@@ -138,7 +120,7 @@ struct exchange<unsigned long>
 {
     static void assign(value& jv, unsigned long v)
     {
-        jv.set_kind(kind::unsigned64);
+        jv.reset(kind::unsigned64);
         jv.raw_unsigned() = v;
     }
 };
@@ -148,7 +130,7 @@ struct exchange<unsigned long long>
 {
     static void assign(value& jv, unsigned long long v)
     {
-        jv.set_kind(kind::unsigned64);
+        jv.reset(kind::unsigned64);
         jv.raw_unsigned() = v;
     }
 };
@@ -162,7 +144,7 @@ struct exchange<float>
 {
     static void assign(value& jv, float v)
     {
-        jv.set_kind(kind::floating);
+        jv.reset(kind::floating);
         jv.raw_floating() = v;
     }
 };
@@ -172,7 +154,7 @@ struct exchange<double>
 {
     static void assign(value& jv, double v)
     {
-        jv.set_kind(kind::floating);
+        jv.reset(kind::floating);
         jv.raw_floating() = v;
     }
 };
@@ -186,7 +168,7 @@ struct exchange<bool>
 {
     static void assign(value& jv, bool v)
     {
-        jv.set_kind(kind::boolean);
+        jv.reset(kind::boolean);
         jv.raw_bool() = v;
     }
 };
@@ -200,7 +182,7 @@ struct exchange<std::nullptr_t>
 {
     static void assign(value& jv, std::nullptr_t)
     {
-        jv.set_kind(kind::null);
+        jv.reset(kind::null);
     }
 };
 

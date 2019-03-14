@@ -42,20 +42,6 @@ struct is_range<T, boost::void_t<
 // assign to value
 //
 
-inline
-void
-assign(value& v, object_type_t)
-{
-    v.set_kind(kind::object);
-}
-
-inline
-void
-assign(value& v, array_type_t)
-{
-    v.set_kind(kind::array);
-}
-
 template<class T
     ,class = typename std::enable_if<
         detail::is_range<T>::value
@@ -66,7 +52,7 @@ template<class T
 void
 assign(value& v, T const& t)
 {
-    v.set_kind(kind::array);
+    v.reset(kind::array);
     for(auto const& e : t)
         v.raw_array().push_back(e);
 }
@@ -75,7 +61,7 @@ inline
 void
 assign(value& v, string_view t)
 {
-    v.set_kind(kind::string);
+    v.reset(kind::string);
     v.raw_string().assign(
         t.data(), t.size());
 }
@@ -85,7 +71,7 @@ template<std::size_t N>
 void
 assign(value& v, char const(&t)[N])
 {
-    v.set_kind(kind::string);
+    v.reset(kind::string);
     v.raw_string().assign(t, N);
 }
 #else
@@ -93,7 +79,7 @@ inline
 void
 assign(value& v, char const* t)
 {
-    v.set_kind(kind::string);
+    v.reset(kind::string);
     v.raw_string() = t;
 }
 #endif
@@ -102,7 +88,7 @@ inline
 void
 assign(value& v, short t)
 {
-    v.set_kind(kind::signed64);
+    v.reset(kind::signed64);
     v.raw_signed() = t;
 }
 
@@ -110,7 +96,7 @@ inline
 void
 assign(value& v, int t)
 {
-    v.set_kind(kind::signed64);
+    v.reset(kind::signed64);
     v.raw_signed() = t;
 }
 
@@ -118,7 +104,7 @@ inline
 void
 assign(value& v, long t)
 {
-    v.set_kind(kind::signed64);
+    v.reset(kind::signed64);
     v.raw_signed() = t;
 }
 
@@ -126,7 +112,7 @@ inline
 void
 assign(value& v, long long t)
 {
-    v.set_kind(kind::signed64);
+    v.reset(kind::signed64);
     v.raw_signed() = t;
 }
 
@@ -134,7 +120,7 @@ inline
 void
 assign(value& v, unsigned short t)
 {
-    v.set_kind(kind::unsigned64);
+    v.reset(kind::unsigned64);
     v.raw_unsigned() = t;
 }
 
@@ -142,7 +128,7 @@ inline
 void
 assign(value& v, unsigned int t)
 {
-    v.set_kind(kind::unsigned64);
+    v.reset(kind::unsigned64);
     v.raw_unsigned() = t;
 }
 
@@ -150,7 +136,7 @@ inline
 void
 assign(value& v, unsigned long t)
 {
-    v.set_kind(kind::unsigned64);
+    v.reset(kind::unsigned64);
     v.raw_unsigned() = t;
 }
 
@@ -158,7 +144,7 @@ inline
 void
 assign(value& v, unsigned long long t)
 {
-    v.set_kind(kind::unsigned64);
+    v.reset(kind::unsigned64);
     v.raw_unsigned() = t;
 }
 
@@ -166,7 +152,7 @@ inline
 void
 assign(value& v, float t)
 {
-    v.set_kind(kind::floating);
+    v.reset(kind::floating);
     v.raw_floating() = t;
 }
 
@@ -174,7 +160,7 @@ inline
 void
 assign(value& v, double t)
 {
-    v.set_kind(kind::floating);
+    v.reset(kind::floating);
     v.raw_floating() = t;
 }
 
@@ -182,7 +168,7 @@ inline
 void
 assign(value& v, bool t)
 {
-    v.set_kind(kind::boolean);
+    v.reset(kind::boolean);
     v.raw_bool() = t;
 }
 
@@ -190,7 +176,7 @@ inline
 void
 assign(value& v, std::nullptr_t)
 {
-    v.set_kind(kind::null);
+    v.reset(kind::null);
 }
 
 //------------------------------------------------------------------------------

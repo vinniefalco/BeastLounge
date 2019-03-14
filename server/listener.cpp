@@ -201,7 +201,7 @@ public:
         : srv_(srv)
         , cfg_(std::move(cfg))
         , log_(srv_.log().get_section("listener"))
-        , ctx_(asio::ssl::context::sslv23)
+        , ctx_(asio::ssl::context::tlsv12)
         , acceptor_(srv_.make_executor())
     {
         cfg_.kind = listener_config::allow_tls;
@@ -377,7 +377,7 @@ public:
         std::lock_guard<std::mutex> lock(mutex_);
         ja.raw_array().push_back({});
         auto& jv = ja.raw_array().back();
-        jv = json::object_type;
+        jv.emplace_object();
         jv["type"] = "listener";
         jv["name"] = cfg_.name;
         jv["address"] = cfg_.address.to_string();

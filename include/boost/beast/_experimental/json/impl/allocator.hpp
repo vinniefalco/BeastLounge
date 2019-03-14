@@ -19,6 +19,13 @@ namespace json {
 
 template<typename T>
 allocator<T>::
+allocator()
+    : sp_(get_default_storage_ptr())
+{
+}
+
+template<typename T>
+allocator<T>::
 allocator(allocator&& other) noexcept
     : allocator(other)
 {

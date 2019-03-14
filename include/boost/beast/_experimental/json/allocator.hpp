@@ -32,6 +32,8 @@ public:
     allocator(allocator const&) = default;
     allocator& operator=(allocator const&) = default;
 
+    allocator();
+
     allocator(allocator&&) noexcept;
 
     allocator& operator=(allocator&&) noexcept;

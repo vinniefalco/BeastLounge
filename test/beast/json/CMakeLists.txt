@@ -31,6 +31,7 @@ add_executable (beast-json-tests
     error.cpp
     key_param.cpp
     kind.cpp
+    object.cpp
     parse_file.cpp
     parser.cpp
     src.cpp
