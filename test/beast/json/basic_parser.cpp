@@ -91,19 +91,56 @@ public:
         for(std::size_t i = 0;
             i < s.size() - 1; ++i)
         {
-            test_parser p;
-            auto used = p.write(
-                net::const_buffer(s.data(), i), ec);
-            BEAST_EXPECT(used == i);
-            if(! BEAST_EXPECTS(! ec, ec.message()))
-                continue;
-            used = p.write(net::const_buffer(
-                s.data() + i, s.size() - i), ec);
-            BEAST_EXPECT(used == s.size() - i);
-            if(! BEAST_EXPECTS(! ec, ec.message()))
-                continue;
-            p.write_eof(ec);
-            BEAST_EXPECTS(! ec, ec.message());
+            // write_some with 1 buffer
+            {
+                test_parser p;
+                auto used = p.write_some(
+                    net::const_buffer(s.data(), i), ec);
+                BEAST_EXPECT(used == i);
+                BEAST_EXPECT(! p.is_done());
+                if(! BEAST_EXPECTS(! ec, ec.message()))
+                    continue;
+                used = p.write_some(net::const_buffer(
+                    s.data() + i, s.size() - i), ec);
+                BEAST_EXPECT(used == s.size() - i);
+                if(! BEAST_EXPECTS(! ec, ec.message()))
+                    continue;
+                p.write({}, ec);
+                BEAST_EXPECTS(! ec, ec.message());
+                BEAST_EXPECT(p.is_done());
+            }
+            // write_some with 1 buffer sequence
+            {
+                test_parser p;
+                std::array<
+                    net::const_buffer, 2> b;
+                b[0] = {s.data(), i};
+                b[1] = {s.data()+i, s.size()-i};
+                auto used = p.write_some(b, ec);
+                BEAST_EXPECT(used = s.size());
+                BEAST_EXPECTS(! ec, ec.message());
+                p.write({}, ec);
+                BEAST_EXPECTS(! ec, ec.message());
+            }
+            // write with 1 buffer sequence
+            {
+                test_parser p;
+                std::array<
+                    net::const_buffer, 2> b;
+                b[0] = {s.data(), i};
+                b[1] = {s.data()+i, s.size()-i};
+                auto used = p.write(b, ec);
+                BEAST_EXPECT(used = s.size());
+                BEAST_EXPECTS(! ec, ec.message());
+            }
+            // write with 1 buffer
+            {
+                test_parser p;
+                auto used = p.write(
+                    {s.data(), s.size()}, ec);
+                BEAST_EXPECT(used = s.size());
+                BEAST_EXPECTS(! ec, ec.message());
+            }
         }
     }
 
@@ -112,7 +149,7 @@ public:
     {
         error_code ec;
         test_parser p;
-        auto const used = p.write(
+        auto const used = p.write_some(
             boost::asio::const_buffer(
                 s.data(), s.size()), ec);
         if(! ec)

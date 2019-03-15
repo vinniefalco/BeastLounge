@@ -39,13 +39,16 @@ parse_file(
         b.commit(f.read(mb.data(), mb.size(), ec));
         if(ec)
             return;
-        parser.write(b.data(), ec);
+        if(remain == b.size())
+            break;
+        auto bytes_used =
+            parser.write_some(b.data(), ec);
         if(ec)
             return;
         remain -= b.size();
-        b.clear();
+        b.consume(bytes_used);
     }
-    parser.write_eof(ec);
+    parser.write(b.data(), ec);
     if(ec)
         return;
     // finished

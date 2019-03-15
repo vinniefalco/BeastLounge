@@ -132,11 +132,19 @@ void
 basic_parser::
 write_eof(error_code& ec)
 {
+    // write a null, this is invalid no matter
+    // what state we are in, to get a descriptive
+    // error.
+    //
+    // VFALCO we might want to return error::partial_data
+
     auto const fail =
         [this, &ec]
         {
             char c = 0;
-            write(boost::asio::const_buffer(&c, 1), ec);
+            write_some(
+                boost::asio::const_buffer(
+                &c, 1), ec);
             BOOST_ASSERT(ec);
         };
 
@@ -152,7 +160,8 @@ write_eof(error_code& ec)
         case state::number_exp:
         case state::number_exp_digits2:
             stack_.front() = state::number_end;
-            write(boost::asio::const_buffer(), ec);
+            write_some(
+                net::const_buffer{}, ec);
             if(ec)
                 return;
             break;
@@ -172,9 +181,12 @@ write_eof(error_code& ec)
 
 std::size_t
 basic_parser::
-write(boost::asio::const_buffer buffer, error_code& ec)
+write_some(
+    net::const_buffer buffer,
+    error_code& ec)
 {
-    auto p = static_cast<char const*>(buffer.data());
+    auto p = static_cast<
+        char const*>(buffer.data());
     auto n = buffer.size();
     auto const p0 = p;
     auto const p1 = p0 + n;
@@ -865,6 +877,23 @@ loop:
 
 finish:
     return p - p0;
+}
+
+//------------------------------------------------------------------------------
+
+// Called to parse the rest of the document, this
+// can be optimized by assuming no more data is coming.
+std::size_t
+basic_parser::
+write(
+    net::const_buffer buffer,
+    error_code& ec)
+{
+    auto bytes_used =
+        write_some(buffer, ec);
+    if(! ec)
+        write_eof(ec);
+    return bytes_used;
 }
 
 } // json

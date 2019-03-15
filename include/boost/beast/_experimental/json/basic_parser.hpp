@@ -80,17 +80,44 @@ public:
     reset();
 
     template<
-        class ConstBufferSequence,
-        class = typename std::enable_if<
+        class ConstBufferSequence
+#ifndef BOOST_BEAST_DOXYGEN
+        ,class = typename std::enable_if<
             ! std::is_convertible<
                 ConstBufferSequence,
-                net::const_buffer>::value>::type>
+                net::const_buffer>::value>::type
+#endif
+    >
     std::size_t
-    write(ConstBufferSequence const& buffers, error_code& ec);
+    write_some(
+        ConstBufferSequence const& buffers,
+        error_code& ec);
 
     BOOST_BEAST_DECL
     std::size_t
-    write(net::const_buffer buffer, error_code& ec);
+    write_some(
+        net::const_buffer buffer,
+        error_code& ec);
+
+    template<
+        class ConstBufferSequence
+#ifndef BOOST_BEAST_DOXYGEN
+        ,class = typename std::enable_if<
+            ! std::is_convertible<
+                ConstBufferSequence,
+                net::const_buffer>::value>::type
+#endif
+    >
+    std::size_t
+    write(
+        ConstBufferSequence const& buffers,
+        error_code& ec);
+
+    BOOST_BEAST_DECL
+    std::size_t
+    write(
+        net::const_buffer buffer,
+        error_code& ec);
 
     BOOST_BEAST_DECL
     void
