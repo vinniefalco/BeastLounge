@@ -414,6 +414,7 @@ public:
     value const&
     operator[](key_param key) const;
 
+#if 0
     BOOST_BEAST_DECL
     value&
     value::
@@ -423,6 +424,7 @@ public:
     value const&
     value::
     operator[](std::size_t i) const noexcept;
+#endif
 
     //--------------------------------------------------------------------------
     //

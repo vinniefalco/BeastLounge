@@ -288,6 +288,7 @@ operator[](key_param key) const
     return it->second;
 }
 
+#if 0
 value&
 value::
 operator[](std::size_t i) noexcept
@@ -305,6 +306,7 @@ operator[](std::size_t i) const noexcept
     BOOST_ASSERT(raw_array().size() > i);
     return raw_array()[i];
 }
+#endif
 
 //------------------------------------------------------------------------------
 

@@ -66,11 +66,9 @@ on_object_begin(error_code& ec)
     if(jv.is_object())
     {
         BOOST_ASSERT(! key().empty());
-        auto result =
-            jv.raw_object().emplace(
-                key(), kind::object);
         stack_.push_front(
-            &result.first->second);
+            &jv.raw_object().emplace(key(),
+                kind::object).first->second);
     }
     else if(jv.is_array())
     {
@@ -106,11 +104,9 @@ on_array_begin(error_code& ec)
     if(jv.is_object())
     {
         BOOST_ASSERT(! key().empty());
-        auto result =
-            jv.raw_object().emplace(
-                key(), kind::array);
         stack_.push_front(
-            &result.first->second);
+            &jv.raw_object().emplace(key(),
+                kind::array).first->second);
     }
     else if(jv.is_array())
     {
@@ -137,7 +133,25 @@ void
 parser::
 on_string_begin(error_code&)
 {
-    s_.clear();
+    auto& jv = *stack_.front();
+    if(jv.is_object())
+    {
+        BOOST_ASSERT(! key().empty());
+        stack_.push_front(
+            &jv.raw_object().emplace(key(),
+                kind::string).first->second);
+    }
+    else if(stack_.front()->is_array())
+    {
+        BOOST_ASSERT(key().empty());
+        jv.raw_array().emplace_back(
+            kind::string);
+    }
+    else
+    {
+        BOOST_ASSERT(jv.is_null());
+        jv.emplace_string();
+    }
 }
 
 void
@@ -145,15 +159,15 @@ parser::
 on_string_piece(
     string_view s, error_code&)
 {
-    s_.append(s.data(), s.size());
+    stack_.front()->raw_string().append(
+        s.data(), s.size());
 }
 
 void
 parser::
 on_string_end(error_code&)
 {
-    assign(s_);
-    s_.clear();
+    stack_.pop_front();
 }
 
 void

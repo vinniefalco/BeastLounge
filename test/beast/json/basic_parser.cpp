@@ -88,20 +88,23 @@ public:
     good(string_view s)
     {
         error_code ec;
-        test_parser p;
-        auto const used = p.write(
-            boost::asio::const_buffer(
-                s.data(), s.size()), ec);
-        if(BEAST_EXPECT(! ec))
+        for(std::size_t i = 0;
+            i < s.size() - 1; ++i)
         {
-            if(BEAST_EXPECT(used == s.size()))
-            {
-                p.write_eof(ec);
-                if(BEAST_EXPECT(! ec))
-                    return;
-            }
+            test_parser p;
+            auto used = p.write(
+                net::const_buffer(s.data(), i), ec);
+            BEAST_EXPECT(used == i);
+            if(! BEAST_EXPECTS(! ec, ec.message()))
+                continue;
+            used = p.write(net::const_buffer(
+                s.data() + i, s.size() - i), ec);
+            BEAST_EXPECT(used == s.size() - i);
+            if(! BEAST_EXPECTS(! ec, ec.message()))
+                continue;
+            p.write_eof(ec);
+            BEAST_EXPECTS(! ec, ec.message());
         }
-        log << "fail: \"" << s << "\"\n";
     }
 
     void

@@ -24,6 +24,35 @@ namespace json {
 
     RFC 7159: The JavaScript Object Notation (JSON) Data Interchange Format
     https://tools.ietf.org/html/rfc7159
+
+    character
+        '0020' . '10ffff' - '"' - '\'
+        '\' escape
+
+    escape
+        '"'
+        '\'
+        '/'
+        'b'
+        'n'
+        'r'
+        't'
+        'u' hex hex hex hex
+
+    hex
+        digit
+        'A' . 'F'
+        'a' . 'f'
+
+    number
+        int frac exp
+
+    ws
+        ""
+        '0009' ws
+        '000A' ws
+        '000D' ws
+        '0020' ws
 */
 
 enum class basic_parser::state : char

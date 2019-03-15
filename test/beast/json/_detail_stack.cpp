@@ -10,8 +10,6 @@
 // Test that header file is self-contained.
 #include <boost/beast/_experimental/json/detail/stack.hpp>
 
-//#include <boost/beast/_experimental/json/value.hpp>
-
 #include <boost/beast/_experimental/unit_test/suite.hpp>
 #include <string>
 
@@ -33,6 +31,14 @@ public:
         s.emplace_front("1");
         BEAST_EXPECT(s.size() == 1);
         BEAST_EXPECT(s[0] == "1");
+        s.emplace_front("2");
+        BEAST_EXPECT(s.size() == 2);
+        BEAST_EXPECT(s[0] == "2");
+        s.pop_front();
+        BEAST_EXPECT(s.size() == 1);
+        BEAST_EXPECT(s[0] == "1");
+        s.pop_front();
+        BEAST_EXPECT(s.empty());
     }
 
     void run() override

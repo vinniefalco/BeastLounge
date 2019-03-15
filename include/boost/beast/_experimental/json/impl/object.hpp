@@ -501,7 +501,7 @@ public:
     const_pointer
     operator->() const noexcept
     {
-        return reference{
+        return const_reference{
             e_->key(), e_->v_ };
     }
 
