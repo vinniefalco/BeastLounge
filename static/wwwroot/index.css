@@ -9,6 +9,17 @@ body {
     margin: 0;
 }
 
+/* Animation */
+@keyframes fade-in {
+    from {
+        opacity: 0;
+    }
+
+    to {
+        opacity: 1;
+    }
+}
+
 /* Navigation */
 .nav {
     display: flex;
@@ -29,8 +40,55 @@ body {
     height: 4em;
 }
 
+.nav-link {
+    text-decoration: none;
+    cursor: pointer;
+    color: white;
+}
+
+.nav-link:hover {
+    background-color: #cc0000;
+}
+
 /* Content */
 .content {
     flex: 1;
-    margin: 1em auto;
+    margin: 1em 1em 1em 1em;
 }
+
+.json-data {
+    display: flex;
+    flex-direction: column;
+    box-shadow: 3px 3px 3px 4px rgba(0, 0, 0, 0.4);
+}
+
+.json-data-list {
+    display: flex;
+}
+
+.json-data-nav {
+    justify-content: flex-start;
+}
+
+.json-data-nav-link {
+    padding: 1em;
+}
+
+/* CSS target pages */
+.target-sub-page {
+    animation: fade-in 1s;
+    display: none;
+}
+
+.target-sub-page.default {
+    display: flex;
+}
+
+.target-sub-page:target {
+    display: flex;
+}
+
+.target-sub-page:target ~ .default {
+    display: none;
+}
+
