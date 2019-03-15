@@ -542,84 +542,98 @@ public:
     object&
     raw_object() noexcept
     {
+        BOOST_ASSERT(is_object());
         return obj_;
     }
 
     object const&
     raw_object() const noexcept
     {
+        BOOST_ASSERT(is_object());
         return obj_;
     }
 
     array&
     raw_array() noexcept
     {
+        BOOST_ASSERT(is_array());
         return arr_;
     }
 
     array const&
     raw_array() const noexcept
     {
+        BOOST_ASSERT(is_array());
         return arr_;
     }
 
     string&
     raw_string() noexcept
     {
+        BOOST_ASSERT(is_string());
         return str_;
     }
 
     string const&
     raw_string() const noexcept
     {
+        BOOST_ASSERT(is_string());
         return str_;
     }
 
     signed64&
     raw_signed() noexcept
     {
+        BOOST_ASSERT(is_signed64());
         return nat_.int64_;
     }
 
     signed64 const&
     raw_signed() const noexcept
     {
+        BOOST_ASSERT(is_signed64());
         return nat_.int64_;
     }
 
     unsigned64&
     raw_unsigned() noexcept
     {
+        BOOST_ASSERT(is_unsigned64());
         return nat_.uint64_;
     }
 
     unsigned64 const&
     raw_unsigned() const noexcept
     {
+        BOOST_ASSERT(is_unsigned64());
         return nat_.uint64_;
     }
 
     floating&
     raw_floating() noexcept
     {
+        BOOST_ASSERT(is_floating());
         return nat_.float_;
     }
 
     floating const&
     raw_floating() const noexcept
     {
+        BOOST_ASSERT(is_floating());
         return nat_.float_;
     }
 
     boolean&
     raw_bool() noexcept
     {
+        BOOST_ASSERT(is_boolean());
         return nat_.bool_;
     }
 
     boolean const&
     raw_bool() const noexcept
     {
+        BOOST_ASSERT(is_boolean());
         return nat_.bool_;
     }
 

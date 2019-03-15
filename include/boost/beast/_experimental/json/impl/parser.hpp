@@ -20,15 +20,16 @@ parser::
 assign(T&& t)
 {
     auto& jv = *stack_.front();
-    if(jv.is_object())
+    BOOST_ASSERT(! jv.is_object());
+    if(obj_)
     {
-        BOOST_ASSERT(! key().empty());
-        jv.raw_object().emplace(
-            key(), std::forward<T>(t));
+        BOOST_ASSERT(jv.is_null());
+        jv = std::forward<T>(t);
+        stack_.pop_front();
     }
     else if(stack_.front()->is_array())
     {
-        BOOST_ASSERT(key().empty());
+        BOOST_ASSERT(s_.empty());
         jv.raw_array().emplace_back(
             std::forward<T>(t));
     }

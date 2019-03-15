@@ -57,8 +57,8 @@ private:
 
     detail::stack<
         state, stack_capacity> stack_;
-    std::string key_;
     number n_;
+    bool is_key_;
 
     template<class Unsigned>
     static
@@ -128,13 +128,6 @@ protected:
     BOOST_BEAST_DECL
     basic_parser();
 
-    /// Returns the current key, or an empty string if no key.
-    string_view
-    key() const noexcept
-    {
-        return key_;
-    }
-
     virtual
     void
     on_document_begin(error_code& ec) = 0;
@@ -157,15 +150,27 @@ protected:
 
     virtual
     void
-    on_string_begin(error_code& ec) = 0;
+    on_key_data(
+        string_view s,
+        error_code& ec) = 0;
 
     virtual
     void
-    on_string_piece(string_view s, error_code& ec) = 0;
+    on_key_end(
+        string_view s,
+        error_code& ec) = 0;
 
     virtual
     void
-    on_string_end(error_code& ec) = 0;
+    on_string_data(
+        string_view s,
+        error_code& ec) = 0;
+
+    virtual
+    void
+    on_string_end(
+        string_view,
+        error_code& ec) = 0;
 
     virtual
     void

@@ -27,13 +27,13 @@ class parser : public basic_parser
     static std::size_t const
         default_max_depth = 32;
 
-    storage_ptr store_;
     value jv_;
     detail::stack<value*,
         default_max_depth> stack_;
     std::string s_;
     unsigned long max_depth_ =
         default_max_depth;
+    bool obj_;
 
 public:
     BOOST_BEAST_DECL
@@ -77,44 +77,64 @@ private:
 
     BOOST_BEAST_DECL
     void
-    on_document_begin(error_code& ec) override;
+    on_document_begin(
+        error_code& ec) override;
 
     BOOST_BEAST_DECL
     void
-    on_object_begin(error_code& ec) override;
+    on_object_begin(
+        error_code& ec) override;
 
     BOOST_BEAST_DECL
     void
-    on_object_end(error_code& ec) override;
+    on_object_end(
+        error_code& ec) override;
 
     BOOST_BEAST_DECL
     void
-    on_array_begin(error_code& ec) override;
+    on_array_begin(
+        error_code& ec) override;
 
     BOOST_BEAST_DECL
     void
-    on_array_end(error_code& ec) override;
+    on_array_end(
+        error_code& ec) override;
 
     BOOST_BEAST_DECL
     void
-    on_string_begin(error_code& ec) override;
+    on_key_data(
+        string_view s,
+        error_code& ec) override;
 
     BOOST_BEAST_DECL
     void
-    on_string_piece(
-        string_view s, error_code& ec) override;
+    on_key_end(
+        string_view s,
+        error_code& ec) override;
 
     BOOST_BEAST_DECL
     void
-    on_string_end(error_code& ec) override;
+    on_string_data(
+        string_view s,
+        error_code& ec) override;
 
     BOOST_BEAST_DECL
     void
-    on_number(number n, error_code& ec) override;
+    on_string_end(
+        string_view s,
+        error_code& ec) override;
 
     BOOST_BEAST_DECL
     void
-    on_bool(bool b, error_code& ec) override;
+    on_number(
+        number n,
+        error_code& ec) override;
+
+    BOOST_BEAST_DECL
+    void
+    on_bool(
+        bool b,
+        error_code& ec) override;
 
     BOOST_BEAST_DECL
     void

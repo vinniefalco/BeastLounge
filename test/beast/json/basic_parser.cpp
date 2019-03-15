@@ -24,57 +24,80 @@ namespace json {
 class basic_parser_test : public beast::unit_test::suite
 {
 public:
-    struct test_parser : basic_parser
+    struct test_parser
+        : basic_parser
     {
         test_parser() = default;
 
         void
-        on_document_begin(error_code&) override
+        on_document_begin(
+            error_code&) override
         {
         }
 
         void
-        on_object_begin(error_code&) override
+        on_object_begin(
+            error_code&) override
         {
         }
 
         void
-        on_object_end(error_code&) override
+        on_object_end(
+            error_code&) override
         {
         }
 
         void
-        on_array_begin(error_code&) override
+        on_array_begin(
+            error_code&) override
         {
         }
 
         void
-        on_array_end(error_code&) override
+        on_array_end(
+            error_code&) override
         {
         }
 
         void
-        on_string_begin(error_code&) override
+        on_key_data(
+            string_view,
+            error_code&) override
         {
         }
 
         void
-        on_string_piece(string_view, error_code&) override
+        on_key_end(
+            string_view,
+            error_code&) override
+        {
+        }
+        
+        void
+        on_string_data(
+            string_view,
+            error_code&) override
         {
         }
 
         void
-        on_string_end(error_code&) override
+        on_string_end(
+            string_view,
+            error_code&) override
         {
         }
 
         void
-        on_number(number, error_code&) override
+        on_number(
+            number,
+            error_code&) override
         {
         }
 
         void
-        on_bool(bool, error_code&) override
+        on_bool(
+            bool,
+            error_code&) override
         {
         }
 

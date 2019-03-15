@@ -11,8 +11,8 @@
 #include <boost/beast/_experimental/json/parser.hpp>
 
 #include <boost/beast/_experimental/unit_test/suite.hpp>
-#include <boost/beast/_experimental/json/parse_file.hpp>
 #include <boost/beast/_experimental/json/parser.hpp>
+#include <sstream>
 
 namespace boost {
 namespace beast {
@@ -22,12 +22,58 @@ class parser_test : public unit_test::suite
 {
 public:
     void
+    testParser()
+    {
+        string_view in =
+R"xx({
+    "glossary": {
+        "title": "example glossary",
+		"GlossDiv": {
+            "title": "S",
+			"GlossList": {
+                "GlossEntry": {
+                    "ID": "SGML",
+					"SortAs": "SGML",
+					"GlossTerm": "Standard Generalized Markup Language",
+					"Acronym": "SGML",
+					"Abbrev": "ISO 8879:1986",
+					"GlossDef": {
+                        "para": "A meta-markup language, used to create markup languages such as DocBook.",
+						"GlossSeeAlso": ["GML", "XML"]
+                    },
+					"GlossSee": "markup"
+                }
+            }
+        }
+    }
+})xx"
+        ;
+        parser p;
+        error_code ec;
+        p.write({in.data(), in.size()}, ec);
+        if(BEAST_EXPECTS(! ec, ec.message()))
+        {
+            std::stringstream ss;
+            ss << p.get();
+            BEAST_EXPECT(ss.str() ==
+                "{\"glossary\":{\"title\":\"example glossary\",\"GlossDiv\":"
+                "{\"title\":\"S\",\"GlossList\":{\"GlossEntry\":{\"ID\":\"SGML\","
+                "\"SortAs\":\"SGML\",\"GlossTerm\":\"Standard Generalized Markup "
+                "Language\",\"Acronym\":\"SGML\",\"Abbrev\":\"ISO 8879:1986\","
+                "\"GlossDef\":{\"para\":\"A meta-markup language, used to create "
+                "markup languages such as DocBook.\",\"GlossSeeAlso\":[\"GML\",\"XML\"]},"
+                "\"GlossSee\":\"markup\"}}}}}"
+            );
+        }
+    }
+
+    void
     run()
     {
         log <<
             "sizeof(parser) == " <<
             sizeof(parser) << "\n";
-        pass();
+        testParser();
     }
 };
 

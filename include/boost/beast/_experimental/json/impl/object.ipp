@@ -1250,7 +1250,7 @@ rehash(size_type count)
     tab_ = table::allocate(
         tab_, count, sp_);
     for(auto e = tab_->head;
-        e != tab_->end; ++e)
+        e != tab_->end; e = e->next_)
     {
         auto const n =
             bucket(e->key());

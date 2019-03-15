@@ -19,6 +19,8 @@
 #include <atomic>
 #include <cstddef>
 
+#include <iostream>
+
 namespace boost {
 namespace beast {
 namespace json {
@@ -73,6 +75,8 @@ struct storage_adaptor
     {
         auto const n1 =
             boost::alignment::align_up(n, align);
+if(n1 > 1000)
+std::cerr << n1 << std::endl;
         BOOST_ASSERT(n1 >= n);
         return this->get().allocate(n1);
     }

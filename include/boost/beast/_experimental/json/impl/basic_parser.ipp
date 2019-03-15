@@ -12,6 +12,7 @@
 
 #include <boost/beast/_experimental/json/basic_parser.hpp>
 #include <boost/beast/_experimental/json/error.hpp>
+#include <boost/beast/core/static_string.hpp>
 #include <boost/assert.hpp>
 
 namespace boost {
@@ -63,12 +64,8 @@ enum class basic_parser::state : char
     value,
 
     object1, object2, object3, object4, colon,
-
     array1,  array2,  array3,  array4,
-
-    key1,    key2,
     string1, string2, string3,
-
     true1,   true2,   true3,   true4,
     false1,  false2,  false3,  false4,  false5,
     null1,   null2,   null3,   null4,
@@ -100,7 +97,6 @@ reset()
     stack_.clear();
     stack_.push_front(state::end);
     stack_.push_front(state::json);
-    key_.clear();
     n_ = {};
 }
 
@@ -190,8 +186,21 @@ write_some(
     auto n = buffer.size();
     auto const p0 = p;
     auto const p1 = p0 + n;
+    static_string<4096> temp;
     ec.assign(0, ec.category());
     BOOST_ASSERT(stack_.front() != state::end);
+    auto const maybe_flush =
+        [&]
+        {
+            if(temp.size() != temp.max_size())
+                return;
+            if(is_key_)
+                this->on_key_data(
+                    {temp.data(), temp.size()}, ec);
+            else
+                this->on_string_data(
+                    {temp.data(), temp.size()}, ec);
+        };
 loop:
     switch(stack_.front())
     {
@@ -200,6 +209,8 @@ loop:
         if(ec)
             goto finish;
         stack_.front() = state::element;
+        temp.clear();
+        is_key_ = false;
         goto loop;
 
     case state::element:
@@ -228,12 +239,7 @@ loop:
         {
         // object
         case '{':
-            ++p;
             stack_.front() = state::object1;
-            this->on_object_begin(ec);
-            if(ec)
-                goto finish;
-            key_.clear();
             goto loop;
 
         // array
@@ -241,13 +247,11 @@ loop:
             ++p;
             stack_.front() = state::array1;
             this->on_array_begin(ec);
-            key_.clear();
             goto loop;
 
         // string
         case '"':
-            ++p;
-            stack_.front() = state::string2;
+            stack_.front() = state::string1;
             goto loop;
 
         // number
@@ -327,15 +331,23 @@ loop:
         break;
     }
 
+    //--------------------------------------------------------------------------
     //
     // object
     //
 
+    // beginning of object
     case state::object1:
+        BOOST_ASSERT(*p == '{');
+        ++p;
+        this->on_object_begin(ec);
+        if(ec)
+            goto finish;
         stack_.front() = state::object2;
         stack_.push_front(state::ws);
         goto loop;
 
+    // first key or end of object
     case state::object2:
         if(p >= p1)
             break;
@@ -345,18 +357,12 @@ loop:
             stack_.front() = state::object4;
             goto loop;
         }
-        if(*p != '"')
-        {
-            ec = error::syntax;
-            goto finish;
-        }
-        ++p;
         stack_.front() = state::object3;
         stack_.push_front(state::element);
         stack_.push_front(state::colon);
         stack_.push_front(state::ws);
-        stack_.push_front(state::key2);
-        key_.clear();
+        stack_.push_front(state::string1);
+        is_key_ = true;
         goto loop;
 
     case state::object3:
@@ -378,8 +384,9 @@ loop:
         stack_.push_front(state::element);
         stack_.push_front(state::colon);
         stack_.push_front(state::ws);
-        stack_.push_front(state::key1);
+        stack_.push_front(state::string1);
         stack_.push_front(state::ws);
+        is_key_ = true;
         goto loop;
 
     case state::object4:
@@ -401,6 +408,7 @@ loop:
         stack_.pop_front();
         goto loop;
 
+    //--------------------------------------------------------------------------
     //
     // array
     //
@@ -450,55 +458,16 @@ loop:
         stack_.pop_front();
         goto loop;
 
-    //
-    // key
-    //
-
-    case state::key1:
-        if(p >= p1)
-            break;
-        if(*p != '"')
-        {
-            ec = error::syntax;
-            goto finish;
-        }
-        ++p;
-        stack_.front() = state::key2;
-        key_.clear();
-        goto loop;
-
-    case state::key2:
-    {
-        auto const first = p;
-        while(p < p1)
-        {
-            if(*p == '"')
-            {
-                key_.append(first, p);
-                ++p;
-                stack_.pop_front();
-                goto loop;
-            }
-            if(is_control(*p))
-            {
-                // illegal character in key
-                ec = error::syntax;
-                goto finish;
-            }
-            ++p;
-        }
-        key_.append(first, p);
-        break;
-    }
-
+    //--------------------------------------------------------------------------
     //
     // string
     //
 
+    // double quote opening string
     case state::string1:
         if(p >= p1)
             break;
-        if(*p != '"')
+        if(*p != '\"')
         {
             ec = error::syntax;
             goto finish;
@@ -507,30 +476,30 @@ loop:
         stack_.front() = state::string2;
         goto loop;
 
+    // characters
     case state::string2:
-        this->on_string_begin(ec);
-        if(ec)
-            goto finish;
-        stack_.front() = state::string3;
-        goto loop;
-
-    case state::string3:
-    {
-        auto const first = p;
         while(p < p1)
         {
-            if(*p == '"')
+            if(*p == '\"')
             {
-                this->on_string_piece(
-                    string_view(first, p - first), ec);
-                if(ec)
-                    goto finish;
-                this->on_string_end(ec);
-                key_.clear();
-                if(ec)
-                    goto finish;
                 ++p;
+                if(is_key_)
+                    this->on_key_end({temp.data(),
+                        temp.size()}, ec);
+                else
+                    this->on_string_end({temp.data(),
+                        temp.size()}, ec);
+                if(ec)
+                    goto finish;
+                temp.clear();
+                is_key_ = false;
                 stack_.pop_front();
+                goto loop;
+            }
+            if(*p == '\\')
+            {
+                ++p;
+                stack_.front() = state::string3;
                 goto loop;
             }
             if(is_control(*p))
@@ -538,10 +507,71 @@ loop:
                 ec = error::syntax;
                 goto finish;
             }
-            ++p;
+            // TODO UTF-8
+            maybe_flush();
+            temp.push_back(*p++);
         }
         break;
-    }
+
+    // escape
+    case state::string3:
+        if(p >= p1)
+           break;
+        switch(*p)
+        {
+        case '\"':
+            maybe_flush();
+            temp.push_back('\"');
+            break;
+
+        case '\\':
+            maybe_flush();
+            temp.push_back('\\');
+            break;
+
+        case '/':
+            maybe_flush();
+            temp.push_back('/');
+            break;
+
+        case 'b':
+            maybe_flush();
+            temp.push_back('\x08');
+            break;
+
+        case 'f':
+            maybe_flush();
+            temp.push_back('\x08');
+            break;
+
+        case 'n':
+            maybe_flush();
+            temp.push_back('\x0a');
+            break;
+
+        case 'r':
+            maybe_flush();
+            temp.push_back('\x0d');
+            break;
+
+        case 't':
+            maybe_flush();
+            temp.push_back('\x09');
+            break;
+
+        case 'u':
+            BOOST_ASSERT(false);
+            break;
+
+        default:
+            ec = error::syntax;
+            goto finish;
+        }
+        ++p;
+        stack_.front()=state::string2;
+        goto loop;
+
+    //--------------------------------------------------------------------------
 
     //
     // true
@@ -585,7 +615,6 @@ loop:
 
     case state::true4:
         this->on_bool(true, ec);
-        key_.clear();
         if(ec)
             goto finish;
         stack_.pop_front();
@@ -645,7 +674,6 @@ loop:
 
     case state::false5:
         this->on_bool(false, ec);
-        key_.clear();
         if(ec)
             goto finish;
         stack_.pop_front();
@@ -693,7 +721,6 @@ loop:
 
     case state::null4:
         this->on_null(ec);
-        key_.clear();
         if(ec)
             goto finish;
         stack_.pop_front();
@@ -853,7 +880,6 @@ loop:
 
     case state::number_end:
         this->on_number(n_, ec);
-        key_.clear();
         if(ec)
             goto finish;
         stack_.pop_front();

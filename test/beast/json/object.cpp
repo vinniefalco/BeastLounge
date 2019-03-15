@@ -438,11 +438,23 @@ public:
         }
     }
 
-    void run() override
+    void
+    testRehash()
+    {
+        object obj;
+        for(std::size_t i = 0; i < 1000; ++i)
+            obj.emplace(
+                std::to_string(i),
+                i);
+    }
+
+    void
+    run() override
     {
         testSpecial();
         testIterators();
         testModifiers();
+        testRehash();
     }
 };
 
