@@ -23,15 +23,40 @@ set (Boost_USE_STATIC_LIBS ON)
 
 if (MSVC)
   set (Boost_USE_STATIC_RUNTIME ON)
-  add_definitions (-D_WIN32_WINNT=0x0601)
-  add_definitions (-D_SCL_SECURE_NO_WARNINGS=1)
-  add_definitions (-D_CRT_SECURE_NO_WARNINGS=1)
-  add_definitions (-D_SILENCE_CXX17_ALLOCATOR_VOID_DEPRECATION_WARNING)
-  add_compile_options (/MP)
-  string (REPLACE "/W3" "/W4" CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}")
+  set (CMAKE_VERBOSE_MAKEFILE FALSE)
+
+  add_definitions (
+    -D_WIN32_WINNT=0x0601
+    -D_SCL_SECURE_NO_WARNINGS=1
+    -D_CRT_SECURE_NO_WARNINGS=1
+    -D_SILENCE_CXX17_ALLOCATOR_VOID_DEPRECATION_WARNING
+    -D_SILENCE_CXX17_ADAPTOR_TYPEDEFS_DEPRECATION_WARNING
+    )
+
+  add_compile_options(
+    /bigobj       # large object file format
+    /permissive-  # strict C++
+    /W4           # enable all warnings
+    /MP           # Multi-processor compilation
+    )
+
 else()
-  set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -Wextra -Wpedantic")
+    set (THREADS_PREFER_PTHREAD_FLAG ON)
+    find_package (Threads)
+
+    set( CMAKE_CXX_FLAGS
+      "${CMAKE_CXX_FLAGS} -std=c++11 -Wall -Wextra -Wpedantic -Wno-unused-parameter")
+
+    if ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang")
+        set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wrange-loop-analysis")
+    endif ()
+
 endif()
+
+#-------------------------------------------------------------------------------
+#
+# Boost / Beast
+#
 
 find_package (Boost REQUIRED COMPONENTS system)
 include_directories (${Boost_INCLUDE_DIRS})
