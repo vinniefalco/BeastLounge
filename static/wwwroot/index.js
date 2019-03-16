@@ -4,39 +4,34 @@ function prepare_title_case(str) {
     })
 }
 
+function create_table_cell(text) {
+    let cell = document.createElement('td')
+    cell.className = "c-table__cell"
+    cell.innerText = text
+    return cell
+}
+
 document.addEventListener('DOMContentLoaded', function() {
-    const JSON_AREA = document.getElementById("json_data")
     //Runs when page is loaded
+    const JSON_TABLE = document.getElementById("json_table")
     let API = window.location.protocol + "//" + window.location.host + "/api/http"
 
     function set_json_data(data) {
-        const nav = JSON_AREA.children[0];
-        const list  = JSON_AREA.children[1];
-
         for (let idx = 0; idx < data.length; idx++) {
-            let new_link = document.createElement('a')
-            new_link.text = prepare_title_case(data[idx].name)
-            new_link.href = "#" + data[idx].name
-            new_link.className = "nav-link json-data-nav-link"
+            let row = document.createElement('tr')
+            row.className = "c-table__row"
 
-            nav.appendChild(new_link)
+            row.appendChild(create_table_cell(prepare_title_case(data[idx].name)))
+            row.appendChild(create_table_cell(prepare_title_case(data[idx].type)))
+            row.appendChild(create_table_cell(data[idx].address))
+            row.appendChild(create_table_cell(data[idx].port_num))
+            row.appendChild(create_table_cell(data[idx].sessions))
 
-            let new_list = document.createElement('div')
-            new_list.id = data[idx].name
-            new_list.className = "json-data-list target-sub-page"
-            let new_list_text = document.createElement('textarea')
-
-            new_list_text.value = JSON.stringify(data[idx], null, 4)
-            new_list_text.rows = 7
-            new_list_text.cols = 50
-            new_list.appendChild(new_list_text)
-
-
-            list.appendChild(new_list)
+            JSON_TABLE.appendChild(row)
         }
     }
 
     fetch(API).then((response) => response.json())
               .then(set_json_data)
-              .catch((error) => JSON_AREA.value = error)
+              .catch((error) => alert(error))
 })

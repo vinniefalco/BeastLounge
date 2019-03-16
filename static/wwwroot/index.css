@@ -56,24 +56,6 @@ body {
     margin: 1em 1em 1em 1em;
 }
 
-.json-data {
-    display: flex;
-    flex-direction: column;
-    box-shadow: 3px 3px 3px 4px rgba(0, 0, 0, 0.4);
-}
-
-.json-data-list {
-    display: flex;
-}
-
-.json-data-nav {
-    justify-content: flex-start;
-}
-
-.json-data-nav-link {
-    padding: 1em;
-}
-
 /* CSS target pages */
 .target-sub-page {
     animation: fade-in 1s;
@@ -92,3 +74,56 @@ body {
     display: none;
 }
 
+/* Tables */
+.c-table {
+    display: -ms-flexbox;
+    display: flex;
+    -ms-flex-wrap: wrap;
+    flex-wrap: wrap;
+    width: 100%;
+    margin: 0;
+    padding: 0;
+    border: 0;
+    border-collapse: collapse;
+    border-spacing: 0;
+}
+
+.c-table__head {
+    display: -ms-flexbox;
+    display: flex;
+    -ms-flex: 0 0 100%;
+    flex: 0 0 100%;
+    max-width: 100%;
+    background-color: #fff;
+    border-bottom: 1px solid #74748c;
+}
+
+.c-table__body {
+    display: -ms-flexbox;
+    display: flex;
+    -ms-flex: 0 0 100%;
+    flex: 0 0 100%;
+    max-width: 100%;
+}
+
+.c-table__row {
+    display: -ms-flexbox;
+    display: flex;
+    -ms-flex: 0 0 100%;
+    flex: 0 0 100%;
+    max-width: 100%;
+}
+
+.c-table__body .c-table__row:nth-of-type(2n+1) {
+    background-color: #fbfbfb;
+}
+
+.c-table__cell {
+    display: -ms-flexbox;
+    display: flex;
+    -ms-flex: 1;
+    flex: 1;
+    padding: .5em;
+    overflow: auto;
+    text-align: left;
+}
