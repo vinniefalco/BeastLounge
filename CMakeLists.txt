@@ -33,6 +33,9 @@ if (MSVC)
     -D_SILENCE_CXX17_ADAPTOR_TYPEDEFS_DEPRECATION_WARNING
     )
 
+  # Disable default warnings switch
+  string(REGEX REPLACE "/W[0-4]" "" CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}")
+
   add_compile_options(
     /bigobj       # large object file format
     /permissive-  # strict C++
