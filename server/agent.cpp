@@ -21,7 +21,7 @@ release_sessions() ->
         std::lock_guard<std::mutex> lock(mutex_);
         v.reserve(sessions_.size());
         for(auto p : sessions_)
-            v.emplace_back(p->get_weak_ptr());
+            v.emplace_back(p->get_weak_session_ptr());
         sessions_.clear();
         sessions_.shrink_to_fit();
     }
@@ -46,7 +46,7 @@ insert(session* p)
 
 void
 agent::
-remove(session* p)
+erase(session* p)
 {
     std::lock_guard<std::mutex> lock(mutex_);
     sessions_.erase(p);

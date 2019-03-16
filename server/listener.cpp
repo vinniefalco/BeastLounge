@@ -71,7 +71,7 @@ public:
 
     ~detector()
     {
-        ag_.remove(this);
+        ag_.erase(this);
     }
 
     void
@@ -84,7 +84,7 @@ public:
     }
 
     boost::weak_ptr<session>
-    get_weak_ptr() override
+    get_weak_session_ptr() override
     {
         return this->weak_from_this();
     }

@@ -7,33 +7,35 @@
 // Official repository: https://github.com/vinniefalco/BeastLounge
 //
 
-#ifndef LOUNGE_SESSION_HPP
-#define LOUNGE_SESSION_HPP
+#ifndef LOUNGE_ROOM_HPP
+#define LOUNGE_ROOM_HPP
 
 #include "config.hpp"
+#include "message.hpp"
+#include "types.hpp"
+#include "ws_session.hpp"
 #include <boost/smart_ptr/shared_ptr.hpp>
 
-/** Base for polymorphic connections
-
-    Every session must be owned by one agent
-*/
-class session
+class room
 {
 public:
-    virtual ~session() = default;
+    virtual ~room() = default;
 
-    /// Returns a weak pointer to the session
-    virtual
-    boost::weak_ptr<session>
-    get_weak_session_ptr() = 0;
-
-    /** Called when the server stops.
-
-        This will be called at most once.
-    */
     virtual
     void
-    on_stop() = 0;
+    insert(ws_session*) = 0;
+
+    virtual
+    void
+    erase(ws_session*) = 0;
+
+    virtual
+    void
+    send(message m) = 0;
 };
+
+extern
+boost::shared_ptr<room>
+make_room();
 
 #endif

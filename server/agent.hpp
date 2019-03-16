@@ -67,7 +67,7 @@ public:
     /** Remove a session from the agent
     */
     void
-    remove(session* p);
+    erase(session* p);
 };
 
 #endif

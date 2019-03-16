@@ -13,6 +13,7 @@
 #include "config.hpp"
 #include "agent.hpp"
 #include "logger.hpp"
+#include "room.hpp"
 #include "types.hpp"
 #include <boost/beast/_experimental/json/value.hpp>
 #include <boost/smart_ptr/shared_ptr.hpp>
@@ -97,6 +98,12 @@ public:
     virtual
     void
     stat(json::value& jv) = 0;
+
+    boost::shared_ptr<room> room_;
+    server()
+        : room_(make_room())
+    {
+    }
 };
 
 //------------------------------------------------------------------------------

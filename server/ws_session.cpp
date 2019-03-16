@@ -8,7 +8,7 @@
 //
 
 #include "server.hpp"
-#include "session.hpp"
+#include "ws_session.hpp"
 #include <boost/beast/websocket/stream.hpp>
 #include <boost/beast/core/stream_traits.hpp>
 #include <boost/beast/ssl/ssl_stream.hpp>
@@ -17,6 +17,7 @@
 #include <boost/asio/post.hpp>
 #include <boost/asio/yield.hpp>
 #include <iostream>
+#include <vector>
 
 //------------------------------------------------------------------------------
 
@@ -25,7 +26,7 @@ namespace {
 template<class Derived>
 class ws_session_base
     : public asio::coroutine
-    , public session
+    , public ws_session
 {
 protected:
     server& srv_;
@@ -33,6 +34,7 @@ protected:
     section& log_;
     endpoint_type ep_;
     flat_storage msg_;
+    std::vector<message> mq_;
 
 public:
     ws_session_base(
@@ -45,11 +47,13 @@ public:
         , ep_(ep)
     {
         ag_.insert(this);
+        srv_.room_->insert(this);
     }
 
     ~ws_session_base()
     {
-        ag_.remove(this);
+        ag_.erase(this);
+        srv_.room_->erase(this);
     }
 
     // The CRTP pattern
@@ -98,8 +102,7 @@ public:
                 if(ec)
                     return fail(ec, "async_read");
 
-                yield impl()->ws().async_write(
-                    msg_.data(), self(impl()));
+                srv_.room_->send(msg_.data());
 
                 // Report any errors writing
                 if(ec)
@@ -126,7 +129,7 @@ public:
     //
 
     boost::weak_ptr<session>
-    get_weak_ptr() override
+    get_weak_session_ptr() override
     {
         return impl()->weak_from_this();
     }
@@ -147,6 +150,68 @@ public:
         beast::error_code ec;
         beast::close_socket(
             beast::get_lowest_layer(impl()->ws()));
+    }
+
+    //--------------------------------------------------------------------------
+    //
+    // ws_session
+    //
+
+    boost::weak_ptr<ws_session>
+    get_weak_ptr() override
+    {
+        return impl()->weak_from_this();
+    }
+
+    void
+    send(message m) override
+    {
+        net::post(
+            impl()->ws().get_executor(),
+            beast::bind_front_handler(
+                &ws_session_base::do_send,
+                impl()->shared_from_this(),
+                std::move(m)));
+    }
+
+    void
+    do_send(message m)
+    {
+        mq_.emplace_back(std::move(m));
+        if(mq_.size() > 1)
+            return;
+        do_write();
+    }
+
+    void
+    do_write()
+    {
+        BOOST_ASSERT(! mq_.empty());
+        impl()->ws().async_write(
+            mq_.back(),
+            beast::bind_front_handler(
+                &ws_session_base::on_write,
+                impl()->shared_from_this(),
+                mq_.size() - 1));
+
+    }
+
+    void
+    on_write(
+        std::size_t idx,
+        beast::error_code ec,
+        std::size_t)
+    {
+        BOOST_ASSERT(! mq_.empty());
+        if(ec)
+            return fail(ec, "on_write");
+        auto const last = mq_.size() - 1;
+        if(idx != last)
+            swap(mq_[idx], mq_[last]);
+        mq_.resize(last);
+        if(mq_.empty())
+            return;
+        do_write();
     }
 };
 

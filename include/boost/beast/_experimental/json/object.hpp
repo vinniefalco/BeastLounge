@@ -568,6 +568,7 @@ private:
         key_type key,
         Args&&... args);
 
+    BOOST_BEAST_DECL
     element*
     prepare_insert(
         key_type key,
