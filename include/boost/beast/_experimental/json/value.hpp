@@ -21,6 +21,7 @@
 #include <boost/beast/_experimental/json/detail/is_specialized.hpp>
 #include <boost/type_traits/make_void.hpp>
 #include <cstdlib>
+#include <initializer_list>
 #include <iosfwd>
 #include <type_traits>
 
@@ -227,6 +228,19 @@ public:
     */
     BOOST_BEAST_DECL
     value(string str, storage_ptr store);
+
+    /** Construct a value from an initializer list.
+    */
+    BOOST_BEAST_DECL
+    value(std::initializer_list<
+        std::pair<string_view, value>> init);
+
+    /** Construct a value from an initializer list using the specified storage.
+    */
+    BOOST_BEAST_DECL
+    value(std::initializer_list<
+        std::pair<string_view, value>> init,
+        storage_ptr store);
 
     /** Assign a value from an object
     */

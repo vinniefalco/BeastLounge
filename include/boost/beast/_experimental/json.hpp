@@ -19,8 +19,10 @@
 #include <boost/beast/_experimental/json/error.hpp>
 #include <boost/beast/_experimental/json/key_param.hpp>
 #include <boost/beast/_experimental/json/kind.hpp>
+#include <boost/beast/_experimental/json/object.hpp>
 #include <boost/beast/_experimental/json/parse_file.hpp>
 #include <boost/beast/_experimental/json/parser.hpp>
+#include <boost/beast/_experimental/json/rpc.hpp>
 #include <boost/beast/_experimental/json/storage.hpp>
 #include <boost/beast/_experimental/json/types.hpp>
 #include <boost/beast/_experimental/json/value.hpp>

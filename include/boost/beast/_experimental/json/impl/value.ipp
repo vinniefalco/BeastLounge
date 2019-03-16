@@ -171,6 +171,27 @@ value(
 {
 }
 
+value::
+value(std::initializer_list<
+    std::pair<string_view, value>> init)
+    : value(init,
+        get_default_storage_ptr())
+{
+}
+
+value::
+value(std::initializer_list<
+    std::pair<string_view, value>> init,
+    storage_ptr store)
+    : value(kind::object, std::move(store))
+{
+    for(auto& e : init)
+        obj_.emplace(
+            e.first,
+            std::move(e.second),
+            get_storage());
+}
+
 value&
 value::
 operator=(object obj)

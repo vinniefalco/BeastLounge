@@ -42,8 +42,13 @@
     disconnect.onclick = function() {
       ws.close();
     };
-    send.onclick = function() {
-      ws.send(userName.value + ": " + sendMessage.value);
+    send.onclick = function() 
+    {
+      var jv = new Object();
+      jv.jsonrpc = "2.0";
+      jv.method = "say";
+      jv.params = [ userName.value, sendMessage.value ];
+      ws.send(JSON.stringify(jv));
       sendMessage.value = "";
     };
     sendMessage.onkeyup = function(ev) {

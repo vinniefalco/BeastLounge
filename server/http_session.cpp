@@ -363,6 +363,9 @@ public:
             // See if it is a WebSocket Upgrade
             if(websocket::is_upgrade(pr_->get()))
             {
+                // Turn off the expiration timer
+                impl()->expires_never();
+
                 // Convert the request type
                 websocket::request_type req(pr_->release());
 
@@ -471,6 +474,12 @@ public:
     }
 
     void
+    expires_never()
+    {
+        stream_.expires_never();
+    }
+
+    void
     run()
     {
         // Use post to get on to our strand.
@@ -534,6 +543,12 @@ public:
         std::chrono::seconds n)
     {
         stream_.next_layer().expires_after(n);
+    }
+
+    void
+    expires_never()
+    {
+        stream_.next_layer().expires_never();
     }
 
     void

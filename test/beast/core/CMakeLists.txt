@@ -13,30 +13,14 @@ source_group (TREE ${Boost_INCLUDE_DIRS}/boost/beast PREFIX beast FILES ${BEAST_
 source_group (TREE ${PROJECT_SOURCE_DIR}/include/boost/beast PREFIX beast FILES ${BEAST_EXTRA_FILES})
 source_group ("beast-test" FILES ${TEST_MAIN})
 
-#source_group (TREE ${PROJECT_SOURCE_DIR}/test/beast/json PREFIX "" FILES *)
-GroupSources(test/beast/json "/")
+GroupSources(test/beast/core "/")
 
 add_definitions (-DBOOST_BEAST_SPLIT_COMPILATION)
 
-add_executable (beast-json-tests
+add_executable (beast-core-tests
     ${BEAST_FILES}
     ${BEAST_EXTRA_FILES}
     ${TEST_MAIN}
-    _detail_stack.cpp
-    allocator.cpp
-    assign_string.cpp
-    assign_vector.cpp
-    basic_parser.cpp
-    json.cpp
-    error.cpp
-    key_param.cpp
-    kind.cpp
-    object.cpp
-    parse_file.cpp
-    parser.cpp
-    rpc.cpp
+    expected.cpp
     src.cpp
-    storage.cpp
-    types.cpp
-    value.cpp
 )
