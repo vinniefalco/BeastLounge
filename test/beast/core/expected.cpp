@@ -236,7 +236,7 @@ public:
         testMembers();
         testObservers();
         testEquality();
-        testReturn();
+        //testReturn();
     }
 };
 
