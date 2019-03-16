@@ -9,10 +9,10 @@
 
     "server": {
       "threads" : 5,
-      "doc-root" : "C:\\\\Users\\vinnie\\src\\lounge\\static\\wwwroot\\"
+      "doc-root" : "static\\wwwroot\\"
     },
 
     "log" : {
-      "path" : "log.txt"
+      "path" : "static\\log.txt"
     }
 }
