@@ -28,6 +28,7 @@ the program, with the macro BOOST_BEAST_SPLIT_COMPILATION defined.
 #include <boost/beast/_experimental/json/detail/varint.ipp>
 #include <boost/beast/_experimental/json/impl/basic_parser.ipp>
 #include <boost/beast/_experimental/json/impl/error.ipp>
+#include <boost/beast/_experimental/json/impl/iterator.ipp>
 #include <boost/beast/_experimental/json/impl/object.ipp>
 #include <boost/beast/_experimental/json/impl/parse_file.ipp>
 #include <boost/beast/_experimental/json/impl/parser.ipp>

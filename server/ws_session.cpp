@@ -12,6 +12,8 @@
 #include <boost/beast/websocket/stream.hpp>
 #include <boost/beast/core/stream_traits.hpp>
 #include <boost/beast/ssl/ssl_stream.hpp>
+#include <boost/beast/_experimental/json/parser.hpp>
+#include <boost/beast/_experimental/json/rpc.hpp>
 #include <boost/asio/coroutine.hpp>
 #include <boost/asio/ip/tcp.hpp>
 #include <boost/asio/post.hpp>
@@ -102,15 +104,71 @@ public:
                 if(ec)
                     return fail(ec, "async_read");
 
-                srv_.room_->send(msg_.data());
+                // Handle the message
+                on_message();
 
-                // Report any errors writing
-                if(ec)
-                    return fail(ec, "async_write");
-
+                // Clear the buffer for the next message
                 msg_.clear();
             }
         }
+    }
+
+    void
+    on_message()
+    {
+        json::parser pr;
+        beast::error_code ec;
+        pr.write(msg_.data(), ec);
+        if(! ec)
+        {
+            json::rpc_request req;
+            req.extract(pr.release(), ec);
+            if(! ec)
+            {
+                json::value res;
+                res["jsonrpc"] = "2.0";
+                if(req.id.has_value())
+                    res["id"] = std::move(*req.id);
+                auto& result =
+                    res["result"].emplace_object();
+                result["method"] =
+                    std::move(req.method);
+                result["params"] =
+                    std::move(req.params);
+            }
+            else
+            {
+                // invalid request
+                json::value res;
+                res["jsonrpc"] = "2.0";
+                auto& err = res["error"].emplace_object();
+                err["code"] = static_cast<int>(
+                    json::rpc_error::invalid_request);
+                err["message"] = ec.message();
+                //err["data"] // optional
+                if(req.id.has_value())
+                    res["id"] = std::move(*req.id);
+            }
+        }
+        else
+        {
+            // parsing error
+            json::value res;
+            res["jsonrpc"] = "2.0";
+            auto& err = res["error"].emplace_object();
+            err["code"] = static_cast<int>(
+                json::rpc_error::parse_error);
+            err["message"] = ec.message();
+            //err["data"] // optional
+            res["id"] = json::kind::null;
+        }
+
+    }
+
+    void
+    on_request(json::value jv)
+    {
+        boost::ignore_unused(jv);
     }
 
     // Report a failure
@@ -355,3 +413,18 @@ run_ws_session(
         ep);
     sp->run(std::move(req));
 }
+
+/*
+
+ws_session is created
+userinfo has just the endpoint
+
+
+RPC commands
+
+method      params
+------------------
+create      "user"
+login       "user"
+
+*/

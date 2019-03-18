@@ -229,18 +229,30 @@ public:
     BOOST_BEAST_DECL
     value(string str, storage_ptr store);
 
-    /** Construct a value from an initializer list.
+    /** Construct an object from an initializer list.
     */
     BOOST_BEAST_DECL
     value(std::initializer_list<
         std::pair<string_view, value>> init);
 
-    /** Construct a value from an initializer list using the specified storage.
+    /** Construct an object from an initializer list using the specified storage.
     */
     BOOST_BEAST_DECL
     value(std::initializer_list<
         std::pair<string_view, value>> init,
         storage_ptr store);
+#if 0
+    /** Construct an array from an initializer list.
+    */
+    BOOST_BEAST_DECL
+    value(std::initializer_list<value> init);
+
+    /** Construct an array from an initializer list using the specified storage.
+    */
+    BOOST_BEAST_DECL
+    value(std::initializer_list<value> init,
+        storage_ptr store);
+#endif
 
     /** Assign a value from an object
     */

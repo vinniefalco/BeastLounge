@@ -47,9 +47,9 @@ class stack
     destroy()
     {
         for(auto p = base(),
-            end = base() +
+            last = base() +
                 (n_ < N ? n_ : N);
-            p != end; ++p)
+            p != last; ++p)
         {
             (*p).~T();
         }

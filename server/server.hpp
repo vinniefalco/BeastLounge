@@ -13,7 +13,7 @@
 #include "config.hpp"
 #include "agent.hpp"
 #include "logger.hpp"
-#include "room.hpp"
+#include "channel.hpp"
 #include "types.hpp"
 #include <boost/beast/_experimental/json/value.hpp>
 #include <boost/smart_ptr/shared_ptr.hpp>
@@ -99,9 +99,9 @@ public:
     void
     stat(json::value& jv) = 0;
 
-    boost::shared_ptr<room> room_;
+    boost::shared_ptr<channel> room_;
     server()
-        : room_(make_room())
+        : room_(make_channel())
     {
     }
 };

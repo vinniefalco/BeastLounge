@@ -7,7 +7,7 @@
 // Official repository: https://github.com/vinniefalco/BeastLounge
 //
 
-#include "room.hpp"
+#include "channel.hpp"
 #include <boost/container/flat_set.hpp>
 #include <mutex>
 #include <vector>
@@ -19,7 +19,7 @@
 
 namespace {
 
-class room_impl : public room
+class channel_impl : public channel
 {
     std::mutex mutex_;
     boost::container::flat_set<
@@ -27,7 +27,7 @@ class room_impl : public room
 
 public:
     explicit
-    room_impl()
+    channel_impl()
     {
     }
 
@@ -74,9 +74,9 @@ public:
 
 //------------------------------------------------------------------------------
 
-boost::shared_ptr<room>
-make_room()
+boost::shared_ptr<channel>
+make_channel()
 {
     return boost::make_shared<
-        room_impl>();
+        channel_impl>();
 }

@@ -25,8 +25,17 @@
     
     connect.onclick = function() {
       ws = new WebSocket(uri.value);
-      ws.onopen = function(ev) {
+      ws.onopen = function(ev)
+      {
         messages.innerText += "[connection opened]\n";
+        ws.send(JSON.stringify(
+          {
+            "jsonrpc" : "2.0",
+            "method" : "set-user",
+            "params" : [
+              userName.value
+            ]
+          }));
       };
       ws.onclose = function(ev) {
         messages.innerText += "[connection closed]\n";

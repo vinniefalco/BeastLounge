@@ -27,9 +27,4 @@ public:
     }
 };
 
-extern
-boost::shared_ptr<user>
-make_user(
-    tcp::endpoint const& ep);
-
 #endif

@@ -4,15 +4,18 @@
 // Distributed under the Boost Software License, Version 1.0. (See accompanying
 // file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
 //
-// Official repository: https://github.com/vinniefalco/BeastLounge
+// Official repository: https://github.com/boostorg/beast
 //
 
-#include "user.hpp"
+#ifndef BOOST_BEAST_JSON_ITERATOR_IMPL_HPP
+#define BOOST_BEAST_JSON_ITERATOR_IMPL_HPP
 
-//------------------------------------------------------------------------------
+namespace boost {
+namespace beast {
+namespace json {
 
-user::
-user(tcp::endpoint const& ep)
-    : ep_(ep)
-{
-}
+} // json
+} // beast
+} // boost
+
+#endif

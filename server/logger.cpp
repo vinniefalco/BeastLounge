@@ -63,7 +63,6 @@ class logger_impl : public logger
         do_write(
             beast::string_view s) override
         {
-            log_.cerr() << s;
             std::lock_guard<
                 std::mutex> lock(log_.m_);
             beast::error_code ec;

@@ -7,8 +7,8 @@
 // Official repository: https://github.com/vinniefalco/BeastLounge
 //
 
-#ifndef LOUNGE_ROOM_HPP
-#define LOUNGE_ROOM_HPP
+#ifndef LOUNGE_CHANNEL_HPP
+#define LOUNGE_CHANNEL_HPP
 
 #include "config.hpp"
 #include "message.hpp"
@@ -16,10 +16,10 @@
 #include "ws_session.hpp"
 #include <boost/smart_ptr/shared_ptr.hpp>
 
-class room
+class channel
 {
 public:
-    virtual ~room() = default;
+    virtual ~channel() = default;
 
     virtual
     void
@@ -35,7 +35,7 @@ public:
 };
 
 extern
-boost::shared_ptr<room>
-make_room();
+boost::shared_ptr<channel>
+make_channel();
 
 #endif

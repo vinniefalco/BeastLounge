@@ -43,6 +43,29 @@ public:
             "Invalid method parameters";
         case rpc_error::internal_error: return
             "Internal JSON-RPC error";
+
+        case rpc_error::expected_object: return
+            "Expected object in JSON-RPC request";
+        case rpc_error::expected_string_version: return
+            "Expected string version in JSON-RPC request";
+        case rpc_error::unknown_version: return
+            "Uknown version in JSON-RPC request";
+        case rpc_error::invalid_null_id: return
+            "Invalid null id in JSON-RPC request";
+        case rpc_error::expected_strnum_id: return
+            "Expected string or number id in JSON-RPC request";
+        case rpc_error::expected_id: return
+            "Missing id in JSON-RPC request version 1";
+        case rpc_error::missing_method: return
+            "Missing method in JSON-RPC request";
+        case rpc_error::expected_string_method: return
+            "Expected string method in JSON-RPC request";
+        case rpc_error::expected_structured_params: return
+            "Expected structured params in JSON-RPC request version 2";
+        case rpc_error::missing_params: return
+            "Missing params in JSON-RPC request version 1";
+        case rpc_error::expected_array_params: return
+            "Expected array params in JSON-RPC request version 1";
         }
         if( ev >= -32099 &&
             ev <= -32099)
@@ -72,107 +95,147 @@ make_error_code(rpc_error e)
 
 rpc_request::
 rpc_request(storage_ptr sp)
-    : version(2)
-    , method(allocator<char>(sp))
+    : method(allocator<char>(sp))
     , params(sp)
     , id(std::move(sp))
 {
 }
 
-expected<rpc_request>
+void
 rpc_request::
-extract(value&& jv)
+extract(value&& jv, error_code& ec)
 {
+    // clear the fields first
+    method = string(allocator<char>(
+        jv.get_storage()));
+    params = value(kind::null,
+        jv.get_storage());
+    id = value(kind::null,
+        jv.get_storage());
+
+    // must be object
     if(! jv.is_object())
-        return error_code(
-        rpc_error::invalid_request);
+    {
+        ec = rpc_error::expected_object;
+        return ;
+    }
+
     auto& obj = jv.raw_object();
 
-    rpc_request result(jv.get_storage());
+    // extract id first so on error,
+    // the response can include it.
+    {
+        auto it = obj.find("id");
+        if(it != obj.end())
+            id.emplace(std::move(it->second));
+    }
+
+    // now check the version
     {
         auto it = obj.find("jsonrpc");
         if(it != obj.end())
         {
             if(! it->second.is_string())
-                return error_code(
-                    rpc_error::invalid_request);
+            {
+                ec = rpc_error::expected_string_version;
+                return;
+            }
             auto const& s =
                 it->second.raw_string();
-            if(s == "2.0")
-                result.version = 2;
-            else
-                return error_code(
-                    rpc_error::invalid_request);
+            if(s != "2.0")
+            {
+                ec = rpc_error::unknown_version;
+                return;
+            }
+            version = 2;
         }
         else
         {
-            result.version = 1;
+            version = 1;
         }
     }
 
+    // validate the extracted id
+    {
+        if(version == 2)
+        {
+            if(id.has_value())
+            {
+                // The use of Null as a value for the
+                // id member in a Request is discouraged.
+                if(id->is_null())
+                {
+                    ec = rpc_error::invalid_null_id;
+                    return;
+                }
+
+                if( ! id->is_number() &&
+                    ! id->is_string())
+                {
+                    ec = rpc_error::expected_strnum_id;
+                    return;
+                }
+            }
+        }
+        else
+        {
+            // id must be present in 1.0
+            if(! id.has_value())
+            {
+                ec = rpc_error::expected_id;
+                return;
+            }
+        }
+    }
+
+    // extract method
     {
         auto it = obj.find("method");
         if(it == obj.end())
-            return error_code(
-                rpc_error::invalid_request);
+        {
+            ec = rpc_error::missing_method;
+            return;
+        }
         if(! it->second.is_string())
-            return error_code(
-                rpc_error::invalid_request);
-        result.method = std::move(
+        {
+            ec = rpc_error::expected_string_method;
+            return;
+        }
+        method = std::move(
             it->second.raw_string());
     }
 
+    // extract params
     {
         auto it = obj.find("params");
-        if(result.version == 2)
+        if(version == 2)
         {
             if(it != obj.end())
             {
                 if( ! it->second.is_object() &&
                     ! it->second.is_array())
-                return error_code(
-                    rpc_error::invalid_request);
-                result.params =
-                    std::move(it->second);
+                {
+                    ec = rpc_error::expected_structured_params;
+                    return;
+                }
+                params = std::move(it->second);
             }
         }
         else
         {
             if(it == obj.end())
-                return error_code(
-                    rpc_error::invalid_request);
-            if(! it->second.is_array())
-                return error_code(
-                    rpc_error::invalid_request);
-            result.params = std::move(it->second);
-        }
-    }
-
-    {
-        auto it = obj.find("id");
-        if(result.version == 2)
-        {
-            if(it != obj.end())
             {
-                // The value SHOULD normally not be Null
-                if( ! it->second.is_number() &&
-                    ! it->second.is_string() &&
-                    ! it->second.is_null())
-                return error_code(
-                    rpc_error::invalid_request);
-                result.id = std::move(it->second);
+                ec = rpc_error::missing_params;
+                return;
             }
-        }
-        else
-        {
-            if(it == obj.end())
-                return error_code(
-                    rpc_error::invalid_request);
-            result.id = std::move(it->second);
+            if(! it->second.is_array())
+            {
+                ec = rpc_error::expected_array_params;
+                return;
+            }
+            params = std::move(it->second);
         }
     }
-
-    return result;
 }
 
 } // json

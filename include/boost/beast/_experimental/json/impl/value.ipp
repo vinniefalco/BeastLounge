@@ -192,6 +192,27 @@ value(std::initializer_list<
             get_storage());
 }
 
+#if 0
+value::
+value(std::initializer_list<value> init)
+    : value(init,
+        get_default_storage_ptr())
+{
+}
+
+value::
+value(std::initializer_list<
+    std::pair<string_view, value>> init,
+    storage_ptr store)
+    : value(kind::array, std::move(store))
+{
+    for(auto& e : init)
+        arr_.emplace_back(
+            std::move(e),
+            get_storage());
+}
+#endif
+
 value&
 value::
 operator=(object obj)
@@ -662,12 +683,12 @@ operator<<(std::ostream& os, value const& jv)
     case kind::object:
         os << '{';
         for(auto it = jv.raw_object().begin(),
-            end = jv.raw_object().end();
-            it != end;)
+            last = jv.raw_object().end();
+            it != last;)
         {
             os << '\"' << it->first << "\":";
             os << it->second;
-            if(++it != end)
+            if(++it != last)
                 os << ',';
         }
         os << '}';
@@ -676,11 +697,11 @@ operator<<(std::ostream& os, value const& jv)
     case kind::array:
         os << '[';
         for(auto it = jv.raw_array().begin(),
-            end = jv.raw_array().end();
-            it != end;)
+            last = jv.raw_array().end();
+            it != last;)
         {
             os << *it;
-            if(++it != end)
+            if(++it != last)
                 os << ',';
         }
         os << ']';

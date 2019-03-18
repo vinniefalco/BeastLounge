@@ -51,6 +51,18 @@ public:
         check(rpc_error::method_not_found);
         check(rpc_error::invalid_params);
         check(rpc_error::internal_error);
+
+        check(rpc_error::expected_object);
+        check(rpc_error::expected_string_version);
+        check(rpc_error::unknown_version);
+        check(rpc_error::invalid_null_id);
+        check(rpc_error::expected_strnum_id);
+        check(rpc_error::expected_id);
+        check(rpc_error::missing_method);
+        check(rpc_error::expected_string_method);
+        check(rpc_error::expected_structured_params);
+        check(rpc_error::missing_params);
+        check(rpc_error::expected_array_params);
     }
 
     void
@@ -62,19 +74,21 @@ public:
                     std::allocator<char>{});
             value jv({
                 { "jsonrpc", "2.0" },
-                { "method", "test" }
+                { "method", "test" },
+                { "id", 1 }
             }, sp);
-            auto req = rpc_request::extract(
-                std::move(jv));
-            BEAST_EXPECT(req.has_value());
+            error_code ec;
+            rpc_request req(jv.get_storage());
+            req.extract(std::move(jv), ec);
+            BEAST_EXPECTS(! ec, ec.message());
             BEAST_EXPECT(
-                req->method.get_allocator() ==
+                req.method.get_allocator() ==
                 allocator<char>(jv.get_storage()));
             BEAST_EXPECT(
-                *req->params.get_storage() ==
+                *req.params.get_storage() ==
                 *jv.get_storage());
             BEAST_EXPECT(
-                *req->id.get_storage() ==
+                *req.id->get_storage() ==
                 *jv.get_storage());
         }
     }

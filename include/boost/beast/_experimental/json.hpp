@@ -16,6 +16,7 @@
 #include <boost/beast/_experimental/json/assign_string.hpp>
 #include <boost/beast/_experimental/json/assign_vector.hpp>
 #include <boost/beast/_experimental/json/basic_parser.hpp>
+#include <boost/beast/_experimental/json/iterator.hpp>
 #include <boost/beast/_experimental/json/error.hpp>
 #include <boost/beast/_experimental/json/key_param.hpp>
 #include <boost/beast/_experimental/json/kind.hpp>

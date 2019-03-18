@@ -221,8 +221,11 @@ class object::iterator
 
 public:
     using value_type = object::value_type;
-    
+    using pointer = object::pointer;
     using reference = object::reference;
+    using difference_type = std::ptrdiff_t;
+    using iterator_category =
+        std::bidirectional_iterator_tag;
 
     iterator() = default;
 
@@ -314,8 +317,11 @@ class object::const_iterator
 
 public:
     using value_type = object::value_type;
-    
+    using pointer = object::const_pointer;
     using reference = object::const_reference;
+    using difference_type = std::ptrdiff_t;
+    using iterator_category =
+        std::bidirectional_iterator_tag;
 
     const_iterator() = default;
 
