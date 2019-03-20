@@ -30,7 +30,7 @@ assign(T&& t)
     else if(stack_.front()->is_array())
     {
         BOOST_ASSERT(s_.empty());
-        jv.raw_array().emplace_back(
+        jv.as_array().emplace_back(
             std::forward<T>(t));
     }
     else

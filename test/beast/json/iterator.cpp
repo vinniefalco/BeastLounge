@@ -39,8 +39,8 @@ public:
 #endif
         };
 
-        auto& arr = jv.raw_object().
-            emplace("arr", kind::array).first->second.raw_array();
+        auto& arr = jv.as_object().
+            emplace("arr", kind::array).first->second.as_array();
         arr.emplace_back(1);
         arr.emplace_back(2);
         arr.emplace_back(3);
@@ -63,27 +63,18 @@ public:
                     log << "[";
                     break;
                 case kind::string:
-                    log << '\"' << e.value.raw_string() << "\"";
+                    log << '\"' << e.value.as_string() << "\"";
                     if(! e.last)
                         log << ",";
                     break;
-                case kind::signed64:
-                    log << e.value.raw_signed();
-                    if(! e.last)
-                        log << ",";
-                    break;
-                case kind::unsigned64:
-                    log << e.value.raw_unsigned();
-                    if(! e.last)
-                        log << ",";
-                    break;
-                case kind::floating:
-                    log << e.value.raw_floating();
+                case kind::number:
+                    log << e.value.as_number();
                     if(! e.last)
                         log << ",";
                     break;
                 case kind::boolean:
-                    log << (e.value.raw_bool() ? "true" : "false");
+                    log << (e.value.as_bool() ?
+                        "true" : "false");
                     if(! e.last)
                         log << ",";
                     break;

@@ -172,6 +172,24 @@ value(
 }
 
 value::
+value(number num)
+    : value(num,
+        get_default_storage_ptr())
+{
+}
+
+value::
+value(
+    number num,
+    storage_ptr store)
+    : kind_(kind::number)
+{
+    ::new(&nat_.num_) number(num);
+    ::new(&nat_.sp_) storage_ptr(
+        std::move(store));
+}
+
+value::
 value(std::initializer_list<
     std::pair<string_view, value>> init)
     : value(init,
@@ -217,22 +235,13 @@ value&
 value::
 operator=(object obj)
 {
-    auto sp = release_storage();
+    object tmp(
+        std::move(obj),
+        get_storage());
     clear();
-    try
-    {
-        ::new(&obj_) object(
-            std::move(obj),
-            std::move(sp));
-        kind_ = kind::object;
-    }
-    catch(...)
-    {
-        new(&nat_.sp_)
-            storage_ptr(std::move(sp));
-        kind_ = kind::null;
-        throw;
-    }
+    ::new(&obj_) object(
+        std::move(tmp));
+    kind_ = kind::object;
     return *this;
 }
 
@@ -240,23 +249,14 @@ value&
 value::
 operator=(array arr)
 {
-    auto sp = release_storage();
+    array tmp(
+        std::move(arr),
+        array::allocator_type(
+            get_storage()));
     clear();
-    try
-    {
-        ::new(&arr_) array(
-            std::move(arr),
-            array::allocator_type(
-                std::move(sp)));
-        kind_ = kind::array;
-    }
-    catch(...)
-    {
-        new(&nat_.sp_)
-            storage_ptr(std::move(sp));
-        kind_ = kind::null;
-        throw;
-    }
+    ::new(&arr_) array(
+        std::move(tmp));
+    kind_ = kind::array;
     return *this;
 }
 
@@ -264,23 +264,14 @@ value&
 value::
 operator=(string str)
 {
-    auto sp = release_storage();
+    string tmp(
+        std::move(str),
+        string::allocator_type(
+            get_storage()));
     clear();
-    try
-    {
-        ::new(&str_) string(
-            std::move(str),
-            string::allocator_type(
-                std::move(sp)));
-        kind_ = kind::string;
-    }
-    catch(...)
-    {
-        new(&nat_.sp_)
-            storage_ptr(std::move(sp));
-        kind_ = kind::null;
-        throw;
-    }
+    ::new(&str_) string(
+        std::move(tmp));
+    kind_ = kind::string;
     return *this;
 }
 
@@ -336,8 +327,8 @@ value::
 operator[](std::size_t i) noexcept
 {
     BOOST_ASSERT(is_array());
-    BOOST_ASSERT(raw_array().size() > i);
-    return raw_array()[i];
+    BOOST_ASSERT(as_array().size() > i);
+    return as_array()[i];
 }
 
 value const&
@@ -345,8 +336,8 @@ value::
 operator[](std::size_t i) const noexcept
 {
     BOOST_ASSERT(is_array());
-    BOOST_ASSERT(raw_array().size() > i);
-    return raw_array()[i];
+    BOOST_ASSERT(as_array().size() > i);
+    return as_array()[i];
 }
 #endif
 
@@ -417,9 +408,7 @@ construct(
                 std::move(sp)));
         break;
 
-    case kind::signed64:
-    case kind::unsigned64:
-    case kind::floating:
+    case kind::number:
     case kind::boolean:
     case kind::null:
         ::new(&nat_.sp_)
@@ -448,9 +437,9 @@ clear() noexcept
         str_.~string();
         break;
 
-    case kind::signed64:
-    case kind::unsigned64:
-    case kind::floating:
+    case kind::number:
+        nat_.num_.~number();
+
     case kind::boolean:
     case kind::null:
         nat_.sp_.~storage_ptr();
@@ -538,22 +527,11 @@ move(
             storage_ptr(std::move(sp));
         break;
 
-    case kind::signed64:
+    case kind::number:
         ::new(&nat_.sp_)
             storage_ptr(std::move(sp));
-        nat_.int64_ = other.nat_.int64_;
-        break;
-
-    case kind::unsigned64:
-        ::new(&nat_.sp_)
-            storage_ptr(std::move(sp));
-        nat_.uint64_ = other.nat_.uint64_;
-        break;
-
-    case kind::floating:
-        ::new(&nat_.sp_)
-            storage_ptr(std::move(sp));
-        nat_.float_ = other.nat_.float_;
+        ::new(&nat_.num_) number(
+            other.nat_.num_);
         break;
 
     case kind::boolean:
@@ -639,22 +617,11 @@ copy(
     #endif
         break;
 
-    case kind::signed64:
+    case kind::number:
         ::new(&nat_.sp_)
             storage_ptr(std::move(sp));
-        nat_.int64_ = other.nat_.int64_;
-        break;
-
-    case kind::unsigned64:
-        ::new(&nat_.sp_)
-            storage_ptr(std::move(sp));
-        nat_.uint64_ = other.nat_.uint64_;
-        break;
-
-    case kind::floating:
-        ::new(&nat_.sp_)
-            storage_ptr(std::move(sp));
-        nat_.float_ = other.nat_.float_;
+        ::new(&nat_.num_) number(
+            other.nat_.num_);
         break;
 
     case kind::boolean:
@@ -682,8 +649,8 @@ operator<<(std::ostream& os, value const& jv)
     {
     case kind::object:
         os << '{';
-        for(auto it = jv.raw_object().begin(),
-            last = jv.raw_object().end();
+        for(auto it = jv.as_object().begin(),
+            last = jv.as_object().end();
             it != last;)
         {
             os << '\"' << it->first << "\":";
@@ -696,8 +663,8 @@ operator<<(std::ostream& os, value const& jv)
         
     case kind::array:
         os << '[';
-        for(auto it = jv.raw_array().begin(),
-            last = jv.raw_array().end();
+        for(auto it = jv.as_array().begin(),
+            last = jv.as_array().end();
             it != last;)
         {
             os << *it;
@@ -708,23 +675,15 @@ operator<<(std::ostream& os, value const& jv)
         break;
         
     case kind::string:
-        os << '\"' << jv.raw_string() << '\"';
+        os << '\"' << jv.as_string() << '\"';
         break;
         
-    case kind::signed64:
-        os << jv.raw_signed();
-        break;
-        
-    case kind::unsigned64:
-        os << jv.raw_unsigned();
-        break;
-
-    case kind::floating:
-        os << jv.raw_floating();
+    case kind::number:
+        os << jv.as_number();
         break;
         
     case kind::boolean:
-        if(jv.raw_bool())
+        if(jv.as_bool())
             os << "true";
         else
             os << "false";

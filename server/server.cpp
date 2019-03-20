@@ -43,7 +43,7 @@ struct value_exchange<net::ip::address>
             return;
         }
         t = net::ip::make_address(
-            jv.raw_string().c_str(), ec);
+            jv.as_string().c_str(), ec);
     }
 };
 
@@ -374,7 +374,7 @@ make_server(
             ec = json::error::expected_array;
             return nullptr;
         }
-        for(auto& e : ja.raw_array())
+        for(auto& e : ja.as_array())
         {
             listener_config cfg;
             e.assign(cfg, ec);

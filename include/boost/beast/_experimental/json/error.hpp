@@ -43,14 +43,8 @@ enum class error
     /// Expected a value of kind string
     expected_string,
 
-    /// Expected a value of kind signed
-    expected_signed,
-
-    /// Expected a value of kind unsigned
-    expected_unsigned,
-
-    /// Expected a value of kind floating
-    expected_floating,
+    /// Expect a value of kind number
+    expected_number,
 
     /// Expected a value of kind boolean
     expected_bool,

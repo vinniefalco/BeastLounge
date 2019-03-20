@@ -97,7 +97,6 @@ reset()
     stack_.clear();
     stack_.push_front(state::end);
     stack_.push_front(state::json);
-    n_ = {};
 }
 
 //------------------------------------------------------------------------------
@@ -105,20 +104,48 @@ reset()
 // Append the digit to the
 // value, which must be unsigned.
 // Returns `false` on overflow.
-template<class Unsigned>
 bool
 basic_parser::
 append_digit(
-    Unsigned* value,
+    number::mantissa_type* value,
     char digit)
 {
-    Unsigned temp = *value * 10;
+    number::mantissa_type temp =
+        *value * 10;
     if(temp < *value)
         return false;
-    Unsigned result = temp + digit;
+    number::mantissa_type result =
+        temp + digit;
     if(result < temp)
         return false;
     *value = result;
+    return true;
+}
+
+// Append the digit to the signed exponent
+bool
+basic_parser::
+append_digit(
+    number::exponent_type* value,
+    char digit, bool neg)
+{
+    if(neg)
+    {
+        if(! *value)
+        {
+            *value = -digit;
+        }
+        else
+        {
+            *value *= 10;
+            *value -= digit;
+        }
+    }
+    else
+    {
+        *value *= 10;
+        *value += digit;
+    }
     return true;
 }
 
@@ -732,11 +759,16 @@ loop:
 
     case state::number:
         BOOST_ASSERT(p < p1);
-        n_ = {};
+        n_mant_ = 0;
+        n_exp_ = 0;
         if(*p == '-')
         {
             ++p;
-            n_.neg = true;
+            n_neg_ = true;
+        }
+        else
+        {
+            n_neg_ = false;
         }
         stack_.front() = state::number_mant1;
         goto loop;
@@ -767,7 +799,7 @@ loop:
                 stack_.front() = state::number_fract1;
                 goto loop;
             }
-            if(! append_digit(&n_.mant, *p++ - '0'))
+            if(! append_digit(&n_mant_, *p++ - '0'))
             {
                 ec = error::mantissa_overflow;
                 goto finish;
@@ -813,13 +845,12 @@ loop:
                 stack_.front() = state::number_exp;
                 goto loop;
             }
-            if(! append_digit(&n_.mant, *p++ - '0'))
+            if(! append_digit(&n_mant_, *p++ - '0'))
             {
                 ec = error::mantissa_overflow;
                 goto finish;
             }
-            n_.pos = false;
-            ++n_.exp;
+            --n_exp_;
         }
         break;
 
@@ -841,11 +872,12 @@ loop:
         if(*p == '+')
         {
             ++p;
+            n_exp_neg_ = false;
         }
         if(*p == '-')
         {
             ++p;
-            n_.pos = false;
+            n_exp_neg_ = true;
         }
         stack_.front() = state::number_exp_digits1;
         goto loop;
@@ -870,7 +902,8 @@ loop:
                 stack_.front() = state::number_end;
                 goto loop;
             }
-            if(! append_digit(&n_.exp, *p++ - '0'))
+            if(! append_digit(&n_exp_,
+                *p++ - '0', n_exp_neg_))
             {
                 ec = error::exponent_overflow;
                 goto finish;
@@ -879,7 +912,8 @@ loop:
         break;
 
     case state::number_end:
-        this->on_number(n_, ec);
+        this->on_number(number(
+            n_mant_, n_exp_, n_neg_), ec);
         if(ec)
             goto finish;
         stack_.pop_front();

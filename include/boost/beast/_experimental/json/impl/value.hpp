@@ -42,6 +42,7 @@ struct is_range<T, boost::void_t<
 // assign to value
 //
 
+// range
 template<class T
     ,class = typename std::enable_if<
         detail::is_range<T>::value
@@ -54,124 +55,48 @@ assign(value& v, T const& t)
 {
     v.reset(kind::array);
     for(auto const& e : t)
-        v.raw_array().push_back(e);
+        v.as_array().push_back(e);
 }
 
+// string
 inline
 void
 assign(value& v, string_view t)
 {
-    v.reset(kind::string);
-    v.raw_string().assign(
+    v.emplace_string().assign(
         t.data(), t.size());
 }
 
-#if 0
-template<std::size_t N>
-void
-assign(value& v, char const(&t)[N])
-{
-    v.reset(kind::string);
-    v.raw_string().assign(t, N);
-}
-#else
+// string
 inline
 void
 assign(value& v, char const* t)
 {
-    v.reset(kind::string);
-    v.raw_string() = t;
+    v.emplace_string() = t;
 }
-#endif
 
+// number
+template<class T
+    ,class = typename std::enable_if<
+        std::is_constructible<number, T>::value &&
+        ! std::is_same<number, T>::value>::type
+>
 inline
 void
-assign(value& v, short t)
+assign(value& v, T t)
 {
-    v.reset(kind::signed64);
-    v.raw_signed() = t;
+    v.emplace_number() = t;
 }
 
+// bool
 inline
 void
-assign(value& v, int t)
+assign(value& v, bool b)
 {
-    v.reset(kind::signed64);
-    v.raw_signed() = t;
+    v.emplace_bool() = b;
 }
 
-inline
-void
-assign(value& v, long t)
-{
-    v.reset(kind::signed64);
-    v.raw_signed() = t;
-}
-
-inline
-void
-assign(value& v, long long t)
-{
-    v.reset(kind::signed64);
-    v.raw_signed() = t;
-}
-
-inline
-void
-assign(value& v, unsigned short t)
-{
-    v.reset(kind::unsigned64);
-    v.raw_unsigned() = t;
-}
-
-inline
-void
-assign(value& v, unsigned int t)
-{
-    v.reset(kind::unsigned64);
-    v.raw_unsigned() = t;
-}
-
-inline
-void
-assign(value& v, unsigned long t)
-{
-    v.reset(kind::unsigned64);
-    v.raw_unsigned() = t;
-}
-
-inline
-void
-assign(value& v, unsigned long long t)
-{
-    v.reset(kind::unsigned64);
-    v.raw_unsigned() = t;
-}
-
-inline
-void
-assign(value& v, float t)
-{
-    v.reset(kind::floating);
-    v.raw_floating() = t;
-}
-
-inline
-void
-assign(value& v, double t)
-{
-    v.reset(kind::floating);
-    v.raw_floating() = t;
-}
-
-inline
-void
-assign(value& v, bool t)
-{
-    v.reset(kind::boolean);
-    v.raw_bool() = t;
-}
-
+// null
 inline
 void
 assign(value& v, std::nullptr_t)
@@ -193,9 +118,9 @@ template<typename T
 void
 assign(T& t, value const& v, error_code& ec)
 {
-    if(v.is_signed64())
+    if(v.is_int64())
     {
-        auto const rhs = v.raw_signed();
+        auto const rhs = v.get_int64();
         if( rhs > (std::numeric_limits<T>::max)() ||
             rhs < (std::numeric_limits<T>::min)())
         {
@@ -204,9 +129,9 @@ assign(T& t, value const& v, error_code& ec)
         }
         t = static_cast<T>(rhs);
     }
-    else if(v.is_unsigned64())
+    else if(v.is_uint64())
     {
-        auto const rhs = v.raw_unsigned();
+        auto const rhs = v.get_uint64();
         if(rhs > (std::numeric_limits<T>::max)())
         {
             ec = error::integer_overflow;
@@ -216,7 +141,7 @@ assign(T& t, value const& v, error_code& ec)
     }
     else
     {
-        ec = error::expected_unsigned;
+        ec = error::expected_number;
         return;
     }
     ec = {};

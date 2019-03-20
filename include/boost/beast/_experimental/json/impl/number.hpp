@@ -7,28 +7,12 @@
 // Official repository: https://github.com/boostorg/beast
 //
 
-#ifndef BOOST_BEAST_JSON_KIND_HPP
-#define BOOST_BEAST_JSON_KIND_HPP
-
-#include <boost/beast/core/detail/config.hpp>
-#include <boost/beast/core/detail/static_const.hpp>
-#include <cstddef>
+#ifndef BOOST_BEAST_JSON_IMPL_NUMBER_HPP
+#define BOOST_BEAST_JSON_IMPL_NUMBER_HPP
 
 namespace boost {
 namespace beast {
 namespace json {
-
-enum class kind
-{
-    object,
-    array,
-    string,
-    number,
-    boolean,
-    null
-};
-
-BOOST_BEAST_INLINE_VARIABLE(null, std::nullptr_t);
 
 } // json
 } // beast

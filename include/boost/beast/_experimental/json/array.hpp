@@ -7,28 +7,25 @@
 // Official repository: https://github.com/boostorg/beast
 //
 
-#ifndef BOOST_BEAST_JSON_KIND_HPP
-#define BOOST_BEAST_JSON_KIND_HPP
+#ifndef BOOST_BEAST_JSON_ARRAY_HPP
+#define BOOST_BEAST_JSON_ARRAY_HPP
 
 #include <boost/beast/core/detail/config.hpp>
-#include <boost/beast/core/detail/static_const.hpp>
-#include <cstddef>
+#include <boost/beast/_experimental/json/allocator.hpp>
+#include <vector>
 
 namespace boost {
 namespace beast {
 namespace json {
 
-enum class kind
-{
-    object,
-    array,
-    string,
-    number,
-    boolean,
-    null
-};
+class value;
 
-BOOST_BEAST_INLINE_VARIABLE(null, std::nullptr_t);
+/** The native type of array values
+*/
+using array  =
+    std::vector<
+        value,
+        allocator<value>>;
 
 } // json
 } // beast

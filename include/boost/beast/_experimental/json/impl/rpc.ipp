@@ -120,7 +120,7 @@ extract(value&& jv, error_code& ec)
         return ;
     }
 
-    auto& obj = jv.raw_object();
+    auto& obj = jv.as_object();
 
     // extract id first so on error,
     // the response can include it.
@@ -141,7 +141,7 @@ extract(value&& jv, error_code& ec)
                 return;
             }
             auto const& s =
-                it->second.raw_string();
+                it->second.as_string();
             if(s != "2.0")
             {
                 ec = rpc_error::unknown_version;
@@ -202,7 +202,7 @@ extract(value&& jv, error_code& ec)
             return;
         }
         method = std::move(
-            it->second.raw_string());
+            it->second.as_string());
     }
 
     // extract params

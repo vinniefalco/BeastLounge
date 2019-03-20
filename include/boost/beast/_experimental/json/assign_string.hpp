@@ -35,7 +35,7 @@ assign(
         ec = error::expected_string;
         return;
     }
-    auto& s= v.raw_string();
+    auto& s= v.as_string();
     t.assign(s.data(), s.size());
 }
 

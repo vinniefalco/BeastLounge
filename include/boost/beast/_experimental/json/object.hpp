@@ -26,6 +26,12 @@ class value;
 
 //------------------------------------------------------------------------------
 
+/** The native type of object values
+
+    This copies the interface of `std::unordered_map` with
+    one important distinction: the order of insertions is
+    preserved.
+*/
 class object
 {
     struct list_hook;

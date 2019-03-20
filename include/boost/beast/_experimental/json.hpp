@@ -13,6 +13,7 @@
 #include <boost/beast/core/detail/config.hpp>
 
 #include <boost/beast/_experimental/json/allocator.hpp>
+#include <boost/beast/_experimental/json/array.hpp>
 #include <boost/beast/_experimental/json/assign_string.hpp>
 #include <boost/beast/_experimental/json/assign_vector.hpp>
 #include <boost/beast/_experimental/json/basic_parser.hpp>
@@ -20,12 +21,13 @@
 #include <boost/beast/_experimental/json/error.hpp>
 #include <boost/beast/_experimental/json/key_param.hpp>
 #include <boost/beast/_experimental/json/kind.hpp>
+#include <boost/beast/_experimental/json/number.hpp>
 #include <boost/beast/_experimental/json/object.hpp>
 #include <boost/beast/_experimental/json/parse_file.hpp>
 #include <boost/beast/_experimental/json/parser.hpp>
 #include <boost/beast/_experimental/json/rpc.hpp>
 #include <boost/beast/_experimental/json/storage.hpp>
-#include <boost/beast/_experimental/json/types.hpp>
+#include <boost/beast/_experimental/json/string.hpp>
 #include <boost/beast/_experimental/json/value.hpp>
 
 #endif

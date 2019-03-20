@@ -375,8 +375,8 @@ public:
     on_stat(json::value& ja) override
     {
         std::lock_guard<std::mutex> lock(mutex_);
-        ja.raw_array().push_back({});
-        auto& jv = ja.raw_array().back();
+        ja.as_array().push_back({});
+        auto& jv = ja.as_array().back();
         jv.emplace_object();
         jv["type"] = "listener";
         jv["name"] = cfg_.name;

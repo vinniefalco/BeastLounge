@@ -24,6 +24,7 @@ add_executable (beast-json-tests
     ${TEST_MAIN}
     _detail_stack.cpp
     allocator.cpp
+    array.cpp
     assign_string.cpp
     assign_vector.cpp
     basic_parser.cpp
@@ -32,12 +33,13 @@ add_executable (beast-json-tests
     iterator.cpp
     key_param.cpp
     kind.cpp
+    number.cpp
     object.cpp
     parse_file.cpp
     parser.cpp
     rpc.cpp
     src.cpp
     storage.cpp
-    types.cpp
+    string.cpp
     value.cpp
 )

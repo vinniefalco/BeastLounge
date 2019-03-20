@@ -4,11 +4,11 @@
 // Distributed under the Boost Software License, Version 1.0. (See accompanying
 // file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
 //
-// Official repository: https://github.com/boostorg/beast
+// Official repository: https://github.com/vinniefalco/BeastLounge
 //
 
 // Test that header file is self-contained.
-#include <boost/beast/_experimental/json/types.hpp>
+#include <boost/beast/_experimental/json/array.hpp>
 
 #include <boost/beast/_experimental/unit_test/suite.hpp>
 
@@ -16,16 +16,17 @@ namespace boost {
 namespace beast {
 namespace json {
 
-class types_test : public unit_test::suite
+class array_test : public unit_test::suite
 {
 public:
-    void run() override
+    void
+    run() override
     {
         pass();
     }
 };
 
-BEAST_DEFINE_TESTSUITE(beast,json,types);
+BEAST_DEFINE_TESTSUITE(beast,json,array);
 
 } // json
 } // beast

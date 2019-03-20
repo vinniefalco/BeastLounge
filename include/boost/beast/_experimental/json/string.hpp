@@ -7,14 +7,12 @@
 // Official repository: https://github.com/boostorg/beast
 //
 
-#ifndef BOOST_BEAST_JSON_TYPES_HPP
-#define BOOST_BEAST_JSON_TYPES_HPP
+#ifndef BOOST_BEAST_JSON_STRING_HPP
+#define BOOST_BEAST_JSON_STRING_HPP
 
 #include <boost/beast/core/detail/config.hpp>
 #include <boost/beast/_experimental/json/allocator.hpp>
-#include <cstdint>
 #include <string>
-#include <vector>
 
 namespace boost {
 namespace beast {
@@ -22,24 +20,13 @@ namespace json {
 
 class value;
 
-using array  =
-    std::vector<
-        value,
-        allocator<value>>;
-
+/** The native type of string values
+*/
 using string =
     std::basic_string<
         char,
         std::char_traits<char>,
         allocator<char>>;
-
-using signed64 = std::int_least64_t;
-
-using unsigned64 = std::uint_least64_t;
-
-using floating = double;
-
-using boolean = bool;
 
 } // json
 } // beast

@@ -49,11 +49,11 @@ node(
         if(v->is_object())
             ::new(&obj_it)
                 object::const_iterator(
-                    v->raw_object().begin());
+                    v->as_object().begin());
         else
             ::new(&arr_it)
                 array::const_iterator(
-                    v->raw_array().begin());
+                    v->as_array().begin());
     }
 }
 
@@ -83,9 +83,9 @@ last() const noexcept
         return true;
     if(v->is_object())
         return obj_it ==
-            v->raw_object().end();
+            v->as_object().end();
     return arr_it ==
-        v->raw_array().end();
+        v->as_array().end();
 }
 
 //------------------------------------------------------------------------------
@@ -119,13 +119,13 @@ operator*() const noexcept ->
     if(n.v->is_object())
     {
         if(n.obj_it !=
-            n.v->raw_object().end())
+            n.v->as_object().end())
             return {
                 stack_.size(),
                 n.obj_it->first,
                 n.obj_it->second,
                 std::next(n.obj_it) ==
-                    n.v->raw_object().end(),
+                    n.v->as_object().end(),
                 false };
         return {
             stack_.size() - 1,
@@ -136,13 +136,13 @@ operator*() const noexcept ->
             true};
     }
     if(n.arr_it !=
-        n.v->raw_array().end())
+        n.v->as_array().end())
         return {
             stack_.size(),
             "",
             *n.arr_it,
             std::next(n.arr_it) ==
-                n.v->raw_array().end(),
+                n.v->as_array().end(),
             false };
     return {
         stack_.size() - 1,
@@ -174,7 +174,7 @@ operator++() noexcept
     else if(n.v->is_object())
     {
         if(n.obj_it ==
-            n.v->raw_object().end())
+            n.v->as_object().end())
         {
             stack_.pop_front();
         }
@@ -191,7 +191,7 @@ operator++() noexcept
     else
     {
         if(n.arr_it ==
-            n.v->raw_array().end())
+            n.v->as_array().end())
         {
             stack_.pop_front();
         }

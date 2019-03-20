@@ -11,12 +11,14 @@
 #define BOOST_BEAST_JSON_VALUE_HPP
 
 #include <boost/beast/core/detail/config.hpp>
+#include <boost/beast/_experimental/json/array.hpp>
 #include <boost/beast/_experimental/json/error.hpp>
 #include <boost/beast/_experimental/json/key_param.hpp>
 #include <boost/beast/_experimental/json/kind.hpp>
+#include <boost/beast/_experimental/json/number.hpp>
 #include <boost/beast/_experimental/json/object.hpp>
 #include <boost/beast/_experimental/json/storage.hpp>
-#include <boost/beast/_experimental/json/types.hpp>
+#include <boost/beast/_experimental/json/string.hpp>
 #include <boost/beast/_experimental/json/detail/has_assign_value.hpp>
 #include <boost/beast/_experimental/json/detail/is_specialized.hpp>
 #include <boost/type_traits/make_void.hpp>
@@ -99,10 +101,8 @@ class value
     {
         union
         {
-            signed64    int64_;
-            unsigned64  uint64_;
-            floating    float_;
-            boolean     bool_;
+            number  num_;
+            bool    bool_;
         };
         storage_ptr sp_;
     };
@@ -204,7 +204,7 @@ public:
     BOOST_BEAST_DECL
     value(object obj) noexcept;
 
-    /** Construct a value from an object using the specified storage.
+    /** Construct a value from an object using the specified storage
     */
     BOOST_BEAST_DECL
     value(object obj, storage_ptr store);
@@ -214,7 +214,7 @@ public:
     BOOST_BEAST_DECL
     value(array arr) noexcept;
 
-    /** Construct a value from an array using the specified storage.
+    /** Construct a value from an array using the specified storage
     */
     BOOST_BEAST_DECL
     value(array arr, storage_ptr store);
@@ -224,10 +224,20 @@ public:
     BOOST_BEAST_DECL
     value(string str) noexcept;
 
-    /** Construct a value from a string using the specified storage.
+    /** Construct a value from a string using the specified storage
     */
     BOOST_BEAST_DECL
     value(string str, storage_ptr store);
+
+    /** Construct a value from a nujmber
+    */
+    BOOST_BEAST_DECL
+    value(number num);
+
+    /** Construct a value from a nujmber using the specified storage
+    */
+    BOOST_BEAST_DECL
+    value(number num, storage_ptr store);
 
     /** Construct an object from an initializer list.
     */
@@ -235,7 +245,7 @@ public:
     value(std::initializer_list<
         std::pair<string_view, value>> init);
 
-    /** Construct an object from an initializer list using the specified storage.
+    /** Construct an object from an initializer list using the specified storage
     */
     BOOST_BEAST_DECL
     value(std::initializer_list<
@@ -313,40 +323,66 @@ public:
     /** Set the value to an empty object, and return it.
 
         This calls `reset(kind::object)` and returns
-        `raw_object()`. The previous contents of the value
+        `as_object()`. The previous contents of the value
         are destroyed.
     */
     object&
     emplace_object() noexcept
     {
         reset(kind::object);
-        return raw_object();
+        return as_object();
     }
 
     /** Set the value to an empty array, and return it.
 
         This calls `reset(kind::array)` and returns
-        `raw_array()`. The previous contents of the value
+        `as_array()`. The previous contents of the value
         are destroyed.
     */
     array&
     emplace_array() noexcept
     {
         reset(kind::array);
-        return raw_array();
+        return as_array();
     }
 
     /** Set the value to an empty string, and return it.
 
         This calls `reset(kind::string)` and returns
-        `raw_string()`. The previous contents of the value
+        `as_string()`. The previous contents of the value
         are destroyed.
     */
     string&
     emplace_string() noexcept
     {
         reset(kind::string);
-        return raw_string();
+        return as_string();
+    }
+
+    /** Set the value to an uninitialized number, and return it.
+
+        This calls `reset(kind::number)` and returns
+        `as_number()`. The previous contents of the value
+        are destroyed.
+    */
+    number&
+    emplace_number() noexcept
+    {
+        reset(kind::number);
+        return as_number();
+    }
+
+    /** Set the value to an uninitialized boolean, and return it.
+
+        This calls `reset(kind::boolean)` and returns
+        `as_bool()`. The previous contents of the value
+        are destroyed.
+    */
+    bool&
+    emplace_bool() noexcept
+    {
+        reset(kind::boolean);
+        return as_bool();
     }
 
     //--------------------------------------------------------------------------
@@ -364,14 +400,27 @@ public:
     #endif
     >
     value(T const& t)
-        : value()
+        : value(t, get_default_storage_ptr())
+    {
+    }
+
+    /// Construct a value from another type using the specified storage
+    template<
+        class T
+    #ifndef BOOST_BEAST_DOXYGEN
+        ,class = typename std::enable_if<
+            can_value_from<T>::value>::type
+    #endif
+    >
+    value(T const& t, storage_ptr store)
+        : value(std::move(store))
     {
         value_exchange<
             detail::remove_cr<T>
                 >::assign(*this, t);
     }
 
-    /// Assign a value from another type
+    /// Assign a value from another type 
     template<
         class T
     #ifndef BOOST_BEAST_DOXYGEN
@@ -458,12 +507,56 @@ public:
     //
     //--------------------------------------------------------------------------
 
+    /// Returns the kind of this JSON value
     kind
     kind() const noexcept
     {
         return kind_;
     }
 
+    /// Returns `true` if this is an object
+    bool
+    is_object() const noexcept
+    {
+        return kind_ == kind::object;
+    }
+
+    /// Returns `true` if this is an array
+    bool
+    is_array() const noexcept
+    {
+        return kind_ == kind::array;
+    }
+
+    /// Returns `true` if this is a string
+    bool
+    is_string() const noexcept
+    {
+        return kind_ == kind::string;
+    }
+
+    /// Returns `true` if this is a number
+    bool
+    is_number() const noexcept
+    {
+        return kind_ == kind::number;
+    }
+
+    bool
+    is_bool() const noexcept
+    {
+        return kind_ == kind::boolean;
+    }
+
+    bool
+    is_null() const noexcept
+    {
+        return kind_ == kind::null;
+    }
+
+    //---
+
+    /// Returns `true` if this is not an array or object
     bool
     is_primitive() const noexcept
     {
@@ -476,88 +569,45 @@ public:
         return true;
     }
 
+    /// Returns `true` if this is an array or object
     bool
     is_structured() const noexcept
     {
         return ! is_primitive();
     }
 
+    /// Returns `true` if this is a number representable as a `std::int64_t`
     bool
-    is_number() const noexcept
+    is_int64() const noexcept
     {
-        switch(kind_)
-        {
-        case kind::signed64:
-        case kind::unsigned64:
-        case kind::floating:
-            return true;
-        }
-        return false;
+        return
+            kind_ == kind::number &&
+            nat_.num_.is_int64();
     }
 
+    /// Returns `true` if this is a number representable as a `std::uint64_t`
     bool
-    is_integer() const noexcept
+    is_uint64() const noexcept
     {
-        switch(kind_)
-        {
-        case kind::signed64:
-        case kind::unsigned64:
-            return true;
-        }
-        return false;
+        return
+            kind_ == kind::number &&
+            nat_.num_.is_uint64();
     }
 
-    bool
-    is_object() const noexcept
-    {
-        return kind_ == kind::object;
-    }
+    /** Returns `true` if this is a number representable as a `double`
 
+        The return value will always be the same as the
+        value returned from @ref is_number.
+    */
     bool
-    is_array() const noexcept
+    is_double() const noexcept
     {
-        return kind_ == kind::array;
-    }
-
-    bool
-    is_string() const noexcept
-    {
-        return kind_ == kind::string;
-    }
-
-    bool
-    is_signed64() const noexcept
-    {
-        return kind_ == kind::signed64;
-    }
-
-    bool
-    is_unsigned64() const noexcept
-    {
-        return kind_ == kind::unsigned64;
-    }
-
-    bool
-    is_floating() const noexcept
-    {
-        return kind_ == kind::floating;
-    }
-
-    bool
-    is_boolean() const noexcept
-    {
-        return kind_ == kind::boolean;
-    }
-
-    bool
-    is_null() const noexcept
-    {
-        return kind_ == kind::null;
+        return kind_ == kind::number;
     }
 
     //--------------------------------------------------------------------------
     //
-    // Raw access
+    // Accessors
     //
     //--------------------------------------------------------------------------
 
@@ -566,100 +616,93 @@ public:
     get_storage() const noexcept;
 
     object&
-    raw_object() noexcept
+    as_object() noexcept
     {
         BOOST_ASSERT(is_object());
         return obj_;
     }
 
     object const&
-    raw_object() const noexcept
+    as_object() const noexcept
     {
         BOOST_ASSERT(is_object());
         return obj_;
     }
 
     array&
-    raw_array() noexcept
+    as_array() noexcept
     {
         BOOST_ASSERT(is_array());
         return arr_;
     }
 
     array const&
-    raw_array() const noexcept
+    as_array() const noexcept
     {
         BOOST_ASSERT(is_array());
         return arr_;
     }
 
     string&
-    raw_string() noexcept
+    as_string() noexcept
     {
         BOOST_ASSERT(is_string());
         return str_;
     }
 
     string const&
-    raw_string() const noexcept
+    as_string() const noexcept
     {
         BOOST_ASSERT(is_string());
         return str_;
     }
 
-    signed64&
-    raw_signed() noexcept
+    number&
+    as_number() noexcept
     {
-        BOOST_ASSERT(is_signed64());
-        return nat_.int64_;
+        BOOST_ASSERT(is_number());
+        return nat_.num_;
     }
 
-    signed64 const&
-    raw_signed() const noexcept
+    number const&
+    as_number() const noexcept
     {
-        BOOST_ASSERT(is_signed64());
-        return nat_.int64_;
+        BOOST_ASSERT(is_number());
+        return nat_.num_;
     }
 
-    unsigned64&
-    raw_unsigned() noexcept
+    std::int64_t
+    get_int64() const noexcept
     {
-        BOOST_ASSERT(is_unsigned64());
-        return nat_.uint64_;
+        BOOST_ASSERT(is_int64());
+        return nat_.num_.get_int64();
     }
 
-    unsigned64 const&
-    raw_unsigned() const noexcept
+    std::uint64_t
+    get_uint64() const noexcept
     {
-        BOOST_ASSERT(is_unsigned64());
-        return nat_.uint64_;
+        BOOST_ASSERT(is_uint64());
+        return nat_.num_.get_uint64();
     }
 
-    floating&
-    raw_floating() noexcept
+    long double
+    get_double() const noexcept
     {
-        BOOST_ASSERT(is_floating());
-        return nat_.float_;
+        BOOST_ASSERT(is_double());
+        return nat_.num_.get_double();
     }
 
-    floating const&
-    raw_floating() const noexcept
+    bool&
+    as_bool() noexcept
     {
-        BOOST_ASSERT(is_floating());
-        return nat_.float_;
-    }
-
-    boolean&
-    raw_bool() noexcept
-    {
-        BOOST_ASSERT(is_boolean());
+        BOOST_ASSERT(is_bool());
         return nat_.bool_;
     }
 
-    boolean const&
-    raw_bool() const noexcept
+    bool const&
+    as_bool() const noexcept
     {
-        BOOST_ASSERT(is_boolean());
+        BOOST_ASSERT(is_bool());
         return nat_.bool_;
     }
 

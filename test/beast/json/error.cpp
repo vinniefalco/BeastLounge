@@ -55,9 +55,7 @@ public:
         check(condition::assign_error, error::expected_object);
         check(condition::assign_error, error::expected_array);
         check(condition::assign_error, error::expected_string);
-        check(condition::assign_error, error::expected_signed);
-        check(condition::assign_error, error::expected_unsigned);
-        check(condition::assign_error, error::expected_floating);
+        check(condition::assign_error, error::expected_number);
         check(condition::assign_error, error::expected_bool);
         check(condition::assign_error, error::expected_null);
         

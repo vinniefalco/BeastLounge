@@ -75,11 +75,11 @@ public:
         BEAST_EXPECT(
             obj.bucket_count() == bucket_count);
         BEAST_EXPECT(
-            obj["a"].raw_signed() == 1);
+            obj["a"].as_number() == 1);
         BEAST_EXPECT(
-            obj["b"].raw_bool());
+            obj["b"].as_bool());
         BEAST_EXPECT(
-            obj["c"].raw_string() == "hello");
+            obj["c"].as_string() == "hello");
 
         // ordering, storage
 

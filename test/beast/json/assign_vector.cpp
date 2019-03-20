@@ -25,7 +25,7 @@ public:
     {
         value jv(kind::array);
         {
-            auto& a = jv.raw_array();
+            auto& a = jv.as_array();
             a.push_back(1);
             a.push_back(2);
             a.push_back(3);

@@ -72,10 +72,10 @@ on_object_begin(error_code& ec)
     }
     else if(jv.is_array())
     {
-        jv.raw_array().emplace_back(
+        jv.as_array().emplace_back(
             kind::object);
         stack_.push_front(
-            &jv.raw_array().back());
+            &jv.as_array().back());
     }
     else
     {
@@ -120,10 +120,10 @@ on_array_begin(error_code& ec)
     else if(jv.is_array())
     {
         BOOST_ASSERT(s_.empty());
-        jv.raw_array().emplace_back(
+        jv.as_array().emplace_back(
             kind::array);
         stack_.push_front(
-            &jv.raw_array().back());
+            &jv.as_array().back());
     }
     else
     {
@@ -173,13 +173,13 @@ on_key_end(
     if(jv.is_object())
     {
         stack_.push_front(
-            &jv.raw_object().emplace(s,
+            &jv.as_object().emplace(s,
                 kind::null).first->second);
     }
     else if(stack_.front()->is_array())
     {
         BOOST_ASSERT(s_.empty());
-        jv.raw_array().emplace_back(
+        jv.as_array().emplace_back(
             kind::null,
             jv_.get_storage());
     }
@@ -209,12 +209,12 @@ on_string_data(
         else if(stack_.front()->is_array())
         {
             BOOST_ASSERT(s_.empty());
-            jv.raw_array().emplace_back(
+            jv.as_array().emplace_back(
                 kind::string,
                 jv_.get_storage());
             stack_.push_front(
-                &jv.raw_array().back());
-            stack_.front()->raw_string().append(
+                &jv.as_array().back());
+            stack_.front()->as_string().append(
                 s.data(), s.size());
         }
         else
@@ -226,7 +226,7 @@ on_string_data(
     }
     else
     {
-        stack_.front()->raw_string().append(
+        stack_.front()->as_string().append(
             s.data(), s.size());
     }
 }
@@ -253,18 +253,7 @@ void
 parser::
 on_number(number n, error_code&)
 {
-    if(n.is_integral())
-    {
-        assign(n.mant);
-    }
-    else
-    {
-        long exp = n.pos ?
-            n.exp : -static_cast<long>(n.exp);
-        auto mul = std::pow(10., exp);
-        auto d = (n.neg ? -1. : 1.) * n.mant * mul;
-        assign(d);
-    }
+    assign(n);
 }
 
 void

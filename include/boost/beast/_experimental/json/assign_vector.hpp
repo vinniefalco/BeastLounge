@@ -37,7 +37,7 @@ assign(
         ec = error::expected_array;
         return;
     }
-    auto& arr = v.raw_array();
+    auto& arr = v.as_array();
     t.resize(0);
     t.resize(arr.size());
     auto it = t.begin();

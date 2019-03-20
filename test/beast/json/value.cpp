@@ -21,6 +21,51 @@ namespace json {
 class value_test : public unit_test::suite
 {
 public:     
+    struct unique_storage : storage
+    {
+        void
+        addref() noexcept override
+        {
+        }
+
+        void
+        release() noexcept override
+        {
+        }
+
+        void*
+        allocate(
+            std::size_t n,
+            std::size_t) override
+        {
+            return std::allocator<
+                char>{}.allocate(n);
+        }
+
+        void
+        deallocate(
+            void* p,
+            std::size_t n,
+            std::size_t) noexcept override
+        {
+            auto cp =
+                reinterpret_cast<char*>(p);
+            return std::allocator<
+                char>{}.deallocate(cp, n);
+        }
+        bool
+        is_equal(
+            storage const& other
+                ) const noexcept override
+        {
+            auto p = dynamic_cast<
+                unique_storage const*>(&other);
+            if(! p)
+                return false;
+            return this == p;
+        }
+    };
+
     void
     testSpecial()
     {
@@ -54,158 +99,181 @@ public:
     void
     testConstruct()
     {
+        unique_storage us;
+        storage_ptr sp(&us);
+        storage_ptr sp0 =
+            get_default_storage_ptr();
+
         // default ctor
         {
             value jv;
-            BEAST_EXPECT(
-                jv.is_null());
+            BEAST_EXPECT(jv.is_null());
+            BEAST_EXPECT(jv.get_storage() != sp);
+            BEAST_EXPECT(jv.get_storage() == sp0);
         }
 
         // storage ctor
         {
-            storage_ptr sp =
-                make_storage_ptr(
-                    std::allocator<char>{});
             value jv1(sp);
             BEAST_EXPECT(jv1.is_null());
-            value jv2(std::move(sp));
+            BEAST_EXPECT(jv1.get_storage() == sp);
+            BEAST_EXPECT(jv1.get_storage() != sp0);
+
+            auto sp2 = sp;
+            value jv2(std::move(sp2));
             BEAST_EXPECT(jv2.is_null());
+            BEAST_EXPECT(jv1.get_storage() == sp);
+            BEAST_EXPECT(jv1.get_storage() != sp0);
+            BEAST_EXPECT(jv2.get_storage() == sp);
+            BEAST_EXPECT(jv2.get_storage() != sp0);
         }
 
         // kind construct
         {
             value jv(kind::object);
-            BEAST_EXPECT(
-                jv.is_object());
+            BEAST_EXPECT(jv.is_object());
+            BEAST_EXPECT(jv.get_storage() != sp);
+            BEAST_EXPECT(jv.get_storage() == sp0);
         }
         {
             value jv(kind::array);
-            BEAST_EXPECT(
-                jv.is_array());
+            BEAST_EXPECT(jv.is_array());
+            BEAST_EXPECT(jv.get_storage() != sp);
+            BEAST_EXPECT(jv.get_storage() == sp0);
         }
         {
             value jv(kind::string);
-            BEAST_EXPECT(
-                jv.is_string());
+            BEAST_EXPECT(jv.is_string());
+            BEAST_EXPECT(jv.get_storage() != sp);
+            BEAST_EXPECT(jv.get_storage() == sp0);
         }
         {
-            value jv(kind::signed64);
-            BEAST_EXPECT(
-                jv.is_signed64());
-        }
-        {
-            value jv(kind::unsigned64);
-            BEAST_EXPECT(
-                jv.is_unsigned64());
-        }
-        {
-            value jv(kind::floating);
-            BEAST_EXPECT(
-                jv.is_floating());
+            value jv(kind::number);
+            BEAST_EXPECT(jv.is_number());
+            BEAST_EXPECT(jv.get_storage() != sp);
+            BEAST_EXPECT(jv.get_storage() == sp0);
         }
         {
             value jv(kind::boolean);
-            BEAST_EXPECT(
-                jv.is_boolean());
+            BEAST_EXPECT(jv.is_bool());
+            BEAST_EXPECT(jv.get_storage() != sp);
+            BEAST_EXPECT(jv.get_storage() == sp0);
         }
         {
             value jv(kind::null);
-            BEAST_EXPECT(
-                jv.is_null());
+            BEAST_EXPECT(jv.is_null());
+            BEAST_EXPECT(jv.get_storage() != sp);
+            BEAST_EXPECT(jv.get_storage() == sp0);
         }
 
         // kind, storage construct
         {
-            storage_ptr sp = make_storage_ptr(
-                std::allocator<char>{});
             value jv(kind::object, sp);
-            BEAST_EXPECT(
-                jv.is_object());
+            BEAST_EXPECT(jv.is_object());
+            BEAST_EXPECT(jv.get_storage() == sp);
+            BEAST_EXPECT(jv.get_storage() != sp0);
         }
         {
-            storage_ptr sp = make_storage_ptr(
-                std::allocator<char>{});
             value jv(kind::array, sp);
-            BEAST_EXPECT(
-                jv.is_array());
+            BEAST_EXPECT(jv.is_array());
+            BEAST_EXPECT(jv.get_storage() == sp);
+            BEAST_EXPECT(jv.get_storage() != sp0);
         }
         {
-            storage_ptr sp = make_storage_ptr(
-                std::allocator<char>{});
             value jv(kind::string, sp);
-            BEAST_EXPECT(
-                jv.is_string());
+            BEAST_EXPECT(jv.is_string());
+            BEAST_EXPECT(jv.get_storage() == sp);
+            BEAST_EXPECT(jv.get_storage() != sp0);
         }
         {
-            storage_ptr sp = make_storage_ptr(
-                std::allocator<char>{});
-            value jv(kind::signed64, sp);
-            BEAST_EXPECT(
-                jv.is_signed64());
+            value jv(kind::number, sp);
+            BEAST_EXPECT(jv.is_number());
+            BEAST_EXPECT(jv.get_storage() == sp);
+            BEAST_EXPECT(jv.get_storage() != sp0);
         }
         {
-            storage_ptr sp = make_storage_ptr(
-                std::allocator<char>{});
-            value jv(kind::unsigned64, sp);
-            BEAST_EXPECT(
-                jv.is_unsigned64());
-        }
-        {
-            storage_ptr sp = make_storage_ptr(
-                std::allocator<char>{});
-            value jv(kind::floating, sp);
-            BEAST_EXPECT(
-                jv.is_floating());
-        }
-        {
-            storage_ptr sp = make_storage_ptr(
-                std::allocator<char>{});
             value jv(kind::boolean, sp);
-            BEAST_EXPECT(
-                jv.is_boolean());
+            BEAST_EXPECT(jv.is_bool());
+            BEAST_EXPECT(jv.get_storage() == sp);
+            BEAST_EXPECT(jv.get_storage() != sp0);
         }
         {
-            storage_ptr sp = make_storage_ptr(
-                std::allocator<char>{});
             value jv(kind::null, sp);
-            BEAST_EXPECT(
-                jv.is_null());
+            BEAST_EXPECT(jv.is_null());
+            BEAST_EXPECT(jv.get_storage() == sp);
+            BEAST_EXPECT(jv.get_storage() != sp0);
         }
 
         // construct from containers
         {
-            storage_ptr sp =
-                make_storage_ptr(
-                    std::allocator<char>());
             {
                 object obj;
                 value jv(obj);
                 BEAST_EXPECT(jv.is_object());
-            }
-            {
-                object obj;
-                value jv(obj, sp);
-                BEAST_EXPECT(jv.is_object());
+                BEAST_EXPECT(jv.get_storage() != sp);
+                BEAST_EXPECT(jv.get_storage() == sp0);
             }
             {
                 array arr;
                 value jv(arr);
                 BEAST_EXPECT(jv.is_array());
-            }
-            {
-                array arr;
-                value jv(arr, sp);
-                BEAST_EXPECT(jv.is_array());
+                BEAST_EXPECT(jv.get_storage() != sp);
+                BEAST_EXPECT(jv.get_storage() == sp0);
             }
             {
                 string str;
                 value jv(str);
                 BEAST_EXPECT(jv.is_string());
+                BEAST_EXPECT(jv.get_storage() != sp);
+                BEAST_EXPECT(jv.get_storage() == sp0);
+            }
+            {
+                value jv(number(1));
+                BEAST_EXPECT(jv.is_number());
+                BEAST_EXPECT(jv.is_int64());
+                BEAST_EXPECT(jv.is_uint64());
+                BEAST_EXPECT(jv.is_double());
+                BEAST_EXPECT(jv.get_int64() == 1);
+                BEAST_EXPECT(jv.get_uint64() == 1);
+                BEAST_EXPECT(jv.get_double() == 1);
+                BEAST_EXPECT(jv.as_number() == 1);
+                BEAST_EXPECT(jv.get_storage() != sp);
+                BEAST_EXPECT(jv.get_storage() == sp0);
+            }
+            //
+            {
+                object obj;
+                value jv(obj, sp);
+                BEAST_EXPECT(jv.is_object());
+                BEAST_EXPECT(jv.get_storage() == sp);
+                BEAST_EXPECT(jv.get_storage() != sp0);
+            }
+            {
+                array arr;
+                value jv(arr, sp);
+                BEAST_EXPECT(jv.is_array());
+                BEAST_EXPECT(jv.get_storage() == sp);
+                BEAST_EXPECT(jv.get_storage() != sp0);
             }
             {
                 string str;
                 value jv(str, sp);
                 BEAST_EXPECT(jv.is_string());
+                BEAST_EXPECT(jv.get_storage() == sp);
+                BEAST_EXPECT(jv.get_storage() != sp0);
+            }
+            {
+                value jv(number(1), sp);
+                BEAST_EXPECT(jv.is_number());
+                BEAST_EXPECT(jv.is_int64());
+                BEAST_EXPECT(jv.is_uint64());
+                BEAST_EXPECT(jv.is_double());
+                BEAST_EXPECT(jv.get_int64() == 1);
+                BEAST_EXPECT(jv.get_uint64() == 1);
+                BEAST_EXPECT(jv.get_double() == 1);
+                BEAST_EXPECT(jv.as_number() == 1);
+                BEAST_EXPECT(jv.get_storage() == sp);
+                BEAST_EXPECT(jv.get_storage() != sp0);
             }
         }
 
@@ -214,32 +282,146 @@ public:
             {
                 object obj;
                 value jv;
+
                 jv = obj;
                 BEAST_EXPECT(jv.is_object());
+                BEAST_EXPECT(jv.get_storage() != sp);
+                BEAST_EXPECT(jv.get_storage() == sp0);
+
                 jv.reset();
                 BEAST_EXPECT(jv.is_null());
+                BEAST_EXPECT(jv.get_storage() != sp);
+                BEAST_EXPECT(jv.get_storage() == sp0);
+
                 jv = std::move(obj);
                 BEAST_EXPECT(jv.is_object());
+                BEAST_EXPECT(jv.get_storage() != sp);
+                BEAST_EXPECT(jv.get_storage() == sp0);
+            }
+            {
+                object obj;
+                value jv(sp);
+
+                jv = obj;
+                BEAST_EXPECT(jv.is_object());
+                BEAST_EXPECT(jv.get_storage() == sp);
+                BEAST_EXPECT(jv.get_storage() != sp0);
+
+                jv.reset();
+                BEAST_EXPECT(jv.is_null());
+                BEAST_EXPECT(jv.get_storage() == sp);
+                BEAST_EXPECT(jv.get_storage() != sp0);
+
+                jv = std::move(obj);
+                BEAST_EXPECT(jv.is_object());
+                BEAST_EXPECT(jv.get_storage() == sp);
+                BEAST_EXPECT(jv.get_storage() != sp0);
             }
             {
                 array arr;
                 value jv;
+
                 jv = arr;
                 BEAST_EXPECT(jv.is_array());
+                BEAST_EXPECT(jv.get_storage() != sp);
+                BEAST_EXPECT(jv.get_storage() == sp0);
+
                 jv.reset();
                 BEAST_EXPECT(jv.is_null());
+                BEAST_EXPECT(jv.get_storage() != sp);
+                BEAST_EXPECT(jv.get_storage() == sp0);
+
                 jv = std::move(arr);
                 BEAST_EXPECT(jv.is_array());
+                BEAST_EXPECT(jv.get_storage() != sp);
+                BEAST_EXPECT(jv.get_storage() == sp0);
+            }
+            {
+                array arr;
+                value jv(sp);
+
+                jv = arr;
+                BEAST_EXPECT(jv.is_array());
+                BEAST_EXPECT(jv.get_storage() == sp);
+                BEAST_EXPECT(jv.get_storage() != sp0);
+
+                jv.reset();
+                BEAST_EXPECT(jv.is_null());
+                BEAST_EXPECT(jv.get_storage() == sp);
+                BEAST_EXPECT(jv.get_storage() != sp0);
+
+                jv = std::move(arr);
+                BEAST_EXPECT(jv.is_array());
+                BEAST_EXPECT(jv.get_storage() == sp);
+                BEAST_EXPECT(jv.get_storage() != sp0);
             }
             {
                 string str;
                 value jv;
+
                 jv = str;
                 BEAST_EXPECT(jv.is_string());
+                BEAST_EXPECT(jv.get_storage() != sp);
+                BEAST_EXPECT(jv.get_storage() == sp0);
+
                 jv.reset();
                 BEAST_EXPECT(jv.is_null());
+                BEAST_EXPECT(jv.get_storage() != sp);
+                BEAST_EXPECT(jv.get_storage() == sp0);
+
                 jv = std::move(str);
                 BEAST_EXPECT(jv.is_string());
+                BEAST_EXPECT(jv.get_storage() != sp);
+                BEAST_EXPECT(jv.get_storage() == sp0);
+            }
+            {
+                string str;
+                value jv(sp);
+
+                jv = str;
+                BEAST_EXPECT(jv.is_string());
+                BEAST_EXPECT(jv.get_storage() == sp);
+                BEAST_EXPECT(jv.get_storage() != sp0);
+
+                jv.reset();
+                BEAST_EXPECT(jv.is_null());
+                BEAST_EXPECT(jv.get_storage() == sp);
+                BEAST_EXPECT(jv.get_storage() != sp0);
+
+                jv = std::move(str);
+                BEAST_EXPECT(jv.is_string());
+                BEAST_EXPECT(jv.get_storage() == sp);
+                BEAST_EXPECT(jv.get_storage() != sp0);
+            }
+            {
+                number n(1);
+                value jv;
+                jv = n;
+                BEAST_EXPECT(jv.is_number());
+                BEAST_EXPECT(jv.is_int64());
+                BEAST_EXPECT(jv.is_uint64());
+                BEAST_EXPECT(jv.is_double());
+                BEAST_EXPECT(jv.get_int64() == 1);
+                BEAST_EXPECT(jv.get_uint64() == 1);
+                BEAST_EXPECT(jv.get_double() == 1);
+                BEAST_EXPECT(jv.as_number() == 1);
+                BEAST_EXPECT(jv.get_storage() != sp);
+                BEAST_EXPECT(jv.get_storage() == sp0);
+            }
+            {
+                number n(1);
+                value jv(sp);
+                jv = n;
+                BEAST_EXPECT(jv.is_number());
+                BEAST_EXPECT(jv.is_int64());
+                BEAST_EXPECT(jv.is_uint64());
+                BEAST_EXPECT(jv.is_double());
+                BEAST_EXPECT(jv.get_int64() == 1);
+                BEAST_EXPECT(jv.get_uint64() == 1);
+                BEAST_EXPECT(jv.get_double() == 1);
+                BEAST_EXPECT(jv.as_number() == 1);
+                BEAST_EXPECT(jv.get_storage() == sp);
+                BEAST_EXPECT(jv.get_storage() != sp0);
             }
         }
     }
@@ -263,17 +445,11 @@ public:
             jv.reset(kind::string);
             BEAST_EXPECT(jv.is_string());
 
-            jv.reset(kind::signed64);
-            BEAST_EXPECT(jv.is_signed64());
-
-            jv.reset(kind::unsigned64);
-            BEAST_EXPECT(jv.is_unsigned64());
-
-            jv.reset(kind::floating);
-            BEAST_EXPECT(jv.is_floating());
+            jv.reset(kind::number);
+            BEAST_EXPECT(jv.is_number());
 
             jv.reset(kind::boolean);
-            BEAST_EXPECT(jv.is_boolean());
+            BEAST_EXPECT(jv.is_bool());
 
             jv.reset(kind::null);
             BEAST_EXPECT(jv.is_null());
@@ -295,17 +471,11 @@ public:
             jv = kind::string;
             BEAST_EXPECT(jv.is_string());
 
-            jv = kind::signed64;
-            BEAST_EXPECT(jv.is_signed64());
-
-            jv = kind::unsigned64;
-            BEAST_EXPECT(jv.is_unsigned64());
-
-            jv = kind::floating;
-            BEAST_EXPECT(jv.is_floating());
+            jv = kind::number;
+            BEAST_EXPECT(jv.is_number());
 
             jv = kind::boolean;
-            BEAST_EXPECT(jv.is_boolean());
+            BEAST_EXPECT(jv.is_bool());
 
             jv = kind::null;
             BEAST_EXPECT(jv.is_null());
@@ -331,6 +501,18 @@ public:
                 BEAST_EXPECT(jv.is_string());
                 str.clear();
             }
+            {
+                value jv;
+                number& n= jv.emplace_number();
+                BEAST_EXPECT(jv.is_number());
+                n = 0;
+            }
+            {
+                value jv;
+                bool& b= jv.emplace_bool();
+                BEAST_EXPECT(jv.is_bool());
+                b = false;
+            }
         }
     }
 
@@ -351,6 +533,7 @@ public:
             value(unsigned long long{});
             value(float{});
             value(double{});
+            value(long double{});
             value(true);
             value(false);
             value v4(null);
@@ -372,6 +555,7 @@ public:
             jv = unsigned long long{};
             jv = float{};
             jv = double{};
+            jv = long double{};
             jv = true;
             jv = false;
             jv = null;
@@ -388,40 +572,35 @@ public:
         {
             jv = kind::object;
             BEAST_EXPECT(
-                jv.raw_object().size() == 0);
-            jc.raw_object();
+                jv.as_object().size() == 0);
+            jc.as_object();
         }
         {
             jv = kind::array;
             BEAST_EXPECT(
-                jv.raw_array().size() == 0);
-            jc.raw_array();
+                jv.as_array().size() == 0);
+            jc.as_array();
         }
         {
             jv = "x";
-            jv.raw_string() = "y";
-            BEAST_EXPECT(jc.raw_string() == "y");
+            jv.as_string() = "y";
+            BEAST_EXPECT(jc.as_string() == "y");
         }
         {
             jv = signed{};
-            BEAST_EXPECT(jc.raw_signed() == 0);
-            jv.raw_signed() = 1;
-            BEAST_EXPECT(jc.raw_signed() == 1);
+            BEAST_EXPECT(jc.get_int64() == 0);
+            jv.as_number() = -1;
+            BEAST_EXPECT(jc.get_int64() == -1);
         }
         {
             jv = unsigned{};
-            jv.raw_unsigned() = 2;
-            BEAST_EXPECT(jc.raw_signed() == 2);
-        }
-        {
-            jv = float{};
-            jv.raw_floating() = 3;
-            BEAST_EXPECT(jc.raw_floating() == 3);
+            jv.as_number() = 2;
+            BEAST_EXPECT(jc.get_uint64() == 2);
         }
         {
             jv = bool{};
-            jv.raw_bool() = true;
-            BEAST_EXPECT(jc.raw_bool());
+            jv.as_bool() = true;
+            BEAST_EXPECT(jc.as_bool());
         }
     }
 
@@ -434,20 +613,20 @@ public:
     void run() override
     {
         log <<
-            "sizeof(value) == " <<
+            "sizeof(value)  == " <<
             sizeof(value) << "\n";
         log <<
             "sizeof(object) == " <<
             sizeof(object) << "\n";
         log <<
-            "sizeof(array) == " <<
+            "sizeof(array)  == " <<
             sizeof(array) << "\n";
         log <<
             "sizeof(string) == " <<
             sizeof(string) << "\n";
         log <<
-            "sizeof(value::native) == " <<
-            sizeof(value::native) << "\n";
+            "sizeof(number) == " <<
+            sizeof(number) << "\n";
         testSpecial();
         testConstruct();
         testModifiers();

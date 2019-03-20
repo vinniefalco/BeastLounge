@@ -11,10 +11,11 @@
 #define BOOST_BEAST_JSON_BASIC_PARSER_HPP
 
 #include <boost/beast/core/detail/config.hpp>
-#include <boost/beast/core/error.hpp>
-#include <boost/beast/core/string.hpp>
+#include <boost/beast/_experimental/json/number.hpp>
 #include <boost/beast/_experimental/json/detail/basic_parser.hpp>
 #include <boost/beast/_experimental/json/detail/stack.hpp>
+#include <boost/beast/core/error.hpp>
+#include <boost/beast/core/string.hpp>
 #include <boost/asio/buffer.hpp>
 #include <cstdint>
 
@@ -32,24 +33,6 @@ class basic_parser
     : private detail::parser_base
 #endif
 {
-protected:
-    /** The representation of parsed numbers.
-    */
-    struct number
-    {
-        unsigned long long mant = 0;
-        unsigned exp = 0;   // integer exponent
-        bool neg = false;   // true if mantissa is negative
-        bool pos = true;    // true if exponent is positive
-
-        bool
-        is_integral() const noexcept
-        {
-            return exp == 0;
-        }
-    };
-
-private:
     enum class state : char;
 
     /// Depth to which the stack does not require dynamic allocation
@@ -57,15 +40,23 @@ private:
 
     detail::stack<
         state, stack_capacity> stack_;
-    number n_;
+    number::mantissa_type n_mant_;
+    number::exponent_type n_exp_;
+    bool n_neg_;
+    bool n_exp_neg_;
     bool is_key_;
 
-    template<class Unsigned>
     static
     bool
     append_digit(
-        Unsigned* value,
+        number::mantissa_type* value,
         char digit);
+
+    static
+    bool
+    append_digit(
+        number::exponent_type* value,
+        char digit, bool neg);
 
 public:
     /// Returns `true` if the parser has completed without error
