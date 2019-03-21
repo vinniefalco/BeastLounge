@@ -7,24 +7,23 @@
 // Official repository: https://github.com/vinniefalco/BeastLounge
 //
 
-#ifndef LOUNGE_USER_HPP
-#define LOUNGE_USER_HPP
+#ifndef LOUNGE_RPC_HPP
+#define LOUNGE_RPC_HPP
 
 #include "config.hpp"
-#include "types.hpp"
+#include "ws_session.hpp"
+#include <boost/beast/_experimental/json/rpc.hpp>
 
-class user
+class rpc_handler
 {
-    tcp::endpoint ep_;
-
 public:
-    user(tcp::endpoint const& ep);
+    virtual ~rpc_handler() = default;
 
-    tcp::endpoint const&
-    endpoint() const noexcept
-    {
-        return ep_;
-    }
+    virtual
+    void
+    on_request(
+        ws_session& user,
+        json::rpc_request&& req) = 0;
 };
 
 #endif

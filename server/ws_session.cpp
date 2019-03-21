@@ -7,6 +7,8 @@
 // Official repository: https://github.com/vinniefalco/BeastLounge
 //
 
+#include "listener.hpp"
+#include "logger.hpp"
 #include "server.hpp"
 #include "ws_session.hpp"
 #include <boost/beast/websocket/stream.hpp>
@@ -32,7 +34,7 @@ class ws_session_base
 {
 protected:
     server& srv_;
-    agent& ag_;
+    listener& lst_;
     section& log_;
     endpoint_type ep_;
     flat_storage msg_;
@@ -41,20 +43,20 @@ protected:
 public:
     ws_session_base(
         server& srv,
-        agent& ag,
+        listener& lst,
         endpoint_type ep)
         : srv_(srv)
-        , ag_(ag)
+        , lst_(lst)
         , log_(srv_.log().get_section("ws_session"))
         , ep_(ep)
     {
-        ag_.insert(this);
+        lst_.insert(this);
         srv_.room_->insert(this);
     }
 
     ~ws_session_base()
     {
-        ag_.erase(this);
+        lst_.erase(this);
         srv_.room_->erase(this);
     }
 
@@ -135,6 +137,7 @@ public:
                     std::move(req.method);
                 result["params"] =
                     std::move(req.params);
+                send(make_message(res));
             }
             else
             {
@@ -148,6 +151,7 @@ public:
                 //err["data"] // optional
                 if(req.id.has_value())
                     res["id"] = std::move(*req.id);
+                send(make_message(res));
             }
         }
         else
@@ -161,8 +165,8 @@ public:
             err["message"] = ec.message();
             //err["data"] // optional
             res["id"] = json::kind::null;
+            send(make_message(res));
         }
-
     }
 
     void
@@ -224,12 +228,15 @@ public:
     void
     send(message m) override
     {
-        net::post(
-            impl()->ws().get_executor(),
-            beast::bind_front_handler(
-                &ws_session_base::do_send,
-                impl()->shared_from_this(),
-                std::move(m)));
+        if(impl()->ws().get_executor().running_in_this_thread())
+            do_send(std::move(m));
+        else
+            net::post(
+                impl()->ws().get_executor(),
+                beast::bind_front_handler(
+                    &ws_session_base::do_send,
+                    impl()->shared_from_this(),
+                    std::move(m)));
     }
 
     void
@@ -286,11 +293,11 @@ class plain_ws_session_impl
 public:
     plain_ws_session_impl(
         server& srv,
-        agent& ag,
+        listener& lst,
         stream_type stream,
         endpoint_type ep)
         : ws_session_base(
-            srv, ag, ep)
+            srv, lst, ep)
         , ws_(std::move(stream))
     {
     }
@@ -326,12 +333,12 @@ class ssl_ws_session_impl
 public:
     ssl_ws_session_impl(
         server& srv,
-        agent& ag,
+        listener& lst,
         beast::ssl_stream<
             stream_type> stream,
         endpoint_type ep)
         : ws_session_base(
-            srv, ag, ep)
+            srv, lst, ep)
         , ws_(std::move(stream))
     {
     }
@@ -382,15 +389,14 @@ public:
 void
 run_ws_session(
     server& srv,
-    agent& ag,
+    listener& lst,
     stream_type stream,
     endpoint_type ep,
     websocket::request_type req)
 {
     auto sp = boost::make_shared<
             plain_ws_session_impl>(
-        srv,
-        ag,
+        srv, lst,
         std::move(stream),
         ep);
     sp->run(std::move(req));
@@ -399,7 +405,7 @@ run_ws_session(
 void
 run_ws_session(
     server& srv,
-    agent& ag,
+    listener& lst,
     beast::ssl_stream<
         stream_type> stream,
     endpoint_type ep,
@@ -407,8 +413,7 @@ run_ws_session(
 {
     auto sp = boost::make_shared<
             ssl_ws_session_impl>(
-        srv,
-        ag,
+        srv, lst,
         std::move(stream),
         ep);
     sp->run(std::move(req));

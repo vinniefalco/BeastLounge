@@ -22,7 +22,7 @@
   </div>
   <script>
     var ws = null;
-    
+    var id = 1;
     connect.onclick = function() {
       ws = new WebSocket(uri.value);
       ws.onopen = function(ev)
@@ -32,10 +32,12 @@
           {
             "jsonrpc" : "2.0",
             "method" : "set-user",
+            "id" : id,
             "params" : [
               userName.value
             ]
           }));
+        ++id;
       };
       ws.onclose = function(ev) {
         messages.innerText += "[connection closed]\n";
@@ -56,9 +58,11 @@
       var jv = new Object();
       jv.jsonrpc = "2.0";
       jv.method = "say";
+      jv.id = id;
       jv.params = [ userName.value, sendMessage.value ];
       ws.send(JSON.stringify(jv));
       sendMessage.value = "";
+      ++id;
     };
     sendMessage.onkeyup = function(ev) {
       ev.preventDefault();

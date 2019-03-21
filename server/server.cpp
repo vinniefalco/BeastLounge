@@ -9,6 +9,8 @@
  
 #include "server.hpp"
 #include "listener.hpp"
+#include "logger.hpp"
+#include "service.hpp"
 #include <boost/beast/_experimental/json/assign_string.hpp>
 #include <boost/beast/_experimental/json/assign_vector.hpp>
 #include <boost/beast/_experimental/json/parse_file.hpp>
@@ -22,6 +24,14 @@
 #include <mutex>
 #include <thread>
 #include <vector>
+
+//------------------------------------------------------------------------------
+
+extern
+bool
+make_chat_service(server&);
+
+//------------------------------------------------------------------------------
 
 namespace boost {
 namespace beast {
@@ -151,7 +161,7 @@ class server_impl
     server_config cfg_;
     std::shared_ptr<logger> log_;
     std::vector<
-        boost::shared_ptr<agent>> agents_;
+        boost::shared_ptr<service>> agents_;
     asio::signal_set signals_;
     std::condition_variable cv_;
     std::mutex mutex_;
@@ -185,13 +195,21 @@ public:
 
     void
     insert(
-        boost::shared_ptr<agent> sp) override
+        boost::shared_ptr<service> sp) override
     {
         if(running_)
             throw std::logic_error(
                 "server already running");
 
         agents_.emplace_back(std::move(sp));
+    }
+
+    void
+    insert(
+        rpc_handler& h,
+        beast::string_view name) override
+    {
+        boost::ignore_unused(h, name);
     }
 
     void
@@ -366,6 +384,9 @@ make_server(
             std::move(log));
     }
 
+    // Add services
+    make_chat_service(*srv);
+
     // Create listeners
     {
         auto& ja = jv["listeners"];
@@ -380,7 +401,7 @@ make_server(
             e.assign(cfg, ec);
             if(ec)
             {
-                log->cerr() <<
+                srv->log().cerr() <<
                     "listener_config: " << ec.message() << "\n";
                 return nullptr;
             }

@@ -12,6 +12,7 @@
 
 #include "config.hpp"
 #include "server.hpp"
+#include "session.hpp"
 #include <boost/beast/core/error.hpp>
 #include <boost/asio/ip/tcp.hpp>
 #include <memory>
@@ -40,7 +41,28 @@ struct listener_config
     } kind;
 };
 
-/** Create a listening socket to accept connections.
+//------------------------------------------------------------------------------
+
+/// A listening socket
+class listener
+{
+public:
+    virtual ~listener() = default;
+
+    /// Add a session to the listener
+    virtual
+    void
+    insert(session* p) = 0;
+
+    /// Remove a session from the listener
+    virtual
+    void
+    erase(session* p) = 0;
+};
+
+//------------------------------------------------------------------------------
+
+/** Create and run a listening socket to accept connections.
 
     @returns `true` on success
 */

@@ -22,7 +22,9 @@ class tcp;
 
 namespace beast {
 namespace http {}
-namespace json {}
+namespace json {
+class value;
+}
 namespace websocket {}
 namespace ssl {}
 } // beast

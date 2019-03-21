@@ -7,6 +7,8 @@
 // Official repository: https://github.com/vinniefalco/BeastLounge
 //
 
+#include "listener.hpp"
+#include "logger.hpp"
 #include "server.hpp"
 #include "session.hpp"
 #include <boost/beast/core/stream_traits.hpp>
@@ -28,7 +30,7 @@ extern
 void
 run_ws_session(
     server& srv,
-    agent& ag,
+    listener& lst,
     stream_type stream,
     endpoint_type ep,
     websocket::request_type req);
@@ -37,7 +39,7 @@ extern
 void
 run_ws_session(
     server& srv,
-    agent& ag,
+    listener& lst,
     beast::ssl_stream<
         stream_type> stream,
     endpoint_type ep,
@@ -224,7 +226,7 @@ class http_session_base
 {
 protected:
     server& srv_;
-    agent& ag_;
+    listener& lst_;
     section& log_;
     endpoint_type ep_;
     flat_storage storage_;
@@ -235,21 +237,21 @@ protected:
 public:
     http_session_base(
         server& srv,
-        agent& ag,
+        listener& lst,
         endpoint_type ep,
         flat_storage storage)
         : srv_(srv)
-        , ag_(ag)
+        , lst_(lst)
         , log_(srv_.log().get_section("http_session"))
         , ep_(ep)
         , storage_(std::move(storage))
     {
-        ag_.insert(this);
+        lst_.insert(this);
     }
 
     ~http_session_base()
     {
-        ag_.erase(this);
+        lst_.erase(this);
     }
 
     // The CRTP pattern
@@ -371,8 +373,7 @@ public:
 
                 // Create a WebSocket session by transferring the socket
                 return run_ws_session(
-                    srv_,
-                    ag_,
+                    srv_, lst_,
                     std::move(impl()->stream()),
                     ep_,
                     std::move(req));
@@ -450,12 +451,12 @@ class plain_http_session_impl
 public:
     plain_http_session_impl(
         server& srv,
-        agent& ag,
+        listener& lst,
         stream_type stream,
         endpoint_type ep,
         flat_storage storage)
         : http_session_base(
-            srv, ag, ep, std::move(storage))
+            srv, lst, ep, std::move(storage))
         , stream_(std::move(stream))
     {
     }
@@ -520,13 +521,13 @@ class ssl_http_session_impl
 public:
     ssl_http_session_impl(
         server& srv,
-        agent& ag,
+        listener& lst,
         asio::ssl::context& ctx,
         stream_type stream,
         endpoint_type ep,
         flat_storage storage)
         : http_session_base(
-            srv, ag, ep, std::move(storage))
+            srv, lst, ep, std::move(storage))
         , ctx_(ctx)
         , stream_(std::move(stream), ctx)
     {
@@ -651,15 +652,14 @@ public:
 void
 run_http_session(
     server& srv,
-    agent& ag,
+    listener& lst,
     stream_type stream,
     endpoint_type ep,
     flat_storage storage)
 {
-    auto sp =boost::make_shared<
+    auto sp = boost::make_shared<
             plain_http_session_impl>(
-        srv,
-        ag,
+        srv, lst,
         std::move(stream),
         ep,
         std::move(storage));
@@ -669,7 +669,7 @@ run_http_session(
 void
 run_https_session(
     server& srv,
-    agent& ag,
+    listener& lst,
     asio::ssl::context& ctx,
     stream_type stream,
     endpoint_type ep,
@@ -677,9 +677,7 @@ run_https_session(
 {
     auto sp = boost::make_shared<
             ssl_http_session_impl>(
-        srv,
-        ag,
-        ctx,
+        srv, lst, ctx,
         std::move(stream),
         ep,
         std::move(storage));

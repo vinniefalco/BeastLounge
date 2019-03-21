@@ -15,7 +15,7 @@
 
 /** Base for polymorphic connections
 
-    Every session must be owned by one agent
+    Every session must be owned by one service
 */
 class session
 {

@@ -11,13 +11,15 @@
 #define LOUNGE_SERVER_HPP
 
 #include "config.hpp"
-#include "agent.hpp"
-#include "logger.hpp"
-#include "channel.hpp"
 #include "types.hpp"
-#include <boost/beast/_experimental/json/value.hpp>
+#include <boost/beast/core/string.hpp>
 #include <boost/smart_ptr/shared_ptr.hpp>
-#include <memory>
+#include <utility>
+
+#include "channel.hpp" // REMOVE
+class logger;
+class rpc_handler;
+class service;
 
 //------------------------------------------------------------------------------
 
@@ -70,14 +72,22 @@ public:
     executor_type
     make_executor() = 0;
 
-    /** Add an agent to the server.
+    /** Add a service to the server.
 
-        Agents may only be added before calling start().
+        Services may only be added before calling start().
     */
     virtual
     void
     insert(
-        boost::shared_ptr<agent> sp) = 0;
+        boost::shared_ptr<service> sp) = 0;
+
+    /** Register an RPC handler
+    */
+    virtual
+    void
+    insert(
+        rpc_handler& h,
+        beast::string_view name) = 0;
 
     /** Run the server.
 

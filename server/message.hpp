@@ -12,6 +12,7 @@
 
 #include "config.hpp"
 #include <boost/beast/core/buffer_traits.hpp>
+#include <boost/beast/_experimental/json/value.hpp>
 #include <boost/assert.hpp>
 #include <boost/core/exchange.hpp>
 #include <atomic>
@@ -135,5 +136,9 @@ public:
         std::swap(lhs.p_, rhs.p_);
     }
 };
+
+/// Construct a message from a JSON value
+message
+make_message(json::value const& jv);
 
 #endif

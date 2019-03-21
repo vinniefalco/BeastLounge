@@ -8,17 +8,22 @@
 //
 
 #include "listener.hpp"
+#include "logger.hpp"
 #include "server_certificate.hpp"
+#include "service.hpp"
 #include <boost/beast/core/detect_ssl.hpp>
 #include <boost/asio/coroutine.hpp>
-#include <boost/asio/yield.hpp>
+#include <boost/container/flat_set.hpp>
+#include <boost/smart_ptr/weak_ptr.hpp>
 #include <iostream>
+#include <mutex>
+#include <vector>
 
 extern
 void
 run_http_session(
     server& srv,
-    agent& ag,
+    listener& lst,
     stream_type stream,
     endpoint_type ep,
     flat_storage storage);
@@ -27,11 +32,12 @@ extern
 void
 run_https_session(
     server& srv,
-    agent& ag,
+    listener& lst,
     asio::ssl::context& ctx,
     stream_type stream,
     endpoint_type ep,
     flat_storage storage);
+
 
 namespace {
 
@@ -44,7 +50,7 @@ class detector
     , public session
 {
     server& srv_;
-    agent& ag_;
+    listener& lst_;
     section& log_;
     asio::ssl::context& ctx_;
     stream_type stream_;
@@ -54,24 +60,24 @@ class detector
 public:
     detector(
         server& srv,
-        agent& ag,
+        listener& lst,
         section& log,
         asio::ssl::context& ctx,
         socket_type sock,
         endpoint_type ep)
         : srv_(srv)
-        , ag_(ag)
+        , lst_(lst)
         , log_(log)
         , ctx_(ctx)
         , stream_(std::move(sock))
         , ep_(ep)
     {
-        ag_.insert(this);
+        lst_.insert(this);
     }
 
     ~detector()
     {
-        ag_.erase(this);
+        lst_.erase(this);
     }
 
     void
@@ -107,6 +113,7 @@ public:
         stream_.cancel();
     }
 
+#include <boost/asio/yield.hpp>
     void
     operator()(
         beast::error_code ec = {},
@@ -132,9 +139,7 @@ public:
             {
                 // launch the HTTPS session
                 return run_https_session(
-                    srv_,
-                    ag_,
-                    ctx_,
+                    srv_, lst_, ctx_,
                     std::move(stream_),
                     ep_,
                     std::move(storage_));
@@ -143,14 +148,14 @@ public:
             {
                 // launch the plain HTTP session
                 return run_http_session(
-                    srv_,
-                    ag_,
+                    srv_, lst_,
                     std::move(stream_),
                     ep_,
                     std::move(storage_));
             }
         }
     }
+#include <boost/asio/unyield.hpp>
 
     void
     fail(beast::error_code ec, char const* what)
@@ -165,10 +170,11 @@ public:
 //------------------------------------------------------------------------------
 
 // Accepts incoming connections and launches the sessions
-class listener
-    : public boost::enable_shared_from_this<listener>
+class listener_impl
+    : public boost::enable_shared_from_this<listener_impl>
     , public boost::asio::coroutine
-    , public agent
+    , public service
+    , public listener
 {
     // This hack works around a bug in basic_socket_acceptor
     // which uses the wrong socket type here:
@@ -187,15 +193,18 @@ class listener
     };
 
     server& srv_;
-    listener_config cfg_;
     section& log_;
+    std::mutex mutex_;
+    listener_config cfg_;
     asio::ssl::context ctx_;
     net::basic_socket_acceptor<
         tcp_ex, executor_type> acceptor_;
+    boost::container::flat_set<
+        session*> sessions_;
     endpoint_type ep_;
 
 public:
-    listener(
+    listener_impl(
         server& srv,
         listener_config cfg)
         : srv_(srv)
@@ -208,6 +217,11 @@ public:
 
         // This holds the self-signed certificate used by the server
         load_server_certificate(ctx_);
+    }
+
+    ~listener_impl()
+    {
+        BOOST_ASSERT(sessions_.empty());
     }
 
     bool
@@ -254,7 +268,7 @@ public:
             return false;
         }
 
-        // Add this agent to the server
+        // Add this service to the server
         srv_.insert(shared_from_this());
 
         return true;
@@ -270,11 +284,22 @@ public:
         acceptor_.close();
 
         // Stop all the sessions
-        for(auto& e : release_sessions())
+        std::vector<
+            boost::weak_ptr<session>> v;
+        {
+            std::lock_guard<std::mutex> lock(mutex_);
+            v.reserve(sessions_.size());
+            for(auto p : sessions_)
+                v.emplace_back(p->get_weak_session_ptr());
+            sessions_.clear();
+            sessions_.shrink_to_fit();
+        }
+        for(auto& e : v)
             if(auto sp = e.lock())
                 sp->on_stop();
     }
 
+#include <boost/asio/yield.hpp>
     void
     operator()(
         beast::error_code ec,
@@ -332,6 +357,7 @@ public:
             }
         }
     }
+#include <boost/asio/unyield.hpp>
 
     // Report a failure
     void
@@ -345,8 +371,29 @@ public:
 
     //--------------------------------------------------------------------------
     //
-    // agent
+    // listener
     //
+    //--------------------------------------------------------------------------
+
+    void
+    insert(session* p) override
+    {
+        std::lock_guard<std::mutex> lock(mutex_);
+        sessions_.insert(p);
+    }
+
+    void
+    erase(session* p) override
+    {
+        std::lock_guard<std::mutex> lock(mutex_);
+        sessions_.erase(p);
+    }
+
+    //--------------------------------------------------------------------------
+    //
+    // service
+    //
+    //--------------------------------------------------------------------------
 
     /// Called when the server starts
     void
@@ -367,7 +414,7 @@ public:
         net::post(
             acceptor_.get_executor(),
             beast::bind_front_handler(
-                &listener::do_stop,
+                &listener_impl::do_stop,
                 shared_from_this()));
     }
 
@@ -396,7 +443,7 @@ run_listener(
     listener_config cfg)
 {
     auto sp =
-        boost::make_shared<listener>(
+        boost::make_shared<listener_impl>(
             srv, std::move(cfg));
     return sp->open();
 }

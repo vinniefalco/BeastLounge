@@ -7,35 +7,21 @@
 // Official repository: https://github.com/vinniefalco/BeastLounge
 //
 
-#ifndef LOUNGE_AGENT_HPP
-#define LOUNGE_AGENT_HPP
+#ifndef LOUNGE_SERVICE_HPP
+#define LOUNGE_SERVICE_HPP
 
 #include "config.hpp"
-#include "session.hpp"
 #include <boost/beast/_experimental/json/value.hpp>
-#include <boost/container/flat_set.hpp>
-#include <boost/smart_ptr/weak_ptr.hpp>
-#include <mutex>
-#include <vector>
 
 /** Base for polymorphic services
 
-    The lifetime of each agent is the
+    The lifetime of each service is the
     same as the server lifetime.
 */
-class agent
+class service
 {
-protected:
-    std::mutex mutex_;
-    boost::container::flat_set<
-        session*> sessions_;
-
-    std::vector<
-        boost::weak_ptr<session>>
-    release_sessions();
-
 public:
-    virtual ~agent();
+    virtual ~service() = default;
 
     /** Called when the server starts.
 
@@ -58,16 +44,6 @@ public:
     virtual
     void
     on_stat(json::value& jv) = 0;
-
-    /** Add a session to the agent
-    */
-    void
-    insert(session* p);
-
-    /** Remove a session from the agent
-    */
-    void
-    erase(session* p);
 };
 
 #endif
