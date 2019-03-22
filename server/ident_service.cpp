@@ -13,8 +13,7 @@
 #include "server.hpp"
 #include "service.hpp"
 #include "user.hpp"
-#include <boost/shared_ptr.hpp>
-#include <functional>
+#include <boost/make_unique.hpp>
 
 //------------------------------------------------------------------------------
 
@@ -42,12 +41,9 @@ public:
     void
     on_start() override
     {
-        namespace ph = std::placeholders;
-
         // Register RPC commands
-        srv_.dispatcher().insert(
-            "set-identity", "ident", std::bind(
-            &ident_service::rpc_set_identity, this, ph::_1, ph::_2));
+        auto& d = srv_.dispatcher();
+        d.insert("set-identity", "ident", &ident_service::rpc_set_identity, this);
     }
 
     void
@@ -96,7 +92,5 @@ public:
 void
 make_ident_service(server& srv)
 {
-    auto sp = boost::make_shared<
-        ident_service>(srv);
-    srv.insert(std::move(sp));
+    srv.insert(boost::make_unique<ident_service>(srv));
 }

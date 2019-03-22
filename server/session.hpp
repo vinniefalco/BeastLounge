@@ -11,21 +11,17 @@
 #define LOUNGE_SESSION_HPP
 
 #include "config.hpp"
-#include <boost/smart_ptr/shared_ptr.hpp>
+#include "utility.hpp"
 
 /** Base for polymorphic connections
 
-    Every session must be owned by one service
+    Every session must be owned by one listener
 */
 class session
+    : public enable_shared_from
 {
 public:
     virtual ~session() = default;
-
-    /// Returns a weak pointer to the session
-    virtual
-    boost::weak_ptr<session>
-    get_weak_session_ptr() = 0;
 
     /** Called when the server stops.
 

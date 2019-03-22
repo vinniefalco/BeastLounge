@@ -169,8 +169,7 @@ class server_impl
 {
     server_config cfg_;
     std::shared_ptr<logger> log_;
-    std::vector<
-        boost::shared_ptr<service>> agents_;
+    std::vector<std::unique_ptr<service>> services_;
     asio::signal_set signals_;
     std::condition_variable cv_;
     std::mutex mutex_;
@@ -196,18 +195,17 @@ public:
 
     ~server_impl()
     {
-        BOOST_ASSERT(agents_.empty());
+        BOOST_ASSERT(services_.empty());
     }
 
     void
-    insert(
-        boost::shared_ptr<service> sp) override
+    insert(std::unique_ptr<service> sp) override
     {
         if(running_)
             throw std::logic_error(
                 "server already running");
 
-        agents_.emplace_back(std::move(sp));
+        services_.emplace_back(std::move(sp));
     }
 
     void
@@ -220,13 +218,12 @@ public:
         running_ = true;
 
         // Start all agents
-        for(auto const& sp : agents_)
+        for(auto const& sp : services_)
             sp->on_start();
 
         // Capture SIGINT and SIGTERM to perform a clean shutdown
         signals_.async_wait(
-            beast::bind_front_handler(
-                &server_impl::on_signal, this));
+            bind_front(this, &server_impl::on_signal));
 
     #ifndef LOUNGE_USE_SYSTEM_EXECUTOR
         std::vector<std::thread> vt;
@@ -244,11 +241,11 @@ public:
         }
 
         // Notify all agents to stop
-        auto agents = std::move(agents_);
+        auto agents = std::move(services_);
         for(auto const& sp : agents)
             sp->on_stop();
 
-        // agents must be kept alive until after
+        // services must be kept alive until after
         // all executor threads are joined.
 
         // If we get here, then the server has
@@ -277,8 +274,7 @@ public:
     {
         net::post(
             signals_.get_executor(),
-            beast::bind_front_handler(
-                &server_impl::on_stop, this));
+            bind_front(this, &server_impl::on_stop));
     }
 
     void
@@ -313,7 +309,7 @@ public:
     {
         jv.emplace_array();
         std::lock_guard<std::mutex> lock(mutex_);
-        for(auto& ag : agents_)
+        for(auto& ag : services_)
             ag->on_stat(jv);
     }
 

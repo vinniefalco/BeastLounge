@@ -66,6 +66,7 @@ class logger_impl : public logger
             std::lock_guard<
                 std::mutex> lock(log_.m_);
             beast::error_code ec;
+            log_.cerr_ << s;
             log_.file_.write(
                 s.data(), s.size(), ec);
             // VFALCO what about ec?

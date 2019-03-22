@@ -11,9 +11,11 @@
 #include "logger.hpp"
 #include "server_certificate.hpp"
 #include "service.hpp"
+#include "utility.hpp"
 #include <boost/beast/core/detect_ssl.hpp>
 #include <boost/asio/coroutine.hpp>
 #include <boost/container/flat_set.hpp>
+#include <boost/make_unique.hpp>
 #include <boost/smart_ptr/weak_ptr.hpp>
 #include <iostream>
 #include <mutex>
@@ -45,8 +47,7 @@ namespace {
 // a plain HTTP session or a Secure HTTP session.
 
 class detector
-    : public boost::enable_shared_from_this<detector>
-    , public boost::asio::coroutine
+    : public boost::asio::coroutine
     , public session
 {
     server& srv_;
@@ -86,13 +87,7 @@ public:
         // Use post to get on to our strand.
         net::post(
             stream_.get_executor(),
-            self(this));
-    }
-
-    boost::weak_ptr<session>
-    get_weak_session_ptr() override
-    {
-        return this->weak_from_this();
+            bind_front(this));
     }
 
     void
@@ -100,9 +95,7 @@ public:
     {
         net::post(
             stream_.get_executor(),
-            beast::bind_front_handler(
-                &detector::do_stop,
-                shared_from_this()));
+            bind_front(this, &detector::do_stop));
     }
 
     void
@@ -129,7 +122,7 @@ public:
             yield beast::async_detect_ssl(
                 stream_,
                 storage_,
-                self(this));
+                bind_front(this));
 
             // Report any error
             if(ec)
@@ -171,8 +164,7 @@ public:
 
 // Accepts incoming connections and launches the sessions
 class listener_impl
-    : public boost::enable_shared_from_this<listener_impl>
-    , public boost::asio::coroutine
+    : public boost::asio::coroutine
     , public service
     , public listener
 {
@@ -268,9 +260,6 @@ public:
             return false;
         }
 
-        // Add this service to the server
-        srv_.insert(shared_from_this());
-
         return true;
     }
 
@@ -290,7 +279,7 @@ public:
             std::lock_guard<std::mutex> lock(mutex_);
             v.reserve(sessions_.size());
             for(auto p : sessions_)
-                v.emplace_back(p->get_weak_session_ptr());
+                v.emplace_back(weak_from(p));
             sessions_.clear();
             sessions_.shrink_to_fit();
         }
@@ -353,7 +342,7 @@ public:
                 yield acceptor_.async_accept(
                     srv_.make_executor(),
                     ep_,
-                    self(this));
+                    bind_front(this));
             }
         }
     }
@@ -403,7 +392,7 @@ public:
         acceptor_.async_accept(
             srv_.make_executor(),
             ep_,
-            self(this));
+            bind_front(this));
     }
 
     /// Called when the server stops
@@ -415,7 +404,7 @@ public:
             acceptor_.get_executor(),
             beast::bind_front_handler(
                 &listener_impl::do_stop,
-                shared_from_this()));
+                this));
     }
 
     void
@@ -442,8 +431,9 @@ run_listener(
     server& srv,
     listener_config cfg)
 {
-    auto sp =
-        boost::make_shared<listener_impl>(
+    auto sp = boost::make_unique<listener_impl>(
             srv, std::move(cfg));
-    return sp->open();
+    bool open = sp->open();
+    srv.insert(std::move(sp));
+    return open;
 }

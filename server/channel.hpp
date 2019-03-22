@@ -11,9 +11,9 @@
 #define LOUNGE_CHANNEL_HPP
 
 #include "config.hpp"
+#include <boost/beast/_experimental/json/value.hpp>
 #include <memory>
 
-class message;
 class user;
 
 class channel
@@ -21,17 +21,21 @@ class channel
 public:
     virtual ~channel() = default;
 
+    /** Add a user to the channel.
+
+        @returns `false` if the user was already in the channel.
+    */
     virtual
-    void
-    insert(user*) = 0;
+    bool
+    insert(user& u) = 0;
 
     virtual
     void
-    erase(user*) = 0;
+    erase(user& u) = 0;
 
     virtual
     void
-    send(message m) = 0;
+    send(json::value const& jv) = 0;
 };
 
 extern

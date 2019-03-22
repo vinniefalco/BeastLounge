@@ -36,6 +36,19 @@ public:
         beast::string_view agent,
         handler_type handler) = 0;
 
+    template<class T>
+    void
+    insert(
+        beast::string_view method,
+        beast::string_view agent,
+        void (T::*mf)(user&, json::rpc_request&),
+        T* t)
+    {
+        namespace ph = std::placeholders;
+        insert(method, agent, std::bind(
+            mf, t, ph::_1, ph::_2));
+    }
+
     virtual
     void
     dispatch(

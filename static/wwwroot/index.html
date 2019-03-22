@@ -31,7 +31,7 @@
         ws.send(JSON.stringify(
           {
             "jsonrpc" : "2.0",
-            "method" : "set-identity",
+            "method" : "identify",
             "id" : id,
             "params" : {
               "agent" : "ident",
@@ -39,12 +39,27 @@
             }
           }));
         ++id;
+        ws.send(JSON.stringify(
+          {
+            "jsonrpc" : "2.0",
+            "method" : "join",
+            "id" : id,
+            "params" : {
+              "agent" : "chat"
+            }
+          }));
+        ++id;
       };
       ws.onclose = function(ev) {
         messages.innerText += "[connection closed]\n";
       };
-      ws.onmessage = function(ev) {
-        messages.innerText += ev.data + "\n";
+      ws.onmessage = function(ev)
+      {
+        var jv = JSON.parse(ev.data);
+        if(jv["channel"] == 1)
+          messages.innerText += jv["name"] + ": " + jv["message"] + "\n";
+        else if(jv["error"] != null)
+          messages.innerText += ev.data + "\n";
       };
       ws.onerror = function(ev) {
         messages.innerText += "[error]\n";
@@ -58,11 +73,24 @@
     {
       var jv = new Object();
       jv.jsonrpc = "2.0";
-      jv.method = "say";
       jv.id = id;
-      jv.params = {
-        "message" : sendMessage.value
-      };
+      if(sendMessage.value.charAt(0) != '/')
+      {
+        jv.method = "say";
+        jv.params = {
+          "agent" : "chat",
+          "message" : sendMessage.value
+        }
+      }
+      else
+      {
+        jv.method = "slash";
+        jv.agent = "chat";
+        jv.params = {
+          "agent" : "chat",
+          "command" : sendMessage.value
+        }
+      }
       ws.send(JSON.stringify(jv));
       sendMessage.value = "";
       ++id;

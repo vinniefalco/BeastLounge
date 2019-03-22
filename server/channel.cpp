@@ -8,6 +8,7 @@
 //
 
 #include "channel.hpp"
+#include "message.hpp"
 #include "user.hpp"
 #include <boost/container/flat_set.hpp>
 #include <boost/make_unique.hpp>
@@ -30,22 +31,29 @@ public:
     {
     }
 
-    void
-    insert(user* u) override
+    bool
+    insert(user& u) override
     {
         std::lock_guard<std::mutex> lock(mutex_);
-        users_.insert(u);
+        auto result = users_.insert(&u);
+        return result.second;
     }
 
     void
-    erase(user* u) override
+    erase(user& u) override
     {
         std::lock_guard<std::mutex> lock(mutex_);
-        users_.erase(u);
+        users_.erase(&u);
     }
 
     void
-    send(message m) override
+    send(json::value const& jv) override
+    {
+        send(make_message(jv));
+    }
+
+    void
+    send(message m)
     {
         // Make a local list of all the weak pointers
         // representing the sessions, so we can do the
@@ -55,7 +63,7 @@ public:
             std::lock_guard<std::mutex> lock(mutex_);
             v.reserve(users_.size());
             for(auto p : users_)
-                v.emplace_back(p->get_weak_ptr());
+                v.emplace_back(weak_from(p));
         }
 
         // For each user in our local list, try to

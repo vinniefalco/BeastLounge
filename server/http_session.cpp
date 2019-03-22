@@ -11,6 +11,7 @@
 #include "logger.hpp"
 #include "server.hpp"
 #include "session.hpp"
+#include "utility.hpp"
 #include <boost/beast/core/stream_traits.hpp>
 #include <boost/beast/http/file_body.hpp>
 #include <boost/beast/http/read.hpp>
@@ -261,6 +262,34 @@ public:
         return static_cast<Derived*>(this);
     }
 
+    //--------------------------------------------------------------------------
+    //
+    // session
+    //
+    //--------------------------------------------------------------------------
+
+    void
+    on_stop() override
+    {
+        net::post(
+            impl()->stream().get_executor(),
+            bind_front(this, &http_session_base::do_stop));
+    }
+
+    void
+    do_stop()
+    {
+        beast::error_code ec;
+        beast::close_socket(
+            beast::get_lowest_layer(impl()->stream()));
+    }
+
+    //--------------------------------------------------------------------------
+    //
+    // http_session
+    //
+    //--------------------------------------------------------------------------
+
     // We only require C++11, this helper is
     // the equivalent of a C++14 generic lambda.
     struct send_lambda
@@ -279,7 +308,7 @@ public:
                     std::move(msg));
 
             // Write the response
-            auto self = self_.impl()->shared_from_this();
+            auto self = bind_front(&self_);
             http::async_write(
                 self_.impl()->stream(),
                 *sp,
@@ -287,7 +316,7 @@ public:
                     beast::error_code ec,
                     std::size_t bytes_transferred)
                 {
-                    (*self)(
+                    self(
                         ec,
                         bytes_transferred,
                         sp->need_eof());
@@ -350,7 +379,7 @@ public:
                 impl()->stream(),
                 storage_,
                 *pr_,
-                self(impl()));
+                bind_front(this));
 
             // This means they closed the connection
             if(ec == http::error::end_of_stream)
@@ -408,43 +437,12 @@ public:
         }
     }
 
-    //--------------------------------------------------------------------------
-    //
-    // session
-    //
-
-    boost::weak_ptr<session>
-    get_weak_session_ptr() override
-    {
-        return impl()->weak_from_this();
-    }
-
-    void
-    on_stop() override
-    {
-        net::post(
-            impl()->stream().get_executor(),
-            beast::bind_front_handler(
-                &http_session_base::do_stop,
-                impl()->shared_from_this()));
-    }
-
-    void
-    do_stop()
-    {
-        beast::error_code ec;
-        beast::close_socket(
-            beast::get_lowest_layer(impl()->stream()));
-    }
 };
 
 //------------------------------------------------------------------------------
 
 class plain_http_session_impl
-    : public boost::enable_shared_from_this<
-        plain_http_session_impl>
-    , public http_session_base<
-        plain_http_session_impl>
+    : public http_session_base<plain_http_session_impl>
 {
     stream_type stream_;
 
@@ -486,7 +484,7 @@ public:
         // Use post to get on to our strand.
         net::post(
             stream_.get_executor(),
-            self(this));
+            bind_front(this));
     }
 
     void
@@ -511,8 +509,7 @@ public:
 //------------------------------------------------------------------------------
 
 class ssl_http_session_impl
-    : public boost::enable_shared_from_this<ssl_http_session_impl>
-    , public http_session_base<ssl_http_session_impl>
+    : public http_session_base<ssl_http_session_impl>
 {
     asio::ssl::context& ctx_;
     beast::ssl_stream<
@@ -558,9 +555,8 @@ public:
         // Use post to get on to our strand.
         net::post(
             stream_.get_executor(),
-            beast::bind_front_handler(
-                &ssl_http_session_impl::do_run,
-                shared_from_this()));
+            bind_front(this,
+                &ssl_http_session_impl::do_run));
     }
 
     void
@@ -573,9 +569,7 @@ public:
         stream_.async_handshake(
             asio::ssl::stream_base::server,
             storage_.data(),
-            beast::bind_front_handler(
-                &ssl_http_session_impl::on_handshake,
-                shared_from_this()));
+            bind_front(this, &ssl_http_session_impl::on_handshake));
     }
 
     void
@@ -602,9 +596,7 @@ public:
 
         // Perform the TLS closing handshake
         stream_.async_shutdown(
-            beast::bind_front_handler(
-                &ssl_http_session_impl::on_shutdown,
-                shared_from_this()));
+            bind_front(this, &ssl_http_session_impl::on_shutdown));
     }
 
     void
