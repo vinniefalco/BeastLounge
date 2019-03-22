@@ -23,8 +23,11 @@
   <script>
     var ws = null;
     var id = 1;
-    connect.onclick = function() {
+
+    connect.onclick = function()
+    {
       ws = new WebSocket(uri.value);
+    
       ws.onopen = function(ev)
       {
         messages.innerText += "[connection opened]\n";
@@ -34,7 +37,6 @@
             "method" : "identify",
             "id" : id,
             "params" : {
-              "agent" : "ident",
               "name" : userName.value
             }
           }));
@@ -45,26 +47,49 @@
             "method" : "join",
             "id" : id,
             "params" : {
-              "agent" : "chat"
+              "channel" : 1
             }
           }));
         ++id;
       };
-      ws.onclose = function(ev) {
+
+      ws.onclose = function(ev)
+      {
         messages.innerText += "[connection closed]\n";
       };
+
       ws.onmessage = function(ev)
       {
         var jv = JSON.parse(ev.data);
-        if(jv["channel"] == 1)
-          messages.innerText += jv["name"] + ": " + jv["message"] + "\n";
-        else if(jv["error"] != null)
-          messages.innerText += ev.data + "\n";
+        if(jv["error"] != null)
+        {
+          messages.innerText += "Error: " + jv["error"]["message"] + "(" + jv["error"]["code"] + ")"
+        }
+        else
+        {
+          switch(jv["verb"])
+          {
+            case "join":
+              messages.innerText += jv["channel"] + ". " + jv["user"] + " joins\n";
+              break;
+
+            case "leave":
+              messages.innerText += jv["channel"] + ". " + jv["user"] + " leaves\n";
+              break;
+
+            case "say":
+              messages.innerText += jv["channel"] + ". " + jv["user"] + ": " + jv["message"] + "\n";
+
+          }
+        }
       };
-      ws.onerror = function(ev) {
+
+      ws.onerror = function(ev)
+      {
         messages.innerText += "[error]\n";
         console.log(ev);
       };
+
     };
     disconnect.onclick = function() {
       ws.close();
@@ -78,7 +103,7 @@
       {
         jv.method = "say";
         jv.params = {
-          "agent" : "chat",
+          "channel" : 1,
           "message" : sendMessage.value
         }
       }
@@ -87,7 +112,7 @@
         jv.method = "slash";
         jv.agent = "chat";
         jv.params = {
-          "agent" : "chat",
+          "channel" : 1,
           "command" : sendMessage.value
         }
       }

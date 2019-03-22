@@ -21,23 +21,23 @@ namespace {
 class dispatcher_impl
     : public dispatcher
 {
-    struct member
+    struct command
     {
         beast::string_view method;
-        beast::string_view agent;
-    };
-
-    struct command : member
-    {
         handler_type handler;
 
         command(
             beast::string_view method_,
-            beast::string_view agent_,
             handler_type&& handler_)
-            : member({method_, agent_})
+            : method(method_)
             , handler(std::move(handler_))
         {
+        }
+
+        operator
+        beast::string_view() const noexcept
+        {
+            return method;
         }
     };
 
@@ -47,15 +47,10 @@ class dispatcher_impl
 
         bool
         operator()(
-            member const& lhs,
-            member const& rhs) const noexcept
+            beast::string_view lhs,
+            beast::string_view rhs) const noexcept
         {
-            if(lhs.method < rhs.method)
-                return true;
-            else if(lhs.method > rhs.method)
-                return false;
-            else
-                return (lhs.agent < rhs.agent);
+            return lhs < rhs;
         }
     };
 
@@ -74,11 +69,10 @@ public:
     void
     insert(
         beast::string_view method,
-        beast::string_view agent,
         handler_type handler) override
     {
         set_.emplace(command{
-            method, agent, std::move(handler)});
+            method, std::move(handler)});
     }
 
     void
@@ -105,18 +99,14 @@ public:
                     json::rpc_error::invalid_request,
                     ec.message());
 
-            // Extract the agent to route to
             beast::string_view method = req.method;
-            beast::string_view agent =
-                checked_string(req.params, "agent");
 
             // Look up the command
-            auto const it =
-                set_.find(member{method, agent});
+            auto const it = set_.find(method);
             if(it == set_.end())
                 throw rpc_exception(
                     json::rpc_error::method_not_found,
-                    "Unknown method or agent");
+                    "Unknown method");
 
             // Dispatch the RPC command
             it->handler(u, req);

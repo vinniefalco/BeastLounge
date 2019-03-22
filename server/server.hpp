@@ -18,7 +18,6 @@
 #include <memory>
 #include <utility>
 
-#include "channel.hpp" // REMOVE
 class dispatcher;
 class logger;
 class rpc_handler;

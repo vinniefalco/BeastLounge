@@ -10,78 +10,81 @@
 #include "channel.hpp"
 #include "message.hpp"
 #include "user.hpp"
-#include <boost/container/flat_set.hpp>
-#include <boost/make_unique.hpp>
-#include <boost/weak_ptr.hpp>
-#include <mutex>
-#include <vector>
+#include <atomic>
 
-//------------------------------------------------------------------------------
-
-namespace {
-
-class channel_impl : public channel
+channel::
+channel()
+    : cid_(
+        []
+        {
+            static std::atomic<std::size_t> cid = 0;
+            return ++cid;
+        }())
 {
-    std::mutex mutex_;
-    boost::container::flat_set<user*> users_;
+}
 
-public:
-    explicit
-    channel_impl()
-    {
-    }
+channel::
+~channel()
+{
+    // The proper way to delete a channel is
+    // to first remove all the users, so they
+    // get the notification.
+    BOOST_ASSERT(users_.empty());
+}
 
-    bool
-    insert(user& u) override
+bool
+channel::
+insert(user& u)
+{
+    bool inserted;
     {
         std::lock_guard<std::mutex> lock(mutex_);
-        auto result = users_.insert(&u);
-        return result.second;
+        inserted = users_.insert(&u).second;
     }
+    if(inserted)
+        u.on_insert(*this);
+    on_insert(u);
+    return inserted;
+}
 
-    void
-    erase(user& u) override
+void
+channel::
+erase(user& u)
+{
     {
         std::lock_guard<std::mutex> lock(mutex_);
         users_.erase(&u);
     }
+    u.on_erase(*this);
+    on_erase(u);
+}
 
-    void
-    send(json::value const& jv) override
+void
+channel::
+send(json::value const& jv)
+{
+    send(make_message(jv));
+}
+
+void
+channel::
+send(message m)
+{
+    // Make a local list of all the weak pointers
+    // representing the sessions, so we can do the
+    // actual sending without holding the mutex:
+    std::vector<boost::weak_ptr<user>> v;
     {
-        send(make_message(jv));
+        std::lock_guard<std::mutex> lock(mutex_);
+        v.reserve(users_.size());
+        for(auto p : users_)
+            v.emplace_back(weak_from(p));
     }
 
-    void
-    send(message m)
-    {
-        // Make a local list of all the weak pointers
-        // representing the sessions, so we can do the
-        // actual sending without holding the mutex:
-        std::vector<boost::weak_ptr<user>> v;
-        {
-            std::lock_guard<std::mutex> lock(mutex_);
-            v.reserve(users_.size());
-            for(auto p : users_)
-                v.emplace_back(weak_from(p));
-        }
-
-        // For each user in our local list, try to
-        // acquire a strong pointer. If successful,
-        // then send the message to that user.
-        for(auto const& wp : v)
-            if(auto sp = wp.lock())
-                sp->send(m);
-    };
+    // For each user in our local list, try to
+    // acquire a strong pointer. If successful,
+    // then send the message to that user.
+    for(auto const& wp : v)
+        if(auto sp = wp.lock())
+            sp->send(m);
 };
-
-} // (anon)
-
-//------------------------------------------------------------------------------
-
-std::unique_ptr<channel>
-make_channel()
-{
-    return boost::make_unique<
-        channel_impl>();
-}

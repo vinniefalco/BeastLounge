@@ -14,15 +14,29 @@
 #include "session.hpp"
 #include "utility.hpp"
 #include <boost/beast/_experimental/json/value.hpp>
+#include <boost/container/flat_set.hpp>
+#include <mutex>
 #include <string>
 
+class channel;
 class message;
 
 /// Represents a connected user
 class user : public session
 {
+    std::mutex mutex_;
+    boost::container::flat_set<channel*> channels_;
+
 public:
     std::string name;
+
+    ~user();
+
+    void
+    on_insert(channel& c);
+
+    void
+    on_erase(channel& c);
 
     /** Send a JSON message
 

@@ -22,19 +22,45 @@
 
 namespace {
 
+class room : public channel
+{
+    server& srv_;
+    
+public:
+    explicit
+    room(server& srv)
+        : srv_(srv)
+    {
+    }
+
+    void
+    on_insert(user& u) override
+    {
+        // indicates a user joined the room
+        json::value jv;
+        jv["channel"] = cid();
+        jv["verb"] = "join";
+        jv["user"] = u.name;
+        send(jv);
+    }
+
+    void
+    on_erase(user& u) override
+    {
+        // indicates a user left the room
+        json::value jv;
+        jv["channel"] = cid();
+        jv["verb"] = "leave";
+        jv["user"] = u.name;
+        send(jv);
+    }
+};
+
+//------------------------------------------------------------------------------
+
 class chat_service
     : public service
 {
-    struct room
-    {
-        std::unique_ptr<channel> c;
-
-        room()
-            : c(make_channel())
-        {
-        }
-    };
-
     server& srv_;
     room room_;
 
@@ -42,6 +68,7 @@ public:
     chat_service(
         server& srv)
         : srv_(srv)
+        , room_(srv)
     {
     }
 
@@ -56,9 +83,9 @@ public:
     {
         auto& d = srv_.dispatcher();
         // Register RPC commands
-        d.insert("join",  "chat", &chat_service::rpc_join, this);
-        d.insert("say",   "chat", &chat_service::rpc_say, this);
-        d.insert("slash", "chat", &chat_service::rpc_slash, this);
+        d.insert("join",  &chat_service::rpc_join, this);
+        d.insert("say",   &chat_service::rpc_say, this);
+        d.insert("slash", &chat_service::rpc_slash, this);
     }
 
     void
@@ -89,7 +116,7 @@ public:
     {
         checked_user(u);
 
-        if(! room_.c->insert(u))
+        if(! room_.insert(u))
             throw rpc_exception(
                 "Already joined");
 
@@ -114,10 +141,11 @@ public:
 
         {
             json::value jv;
-            jv["channel"] = 1;
+            jv["verb"] = "say";
+            jv["channel"] = room_.cid();
+            jv["user"] = u.name;
             jv["message"] = text;
-            jv["name"] = u.name;
-            room_.c->send(jv);
+            room_.send(jv);
         }
 
         if(req.id.has_value())

@@ -43,7 +43,7 @@ public:
     {
         // Register RPC commands
         auto& d = srv_.dispatcher();
-        d.insert("identify", "ident", &ident_service::rpc_identify, this);
+        d.insert("identify", &ident_service::rpc_set_identity, this);
     }
 
     void
@@ -60,7 +60,7 @@ public:
     //--------------------------------------------------------------------------
 
     void
-    rpc_identify(
+    rpc_set_identity(
         user& u, json::rpc_request& req)
     {
         auto& name = checked_string(req.params, "name");

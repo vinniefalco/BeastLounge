@@ -12,34 +12,59 @@
 
 #include "config.hpp"
 #include <boost/beast/_experimental/json/value.hpp>
-#include <memory>
+#include <boost/container/flat_set.hpp>
+#include <mutex>
+#include <vector>
 
+class message;
 class user;
+
+//------------------------------------------------------------------------------
 
 class channel
 {
+    std::mutex mutex_;
+    boost::container::flat_set<user*> users_;
+    std::size_t cid_;
+
 public:
-    virtual ~channel() = default;
+    ~channel();
+
+    /// Construct a new channel with a unique channel id
+    channel();
+
+    /// Return the channel id
+    std::size_t
+    cid() const noexcept
+    {
+        return cid_;
+    }
 
     /** Add a user to the channel.
 
         @returns `false` if the user was already in the channel.
     */
-    virtual
     bool
-    insert(user& u) = 0;
+    insert(user& u);
+
+    void
+    erase(user& u);
+
+    void
+    send(json::value const& jv);
+
+protected:
+    virtual
+    void
+    on_insert(user& u) = 0;
 
     virtual
     void
-    erase(user& u) = 0;
+    on_erase(user& u) = 0;
 
-    virtual
+private:
     void
-    send(json::value const& jv) = 0;
+    send(message m);
 };
-
-extern
-std::unique_ptr<channel>
-make_channel();
 
 #endif
