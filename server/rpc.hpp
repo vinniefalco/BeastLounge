@@ -10,20 +10,38 @@
 #ifndef LOUNGE_RPC_HPP
 #define LOUNGE_RPC_HPP
 
-#include "config.hpp"
-#include "ws_session.hpp"
-#include <boost/beast/_experimental/json/rpc.hpp>
+#include <boost/beast/_experimental/json/value.hpp>
 
-class rpc_handler
+inline
+json::value
+make_rpc_error(
+    json::rpc_error ev,
+    beast::string_view msg)
 {
-public:
-    virtual ~rpc_handler() = default;
+    json::value jv;
+    jv["jsonrpc"] = "2.0";
+    auto& err = jv["error"].emplace_object();
+    err["code"] = static_cast<int>(ev);
+    err["message"] = msg;
+    jv["id"] = nullptr;
+    return jv;
+}
 
-    virtual
-    void
-    on_request(
-        ws_session& user,
-        json::rpc_request&& req) = 0;
-};
+inline
+json::value
+make_rpc_error(
+    json::rpc_error ev,
+    beast::string_view msg,
+    json::rpc_request const& req)
+{
+    json::value jv;
+    jv["jsonrpc"] = "2.0";
+    auto& err = jv["error"].emplace_object();
+    err["code"] = static_cast<int>(ev);
+    err["message"] = msg;
+    if(req.id.has_value())
+        jv["id"] = *req.id;
+    return jv;
+}
 
 #endif

@@ -13,13 +13,17 @@
 #include "config.hpp"
 #include "types.hpp"
 #include <boost/beast/core/string.hpp>
+#include <boost/beast/_experimental/json/rpc.hpp>
 #include <boost/smart_ptr/shared_ptr.hpp>
+#include <functional>
 #include <utility>
 
 #include "channel.hpp" // REMOVE
+class dispatcher;
 class logger;
 class rpc_handler;
 class service;
+class user;
 
 //------------------------------------------------------------------------------
 
@@ -61,11 +65,6 @@ class server
 public:
     virtual ~server() = default;
 
-    /// Return the log object
-    virtual
-    logger&
-    log() noexcept = 0;
-
     /** Return a new executor to use.
     */
     virtual
@@ -81,13 +80,26 @@ public:
     insert(
         boost::shared_ptr<service> sp) = 0;
 
-    /** Register an RPC handler
-    */
+    /// Return the document root path
+    virtual
+    beast::string_view
+    doc_root() const = 0;
+
+    /// Perform a stat
     virtual
     void
-    insert(
-        rpc_handler& h,
-        beast::string_view name) = 0;
+    stat(json::value& jv) = 0;
+
+    //--------------------------------------------------------------------------
+    //
+    // Services
+    //
+    //--------------------------------------------------------------------------
+
+    virtual logger&             log() = 0;
+    virtual ::dispatcher&       dispatcher() = 0;
+
+    //--------------------------------------------------------------------------
 
     /** Run the server.
 
@@ -99,21 +111,6 @@ public:
     void
     run() = 0;
 
-    /// Return the document root path
-    virtual
-    beast::string_view
-    doc_root() const = 0;
-
-    /// Perform a stat
-    virtual
-    void
-    stat(json::value& jv) = 0;
-
-    boost::shared_ptr<channel> room_;
-    server()
-        : room_(make_channel())
-    {
-    }
 };
 
 //------------------------------------------------------------------------------

@@ -11,10 +11,10 @@
 #define LOUNGE_CHANNEL_HPP
 
 #include "config.hpp"
-#include "message.hpp"
-#include "types.hpp"
-#include "ws_session.hpp"
-#include <boost/smart_ptr/shared_ptr.hpp>
+#include <memory>
+
+class message;
+class user;
 
 class channel
 {
@@ -23,11 +23,11 @@ public:
 
     virtual
     void
-    insert(ws_session*) = 0;
+    insert(user*) = 0;
 
     virtual
     void
-    erase(ws_session*) = 0;
+    erase(user*) = 0;
 
     virtual
     void
@@ -35,7 +35,7 @@ public:
 };
 
 extern
-boost::shared_ptr<channel>
+std::unique_ptr<channel>
 make_channel();
 
 #endif

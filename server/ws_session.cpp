@@ -7,10 +7,11 @@
 // Official repository: https://github.com/vinniefalco/BeastLounge
 //
 
+#include "dispatcher.hpp"
 #include "listener.hpp"
 #include "logger.hpp"
 #include "server.hpp"
-#include "ws_session.hpp"
+#include "user.hpp"
 #include <boost/beast/websocket/stream.hpp>
 #include <boost/beast/core/stream_traits.hpp>
 #include <boost/beast/ssl/ssl_stream.hpp>
@@ -30,7 +31,8 @@ namespace {
 template<class Derived>
 class ws_session_base
     : public asio::coroutine
-    , public ws_session
+    , public session
+    , public user
 {
 protected:
     server& srv_;
@@ -51,13 +53,11 @@ public:
         , ep_(ep)
     {
         lst_.insert(this);
-        srv_.room_->insert(this);
     }
 
     ~ws_session_base()
     {
         lst_.erase(this);
-        srv_.room_->erase(this);
     }
 
     // The CRTP pattern
@@ -118,61 +118,8 @@ public:
     void
     on_message()
     {
-        json::parser pr;
-        beast::error_code ec;
-        pr.write(msg_.data(), ec);
-        if(! ec)
-        {
-            json::rpc_request req;
-            req.extract(pr.release(), ec);
-            if(! ec)
-            {
-                json::value res;
-                res["jsonrpc"] = "2.0";
-                if(req.id.has_value())
-                    res["id"] = std::move(*req.id);
-                auto& result =
-                    res["result"].emplace_object();
-                result["method"] =
-                    std::move(req.method);
-                result["params"] =
-                    std::move(req.params);
-                send(make_message(res));
-            }
-            else
-            {
-                // invalid request
-                json::value res;
-                res["jsonrpc"] = "2.0";
-                auto& err = res["error"].emplace_object();
-                err["code"] = static_cast<int>(
-                    json::rpc_error::invalid_request);
-                err["message"] = ec.message();
-                //err["data"] // optional
-                if(req.id.has_value())
-                    res["id"] = std::move(*req.id);
-                send(make_message(res));
-            }
-        }
-        else
-        {
-            // parsing error
-            json::value res;
-            res["jsonrpc"] = "2.0";
-            auto& err = res["error"].emplace_object();
-            err["code"] = static_cast<int>(
-                json::rpc_error::parse_error);
-            err["message"] = ec.message();
-            //err["data"] // optional
-            res["id"] = json::kind::null;
-            send(make_message(res));
-        }
-    }
-
-    void
-    on_request(json::value jv)
-    {
-        boost::ignore_unused(jv);
+        srv_.dispatcher().dispatch(
+            *this, msg_.data());
     }
 
     // Report a failure
@@ -219,7 +166,7 @@ public:
     // ws_session
     //
 
-    boost::weak_ptr<ws_session>
+    boost::weak_ptr<user>
     get_weak_ptr() override
     {
         return impl()->weak_from_this();

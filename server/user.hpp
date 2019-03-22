@@ -7,19 +7,22 @@
 // Official repository: https://github.com/vinniefalco/BeastLounge
 //
 
-#ifndef LOUNGE_WS_SESSION_HPP
-#define LOUNGE_WS_SESSION_HPP
+#ifndef LOUNGE_USER_HPP
+#define LOUNGE_USER_HPP
 
 #include "config.hpp"
 #include "message.hpp"
-#include "session.hpp"
 #include <boost/smart_ptr/weak_ptr.hpp>
+#include <string>
 
-class ws_session : public session
+/// Represents a connected user
+class user
 {
 public:
+    std::string name;
+
     virtual
-    boost::weak_ptr<ws_session>
+    boost::weak_ptr<user>
     get_weak_ptr() = 0;
 
     /** Send a message

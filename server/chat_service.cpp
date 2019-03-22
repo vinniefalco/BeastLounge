@@ -22,6 +22,11 @@ namespace {
 class chat_service
     : public service
 {
+    struct room
+    {
+        boost::shared_ptr<channel> c;
+    };
+
     server& srv_;
 
 public:
@@ -31,9 +36,17 @@ public:
     {
     }
 
+    //--------------------------------------------------------------------------
+    //
+    // service
+    //
+    //--------------------------------------------------------------------------
+
     void
     on_start() override
     {
+        // Register RPC commands
+        //srv_.insert_rpc("say",
     }
 
     void
@@ -46,18 +59,19 @@ public:
     {
         boost::ignore_unused(jv);
     }
+
+    //--------------------------------------------------------------------------
 };
 
 } // (anon)
 
 //------------------------------------------------------------------------------
 
-bool
+void
 make_chat_service(
     server& srv)
 {
     auto sp = boost::make_shared<
         chat_service>(srv);
     srv.insert(std::move(sp));
-    return true;
 }

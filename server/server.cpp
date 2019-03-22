@@ -7,9 +7,10 @@
 // Official repository: https://github.com/vinniefalco/BeastLounge
 //
  
-#include "server.hpp"
+#include "dispatcher.hpp"
 #include "listener.hpp"
 #include "logger.hpp"
+#include "server.hpp"
 #include "service.hpp"
 #include <boost/beast/_experimental/json/assign_string.hpp>
 #include <boost/beast/_experimental/json/assign_vector.hpp>
@@ -28,8 +29,16 @@
 //------------------------------------------------------------------------------
 
 extern
-bool
+void
 make_chat_service(server&);
+
+extern
+void
+make_ident_service(server&);
+
+extern
+std::unique_ptr<dispatcher>
+make_dispatcher(server& srv);
 
 //------------------------------------------------------------------------------
 
@@ -168,6 +177,8 @@ class server_impl
     bool running_ = false;
     bool stop_ = false;
 
+    std::unique_ptr<::dispatcher> dispatcher_;
+
 public:
     explicit
     server_impl(
@@ -179,18 +190,13 @@ public:
             this->make_executor(),
                 SIGINT,
                 SIGTERM)
+        , dispatcher_(make_dispatcher(*this))
     {
     }
 
     ~server_impl()
     {
         BOOST_ASSERT(agents_.empty());
-    }
-
-    logger&
-    log() noexcept override
-    {
-        return *log_;
     }
 
     void
@@ -202,14 +208,6 @@ public:
                 "server already running");
 
         agents_.emplace_back(std::move(sp));
-    }
-
-    void
-    insert(
-        rpc_handler& h,
-        beast::string_view name) override
-    {
-        boost::ignore_unused(h, name);
     }
 
     void
@@ -318,6 +316,20 @@ public:
         for(auto& ag : agents_)
             ag->on_stat(jv);
     }
+
+    //--------------------------------------------------------------------------
+
+    ::dispatcher&
+    dispatcher() override
+    {
+        return *dispatcher_;
+    }
+
+    logger&
+    log() noexcept override
+    {
+        return *log_;
+    }
 };
 
 } // (anon)
@@ -386,6 +398,7 @@ make_server(
 
     // Add services
     make_chat_service(*srv);
+    make_ident_service(*srv);
 
     // Create listeners
     {

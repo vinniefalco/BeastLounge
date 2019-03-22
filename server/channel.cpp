@@ -8,12 +8,12 @@
 //
 
 #include "channel.hpp"
+#include "user.hpp"
 #include <boost/container/flat_set.hpp>
+#include <boost/make_unique.hpp>
+#include <boost/weak_ptr.hpp>
 #include <mutex>
 #include <vector>
-
-//------------------------------------------------------------------------------
-
 
 //------------------------------------------------------------------------------
 
@@ -22,8 +22,7 @@ namespace {
 class channel_impl : public channel
 {
     std::mutex mutex_;
-    boost::container::flat_set<
-        ws_session*> sessions_;
+    boost::container::flat_set<user*> users_;
 
 public:
     explicit
@@ -32,19 +31,17 @@ public:
     }
 
     void
-    insert(ws_session* ws) override
+    insert(user* u) override
     {
-        std::lock_guard<
-            std::mutex> lock(mutex_);
-        sessions_.insert(ws);
+        std::lock_guard<std::mutex> lock(mutex_);
+        users_.insert(u);
     }
 
     void
-    erase(ws_session* ws) override
+    erase(user* u) override
     {
-        std::lock_guard<
-            std::mutex> lock(mutex_);
-        sessions_.erase(ws);
+        std::lock_guard<std::mutex> lock(mutex_);
+        users_.erase(u);
     }
 
     void
@@ -53,17 +50,17 @@ public:
         // Make a local list of all the weak pointers
         // representing the sessions, so we can do the
         // actual sending without holding the mutex:
-        std::vector<boost::weak_ptr<ws_session>> v;
+        std::vector<boost::weak_ptr<user>> v;
         {
             std::lock_guard<std::mutex> lock(mutex_);
-            v.reserve(sessions_.size());
-            for(auto p : sessions_)
+            v.reserve(users_.size());
+            for(auto p : users_)
                 v.emplace_back(p->get_weak_ptr());
         }
 
-        // For each session in our local list, try to
+        // For each user in our local list, try to
         // acquire a strong pointer. If successful,
-        // then send the message on that session.
+        // then send the message to that user.
         for(auto const& wp : v)
             if(auto sp = wp.lock())
                 sp->send(m);
@@ -74,9 +71,9 @@ public:
 
 //------------------------------------------------------------------------------
 
-boost::shared_ptr<channel>
+std::unique_ptr<channel>
 make_channel()
 {
-    return boost::make_shared<
+    return boost::make_unique<
         channel_impl>();
 }

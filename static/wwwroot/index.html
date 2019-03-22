@@ -31,11 +31,12 @@
         ws.send(JSON.stringify(
           {
             "jsonrpc" : "2.0",
-            "method" : "set-user",
+            "method" : "set-identity",
             "id" : id,
-            "params" : [
-              userName.value
-            ]
+            "params" : {
+              "agent" : "ident",
+              "name" : userName.value
+            }
           }));
         ++id;
       };
@@ -59,7 +60,9 @@
       jv.jsonrpc = "2.0";
       jv.method = "say";
       jv.id = id;
-      jv.params = [ userName.value, sendMessage.value ];
+      jv.params = {
+        "message" : sendMessage.value
+      };
       ws.send(JSON.stringify(jv));
       sendMessage.value = "";
       ++id;
