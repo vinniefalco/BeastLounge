@@ -26,6 +26,9 @@ public:
     get_weak_ptr() = 0;
 
     /** Send a message
+
+        Messages are queued as needed.
+        May be called from any thread.
     */
     virtual
     void

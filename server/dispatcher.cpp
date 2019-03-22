@@ -85,93 +85,46 @@ public:
     dispatch(
         user& u, net::const_buffer b) override
     {
-        json::parser pr;
-        beast::error_code ec;
-
-        // Parse the buffer into JSON
-        pr.write(b, ec);
-        if(ec)
-        {
-            u.send(make_message(
-                make_rpc_error(
-                    json::rpc_error::parse_error,
-                    ec.message())));
-            return;
-        }
-
-        // Validate and extract the JSON-RPC request
         json::rpc_request req;
-        req.extract(pr.release(), ec);
-        if(ec)
+        try
         {
-            u.send(make_message(
-                make_rpc_error(
+            json::parser pr;
+            beast::error_code ec;
+
+            // Parse the buffer into JSON
+            pr.write(b, ec);
+            if(ec)
+                throw rpc_exception(
+                    json::rpc_error::parse_error,
+                    ec.message());
+
+            // Validate and extract the JSON-RPC request
+            req.extract(pr.release(), ec);
+            if(ec)
+                throw rpc_exception(
                     json::rpc_error::invalid_request,
-                    ec.message(),
-                    req)));
-            return;
-        }
+                    ec.message());
 
-        // Extract the agent to route to
-        beast::string_view method = req.method;
-        beast::string_view agent;
+            // Extract the agent to route to
+            beast::string_view method = req.method;
+            beast::string_view agent =
+                checked_string(req.params, "agent");
+
+            // Look up the command
+            auto const it =
+                set_.find(member{method, agent});
+            if(it == set_.end())
+                throw rpc_exception(
+                    json::rpc_error::method_not_found,
+                    "Unknown method or agent");
+
+            // Dispatch the RPC command
+            it->handler(u, req);
+        }
+        catch(rpc_exception const& e)
         {
-            if(! req.params.is_object())
-            {
-                u.send(make_message(make_rpc_error(
-                    json::rpc_error::invalid_params,
-                    "Expected object for \"params\"",
-                    req)));
-                return;
-            }
-            auto const& params = req.params.as_object();
-            auto const it = params.find("agent");
-            if(it == params.end())
-            {
-                u.send(make_message(make_rpc_error(
-                    json::rpc_error::invalid_params,
-                    "Missing parameter \"agent\"",
-                    req)));
-                return;
-            }
-            if(! it->second.is_string())
-            {
-                u.send(make_message(make_rpc_error(
-                    json::rpc_error::invalid_params,
-                    "Expected string for parameter \"agent\"",
-                    req)));
-                return;
-            }
-            agent = it->second.as_string();
+            u.send(make_message(e.to_json(req.id)));
         }
-
-        // Look up the command
-        auto const it =
-            set_.find(member{method, agent});
-        if(it == set_.end())
-        {
-            u.send(make_message(make_rpc_error(
-                json::rpc_error::method_not_found,
-                "Unknown method or agent",
-                req)));
-            return;
-        }
-
-        // Dispatch the RPC command
-        it->handler(u, std::move(req));
-#if 0
-        json::value res;
-        res["jsonrpc"] = "2.0";
-        if(req.id.has_value())
-            res["id"] = std::move(*req.id);
-        auto& result =
-            res["result"].emplace_object();
-        result["method"] =
-            std::move(req.method);
-        result["params"] =
-            std::move(req.params);
-        u.send(make_message(res));
-#endif
     }
 };
 

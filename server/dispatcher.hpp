@@ -25,7 +25,7 @@ class dispatcher
 public:
     using handler_type =
         std::function<void(
-            user&, json::rpc_request&&)>;
+            user&, json::rpc_request&)>;
 
     virtual ~dispatcher() = default;
 

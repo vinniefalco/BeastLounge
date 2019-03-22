@@ -14,6 +14,7 @@
 #include "service.hpp"
 #include "user.hpp"
 #include <boost/shared_ptr.hpp>
+#include <functional>
 
 //------------------------------------------------------------------------------
 
@@ -41,13 +42,12 @@ public:
     void
     on_start() override
     {
+        namespace ph = std::placeholders;
+
         // Register RPC commands
         srv_.dispatcher().insert(
-            "set-identity", "ident",
-            [&](user& u, json::rpc_request&& req)
-            {
-                this->rpc_set_identity(u, std::move(req));
-            });
+            "set-identity", "ident", std::bind(
+            &ident_service::rpc_set_identity, this, ph::_1, ph::_2));
     }
 
     void
@@ -65,54 +65,26 @@ public:
 
     void
     rpc_set_identity(
-        user& u, json::rpc_request&& req)
+        user& u, json::rpc_request& req)
     {
-        auto& params = req.params.as_object();
-        auto it = params.find("name");
-        if(it == params.end())
-        {
-            u.send(make_message(make_rpc_error(
-                json::rpc_error::invalid_params,
-                "Missing parameter \"agent\"",
-                req)));
-            return;
-        }
-        if(! it->second.is_string())
-        {
-            u.send(make_message(make_rpc_error(
-                json::rpc_error::invalid_params,
-                "Expected string for parameter \"agent\"",
-                req)));
-            return;
-        }
-        auto& str = it->second.as_string();
-        if(str.empty())
-        {
-            u.send(make_message(make_rpc_error(
-                json::rpc_error::invalid_params,
-                "Invalid \"name\" = \"" + str + "\"",
-                req)));
-            return;
-        }
-        if(str.size() > 20)
-        {
-            u.send(make_message(make_rpc_error(
-                json::rpc_error::invalid_params,
-                "Invalid \"name\": too long",
-                req)));
-            return;
-        }
+        auto& name = checked_string(req.params, "name");
+
+        if(name.size() > 20)
+            throw rpc_exception(
+                "Invalid \"name\": too long");
         if(! u.name.empty())
-        {
-            u.send(make_message(make_rpc_error(
-                json::rpc_error::invalid_params,
-                "Identity already set",
-                req)));
-            return;
-        }
+            throw rpc_exception(
+                "Identity is already set");
 
         // VFALCO NOT THREAD SAFE!
-        u.name.assign(str.data(), str.size());
+        u.name.assign(name.data(), name.size());
+
+        json::value res;
+        res["jsonrpc"] = "2.0";
+        res["result"] = 0;
+        if(req.id.has_value())
+            res["id"] = std::move(*req.id);
+        u.send(make_message(res));
     }
 
 };
