@@ -324,37 +324,6 @@ public:
         }
     };
 
-    template<class Body, class Allocator>
-    bool
-    is_json_rpc(http::request<
-        Body, http::basic_fields<Allocator>> const& req)
-    {
-        return
-            req.method() == http::verb::get &&
-            req.target() == "/api/http";
-    }
-
-    template<class Body, class Allocator>
-    void
-    do_json_rpc(http::request<
-        Body, http::basic_fields<Allocator>> const& req)
-    {
-        json::value jv;
-        srv_.stat(jv);
-        http::response<http::string_body> res;
-        res.version(req.version());
-        res.result(http::status::ok);
-        res.set(http::field::server, BOOST_BEAST_VERSION_STRING);
-        res.set(http::field::content_type, "application/json");
-        std::stringstream ss;
-        ss << jv;
-        res.body() = ss.str();
-        res.prepare_payload();
-
-        // Write the message asynchronously
-        send_lambda{*this}(std::move(res));
-    }
-
     void
     operator()(
         beast::error_code ec = {},
@@ -408,21 +377,12 @@ public:
                     std::move(req));
             }
 
-            // See if it is a JSON-RPC request
-            if(is_json_rpc(pr_->get()))
-            {
-                // Process it
-                do_json_rpc(pr_->get());
-            }
-            else
-            {
-                // Send the response
-                yield
-                handle_request(
-                    srv_.doc_root(),
-                    pr_->release(),
-                    send_lambda{*this});
-            }
+            // Send the response
+            yield
+            handle_request(
+                srv_.doc_root(),
+                pr_->release(),
+                send_lambda{*this});
 
             // Handle the error, if any
             if(ec)

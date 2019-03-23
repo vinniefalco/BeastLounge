@@ -33,7 +33,6 @@ the program, with the macro BOOST_BEAST_SPLIT_COMPILATION defined.
 #include <boost/beast/_experimental/json/impl/object.ipp>
 #include <boost/beast/_experimental/json/impl/parse_file.ipp>
 #include <boost/beast/_experimental/json/impl/parser.ipp>
-#include <boost/beast/_experimental/json/impl/rpc.ipp>
 #include <boost/beast/_experimental/json/impl/serializer.ipp>
 #include <boost/beast/_experimental/json/impl/storage.ipp>
 #include <boost/beast/_experimental/json/impl/value.ipp>

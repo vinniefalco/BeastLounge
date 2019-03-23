@@ -37,7 +37,6 @@ add_executable (beast-json-tests
     object.cpp
     parse_file.cpp
     parser.cpp
-    rpc.cpp
     serializer.cpp
     src.cpp
     storage.cpp

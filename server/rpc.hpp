@@ -12,39 +12,66 @@
 
 #include "config.hpp"
 #include <boost/beast/_experimental/json/value.hpp>
+#include <boost/optional.hpp>
 #include <stdexcept>
 
-inline
-json::value
-make_rpc_error(
-    json::rpc_error ev,
-    beast::string_view msg)
+/// Error codes returned by JSON operations
+enum class rpc_error
 {
-    json::value jv;
-    jv["jsonrpc"] = "2.0";
-    auto& err = jv["error"].emplace_object();
-    err["code"] = static_cast<int>(ev);
-    err["message"] = msg;
-    jv["id"] = nullptr;
-    return jv;
-}
+    parse_error      = -32700,
+    invalid_request  = -32600,
+    method_not_found = -32601,
+    invalid_params   = -32602,
+    internal_error   = -32603,
 
-inline
-json::value
-make_rpc_error(
-    json::rpc_error ev,
-    beast::string_view msg,
-    json::rpc_request const& req)
+    /// Expected object in JSON-RPC request
+    expected_object = 1,
+
+    /// Expected string version in JSON-RPC request
+    expected_string_version,
+
+    /// Uknown version in JSON-RPC request
+    unknown_version,
+
+    /// Invalid null id in JSON-RPC request
+    invalid_null_id,
+
+    /// Expected string or number id in JSON-RPC request
+    expected_strnum_id,
+
+    /// Missing id in JSON-RPC request version 1
+    expected_id,
+
+    /// Missing method in JSON-RPC request
+    missing_method,
+
+    /// Expected string method in JSON-RPC request
+    expected_string_method,
+
+    /// Expected structured params in JSON-RPC request version 2
+    expected_structured_params,
+
+    /// Missing params in JSON-RPC request version 1
+    missing_params,
+
+    /// Expected array params in JSON-RPC request version 1
+    expected_array_params
+};
+
+namespace boost {
+namespace system {
+template<>
+struct is_error_code_enum<rpc_error>
 {
-    json::value jv;
-    jv["jsonrpc"] = "2.0";
-    auto& err = jv["error"].emplace_object();
-    err["code"] = static_cast<int>(ev);
-    err["message"] = msg;
-    if(req.id.has_value())
-        jv["id"] = *req.id;
-    return jv;
-}
+    static bool constexpr value = true;
+};
+} // system
+} // boost
+
+beast::error_code
+make_error_code(rpc_error e);
+
+//------------------------------------------------------------------------------
 
 class rpc_exception
     : public std::exception
@@ -55,12 +82,12 @@ class rpc_exception
 public:
     rpc_exception()
         : rpc_exception(
-            json::rpc_error::internal_error)
+            rpc_error::internal_error)
     {
     }
 
     rpc_exception(
-        json::rpc_error ev)
+        rpc_error ev)
         : rpc_exception(ev, 
             beast::error_code(ev).message())
     {
@@ -69,13 +96,13 @@ public:
     rpc_exception(
         beast::string_view msg)
         : rpc_exception(
-            json::rpc_error::invalid_params,
+            rpc_error::invalid_params,
             msg)
     {
     }
 
     rpc_exception(
-        json::rpc_error ev,
+        rpc_error ev,
         beast::string_view msg)
         : code_(static_cast<int>(ev))
         , msg_(msg)
@@ -92,143 +119,135 @@ public:
     json::value
     to_json(
         boost::optional<json::value> const&
-            id = boost::none) const
-    {
-        json::value jv;
-        jv["jsonrpc"] = "2.0";
-        auto& err = jv["error"].emplace_object();
-        err["code"] = code_;
-        err["message"] = msg_;
-        if(id.has_value())
-            jv["id"] = *id;
-        return jv;
-    }
+            id = boost::none) const;
 };
 
-inline
+//------------------------------------------------------------------------------
+
+/** Represents a JSON-RPC request
+*/
+struct rpc_request
+{
+    /// Version of the request (1 or 2)
+    int version = 2;
+
+    /// The request method
+    json::string method;
+
+    /** The request parameters
+
+        This will be object, array, or null
+    */
+    json::value params;
+
+    /** The request id
+
+        If set, this will be string, number, or null
+    */
+    boost::optional<json::value> id;
+
+    /** Construct an empty request using the default storage.
+
+        The method, params, and id will be null,
+        and version will be 2.
+    */
+    rpc_request() = default;
+
+    /** Construct an empty request using the specified storage.
+
+        The method, params, and id will be null,
+        and version will be 2.
+    */
+    explicit
+    rpc_request(json::storage_ptr sp);
+
+    /** Extract a JSON-RPC request or return an error.
+    */
+    void
+    extract(
+        json::value&& jv,
+        beast::error_code& ec);
+};
+
+//------------------------------------------------------------------------------
+
+extern
+json::value
+make_rpc_error(
+    rpc_error ev,
+    beast::string_view msg);
+
+extern
+json::value
+make_rpc_error(
+    rpc_error ev,
+    beast::string_view msg,
+    rpc_request const& req);
+
+extern
 json::object&
-checked_object(json::value& jv)
-{
-    if(! jv.is_object())
-        throw rpc_exception{};
-    return jv.as_object();
-}
+checked_object(json::value& jv);
 
-inline
+extern
 json::array&
-checked_array(json::value& jv)
-{
-    if(! jv.is_array())
-        throw rpc_exception{};
-    return jv.as_array();
-}
+checked_array(json::value& jv);
 
-inline
+extern
 json::string&
-checked_string(json::value& jv)
-{
-    if(! jv.is_string())
-        throw rpc_exception{};
-    return jv.as_string();
-}
+checked_string(json::value& jv);
 
-inline
+extern
 json::number&
-checked_number(json::value& jv)
-{
-    if(! jv.is_number())
-        throw rpc_exception{};
-    return jv.as_number();
-}
+checked_number(json::value& jv);
 
-inline
+extern
 bool&
-checked_bool(json::value& jv)
-{
-    if(! jv.is_bool())
-        throw rpc_exception{};
-    return jv.as_bool();
-}
+checked_bool(json::value& jv);
 
-inline
+extern
 void
-checked_null(json::value& jv)
-{
-    if(! jv.is_null())
-        throw rpc_exception{};
-}
+checked_null(json::value& jv);
 
-inline
+extern
 json::value&
 checked_value(
     json::value& jv,
-    beast::string_view key)
-{
-    auto& obj =
-        checked_object(jv);
-    auto it = obj.find(key);
-    if(it == obj.end())
-        throw rpc_exception{};
-    return it->second;
-}
+    beast::string_view key);
 
-inline
+extern
 json::object&
 checked_object(
     json::value& jv,
-    beast::string_view key)
-{
-    return checked_object(
-        checked_value(jv, key));
-}
+    beast::string_view key);
 
-inline
+extern
 json::array&
 checked_array(
     json::value& jv,
-    beast::string_view key)
-{
-    return checked_array(
-        checked_value(jv, key));
-}
+    beast::string_view key);
 
-inline
+extern
 json::string&
 checked_string(
     json::value& jv,
-    beast::string_view key)
-{
-    return checked_string(
-        checked_value(jv, key));
-}
+    beast::string_view key);
 
-inline
+extern
 json::number&
 checked_number(
     json::value& jv,
-    beast::string_view key)
-{
-    return checked_number(
-        checked_value(jv, key));
-}
+    beast::string_view key);
 
-inline
+extern
 bool&
 checked_bool(
     json::value& jv,
-    beast::string_view key)
-{
-    return checked_bool(
-        checked_value(jv, key));
-}
+    beast::string_view key);
 
-inline
+extern
 void
 checked_null(
     json::value& jv,
-    beast::string_view key)
-{
-    checked_null(checked_value(jv, key));
-}
+    beast::string_view key);
 
 #endif

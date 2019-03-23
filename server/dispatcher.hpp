@@ -12,9 +12,10 @@
 
 #include "config.hpp"
 #include <boost/beast/core/string.hpp>
-#include <boost/beast/_experimental/json/rpc.hpp>
 #include <boost/asio/buffer.hpp>
 #include <functional>
+
+struct rpc_request;
 
 class message;
 class user;
@@ -25,7 +26,7 @@ class dispatcher
 public:
     using handler_type =
         std::function<void(
-            user&, json::rpc_request&)>;
+            user&, rpc_request&)>;
 
     virtual ~dispatcher() = default;
 
@@ -39,7 +40,7 @@ public:
     void
     insert(
         beast::string_view method,
-        void (T::*mf)(user&, json::rpc_request&),
+        void (T::*mf)(user&, rpc_request&),
         T* t)
     {
         namespace ph = std::placeholders;

@@ -111,8 +111,7 @@ public:
 
     // join a room
     void
-    rpc_join(
-        user& u, json::rpc_request& req)
+    rpc_join(user& u, rpc_request& req)
     {
         checked_user(u);
 
@@ -133,7 +132,7 @@ public:
     // say something in a room
     void
     rpc_say(
-        user& u, json::rpc_request& req)
+        user& u, rpc_request& req)
     {
         checked_user(u);
         auto const& text =
@@ -161,7 +160,7 @@ public:
     // perform slash command
     void
     rpc_slash(
-        user& u, json::rpc_request&)
+        user& u, rpc_request&)
     {
         checked_user(u);
         throw rpc_exception(

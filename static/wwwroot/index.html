@@ -63,7 +63,7 @@
         var jv = JSON.parse(ev.data);
         if(jv["error"] != null)
         {
-          messages.innerText += "Error: " + jv["error"]["message"] + "(" + jv["error"]["code"] + ")"
+          messages.innerText += "Error: " + jv["error"]["message"] + "(" + jv["error"]["code"] + ")\n"
         }
         else
         {

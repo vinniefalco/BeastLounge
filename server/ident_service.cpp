@@ -61,7 +61,7 @@ public:
 
     void
     rpc_set_identity(
-        user& u, json::rpc_request& req)
+        user& u, rpc_request& req)
     {
         auto& name = checked_string(req.params, "name");
 

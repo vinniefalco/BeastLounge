@@ -4,30 +4,26 @@
 // Distributed under the Boost Software License, Version 1.0. (See accompanying
 // file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
 //
-// Official repository: https://github.com/boostorg/beast
+// Official repository: https://github.com/vinniefalco/BeastLounge
 //
 
-#ifndef BOOST_BEAST_JSON_IMPL_RPC_IPP
-#define BOOST_BEAST_JSON_IMPL_RPC_IPP
+#include "rpc.hpp"
+#include <boost/beast/core/error.hpp>
+#include <type_traits>
 
-#include <boost/beast/_experimental/json/rpc.hpp>
+//------------------------------------------------------------------------------
 
-namespace boost {
-namespace beast {
-namespace json {
+namespace {
 
-namespace detail {
-
-class rpc_error_codes : public error_category
+class rpc_error_codes : public beast::error_category
 {
 public:
     const char*
     name() const noexcept override
     {
-        return "boost.beast.json";
+        return "beast-lounge";
     }
 
-    BOOST_BEAST_DECL
     std::string
     message(int ev) const override
     {
@@ -73,29 +69,45 @@ public:
         return "Unknown RPC error #" + std::to_string(ev);
     }
 
-    BOOST_BEAST_DECL
-    error_condition
+    beast::error_condition
     default_error_condition(int ev) const noexcept override
     {
         return {ev, *this};
     }
 };
 
-} // detail
+} // (anon)
 
-error_code
+beast::error_code
 make_error_code(rpc_error e)
 {
-    static detail::rpc_error_codes const cat{};
-    return error_code{static_cast<
-        std::underlying_type<rpc_error>::type>(e), cat};
+    static rpc_error_codes const cat{};
+    return {static_cast<std::underlying_type<
+        rpc_error>::type>(e), cat};
+}
+
+//------------------------------------------------------------------------------
+
+json::value
+rpc_exception::
+to_json(
+    boost::optional<json::value> const& id) const
+{
+    json::value jv;
+    jv["jsonrpc"] = "2.0";
+    auto& err = jv["error"].emplace_object();
+    err["code"] = code_;
+    err["message"] = msg_;
+    if(id.has_value())
+        jv["id"] = *id;
+    return jv;
 }
 
 //------------------------------------------------------------------------------
 
 rpc_request::
-rpc_request(storage_ptr sp)
-    : method(allocator<char>(sp))
+rpc_request(json::storage_ptr sp)
+    : method(json::allocator<char>(sp))
     , params(sp)
     , id(std::move(sp))
 {
@@ -103,14 +115,19 @@ rpc_request(storage_ptr sp)
 
 void
 rpc_request::
-extract(value&& jv, error_code& ec)
+extract(
+    json::value&& jv,
+    beast::error_code& ec)
 {
     // clear the fields first
-    method = string(allocator<char>(
-        jv.get_storage()));
-    params = value(kind::null,
+    method = json::string(
+        json::allocator<char>(
+            jv.get_storage()));
+    params = json::value(
+        json::kind::null,
         jv.get_storage());
-    id = value(kind::null,
+    id = json::value(
+        json::kind::null,
         jv.get_storage());
 
     // must be object
@@ -238,8 +255,147 @@ extract(value&& jv, error_code& ec)
     }
 }
 
-} // json
-} // beast
-} // boost
+//------------------------------------------------------------------------------
 
-#endif
+json::value
+make_rpc_error(
+    rpc_error ev,
+    beast::string_view msg)
+{
+    json::value jv;
+    jv["jsonrpc"] = "2.0";
+    auto& err = jv["error"].emplace_object();
+    err["code"] = static_cast<int>(ev);
+    err["message"] = msg;
+    jv["id"] = nullptr;
+    return jv;
+}
+
+json::value
+make_rpc_error(
+    rpc_error ev,
+    beast::string_view msg,
+    rpc_request const& req)
+{
+    json::value jv;
+    jv["jsonrpc"] = "2.0";
+    auto& err = jv["error"].emplace_object();
+    err["code"] = static_cast<int>(ev);
+    err["message"] = msg;
+    if(req.id.has_value())
+        jv["id"] = *req.id;
+    return jv;
+}
+
+json::object&
+checked_object(json::value& jv)
+{
+    if(! jv.is_object())
+        throw rpc_exception{};
+    return jv.as_object();
+}
+
+json::array&
+checked_array(json::value& jv)
+{
+    if(! jv.is_array())
+        throw rpc_exception{};
+    return jv.as_array();
+}
+
+json::string&
+checked_string(json::value& jv)
+{
+    if(! jv.is_string())
+        throw rpc_exception{};
+    return jv.as_string();
+}
+
+json::number&
+checked_number(json::value& jv)
+{
+    if(! jv.is_number())
+        throw rpc_exception{};
+    return jv.as_number();
+}
+
+bool&
+checked_bool(json::value& jv)
+{
+    if(! jv.is_bool())
+        throw rpc_exception{};
+    return jv.as_bool();
+}
+
+void
+checked_null(json::value& jv)
+{
+    if(! jv.is_null())
+        throw rpc_exception{};
+}
+
+json::value&
+checked_value(
+    json::value& jv,
+    beast::string_view key)
+{
+    auto& obj =
+        checked_object(jv);
+    auto it = obj.find(key);
+    if(it == obj.end())
+        throw rpc_exception{};
+    return it->second;
+}
+
+json::object&
+checked_object(
+    json::value& jv,
+    beast::string_view key)
+{
+    return checked_object(
+        checked_value(jv, key));
+}
+
+json::array&
+checked_array(
+    json::value& jv,
+    beast::string_view key)
+{
+    return checked_array(
+        checked_value(jv, key));
+}
+
+json::string&
+checked_string(
+    json::value& jv,
+    beast::string_view key)
+{
+    return checked_string(
+        checked_value(jv, key));
+}
+
+json::number&
+checked_number(
+    json::value& jv,
+    beast::string_view key)
+{
+    return checked_number(
+        checked_value(jv, key));
+}
+
+bool&
+checked_bool(
+    json::value& jv,
+    beast::string_view key)
+{
+    return checked_bool(
+        checked_value(jv, key));
+}
+
+void
+checked_null(
+    json::value& jv,
+    beast::string_view key)
+{
+    checked_null(checked_value(jv, key));
+}

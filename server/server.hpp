@@ -13,7 +13,6 @@
 #include "config.hpp"
 #include "types.hpp"
 #include <boost/beast/core/string.hpp>
-#include <boost/beast/_experimental/json/rpc.hpp>
 #include <functional>
 #include <memory>
 #include <utility>
@@ -22,6 +21,7 @@ class dispatcher;
 class logger;
 class rpc_handler;
 class service;
+class system_channel;
 class user;
 
 //------------------------------------------------------------------------------
@@ -66,6 +66,7 @@ public:
 
     virtual logger&             log() = 0;
     virtual ::dispatcher&       dispatcher() = 0;
+    virtual ::system_channel&   system_channel() = 0;
 
     //--------------------------------------------------------------------------
 

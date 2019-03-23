@@ -36,15 +36,15 @@ bool
 channel::
 insert(user& u)
 {
-    bool inserted;
-    {
-        std::lock_guard<std::mutex> lock(mutex_);
-        inserted = users_.insert(&u).second;
-    }
-    if(inserted)
-        u.on_insert(*this);
+    if(![&]
+        {
+            std::lock_guard<std::mutex> lock(mutex_);
+            return users_.insert(&u).second;
+        }())
+        return false;
+    u.on_insert(*this);
     on_insert(u);
-    return inserted;
+    return true;
 }
 
 void

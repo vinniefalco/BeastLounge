@@ -79,7 +79,7 @@ public:
     dispatch(
         user& u, net::const_buffer b) override
     {
-        json::rpc_request req;
+        rpc_request req;
         try
         {
             json::parser pr;
@@ -89,14 +89,14 @@ public:
             pr.write(b, ec);
             if(ec)
                 throw rpc_exception(
-                    json::rpc_error::parse_error,
+                    rpc_error::parse_error,
                     ec.message());
 
             // Validate and extract the JSON-RPC request
             req.extract(pr.release(), ec);
             if(ec)
                 throw rpc_exception(
-                    json::rpc_error::invalid_request,
+                    rpc_error::invalid_request,
                     ec.message());
 
             beast::string_view method = req.method;
@@ -105,7 +105,7 @@ public:
             auto const it = set_.find(method);
             if(it == set_.end())
                 throw rpc_exception(
-                    json::rpc_error::method_not_found,
+                    rpc_error::method_not_found,
                     "Unknown method");
 
             // Dispatch the RPC command

@@ -12,6 +12,7 @@
 #include "logger.hpp"
 #include "server.hpp"
 #include "service.hpp"
+#include "system_channel.hpp"
 #include <boost/beast/_experimental/json/assign_string.hpp>
 #include <boost/beast/_experimental/json/assign_vector.hpp>
 #include <boost/beast/_experimental/json/parse_file.hpp>
@@ -177,6 +178,7 @@ class server_impl
     bool stop_ = false;
 
     std::unique_ptr<::dispatcher> dispatcher_;
+    ::system_channel system_channel_;
 
 public:
     explicit
@@ -315,16 +317,22 @@ public:
 
     //--------------------------------------------------------------------------
 
+    logger&
+    log() noexcept override
+    {
+        return *log_;
+    }
+
     ::dispatcher&
     dispatcher() override
     {
         return *dispatcher_;
     }
 
-    logger&
-    log() noexcept override
+    ::system_channel&
+    system_channel() override
     {
-        return *log_;
+        return system_channel_;
     }
 };
 

@@ -25,7 +25,6 @@
 #include <boost/beast/_experimental/json/object.hpp>
 #include <boost/beast/_experimental/json/parse_file.hpp>
 #include <boost/beast/_experimental/json/parser.hpp>
-#include <boost/beast/_experimental/json/rpc.hpp>
 #include <boost/beast/_experimental/json/serializer.hpp>
 #include <boost/beast/_experimental/json/storage.hpp>
 #include <boost/beast/_experimental/json/string.hpp>
