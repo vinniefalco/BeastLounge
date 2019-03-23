@@ -24,5 +24,5 @@ add_executable (server-tests
     ${BEAST_FILES}
     ${BEAST_EXTRA_FILES}
     ${TEST_MAIN}
-    message.cpp
+    message_test.cpp
 )

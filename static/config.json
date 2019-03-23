@@ -1,8 +1,13 @@
 {
     "listeners": [
         {
-            "name" : "all",
+            "name" : "ipv4",
             "address" : "0.0.0.0",
+            "port_num" : 8080
+        },
+        {
+            "name" : "ipv6",
+            "address" : "[::]",
             "port_num" : 8080
         }
     ],
