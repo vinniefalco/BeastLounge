@@ -420,7 +420,7 @@ public:
                 >::assign(*this, t);
     }
 
-    /// Assign a value from another type 
+    /// Assign a value from another type
     template<
         class T
     #ifndef BOOST_BEAST_DOXYGEN
@@ -565,8 +565,10 @@ public:
         case kind::object:
         case kind::array:
             return false;
+        default:
+            return true;
         }
-        return true;
+
     }
 
     /// Returns `true` if this is an array or object

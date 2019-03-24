@@ -38,10 +38,11 @@ add_executable (lounge-server
     )
 
 target_link_libraries (lounge-server
-    lib-beast
-    lib-asio
-    lib-asio-ssl
-    OpenSSL::SSL OpenSSL::Crypto
+    PRIVATE
+        lib-beast
+        lib-asio
+        lib-asio-ssl
+        OpenSSL::SSL OpenSSL::Crypto
     )
 
 if(NOT WIN32)

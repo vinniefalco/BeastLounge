@@ -15,8 +15,6 @@ source_group ("beast-test" FILES ${TEST_MAIN})
 
 GroupSources(test/server "/")
 
-add_definitions (-DBOOST_BEAST_SPLIT_COMPILATION)
- 
 include_directories (${PROJECT_SOURCE_DIR}/server)
 
 add_executable (server-tests
