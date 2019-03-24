@@ -28,7 +28,7 @@ enum class kind
     null
 };
 
-BOOST_BEAST_INLINE_VARIABLE(null, std::nullptr_t);
+BOOST_BEAST_INLINE_VARIABLE(null, std::nullptr_t)
 
 } // json
 } // beast

@@ -7,8 +7,10 @@
 # Official repository: https://github.com/vinniefalco/BeastLounge
 #
 
-cmake_minimum_required (VERSION 3.13 FATAL_ERROR)
-cmake_policy (SET CMP0074 NEW)
+cmake_minimum_required (VERSION 3.10 FATAL_ERROR)
+if(NOT ${CMAKE_VERSION} VERSION_LESS "3.12.0")
+    cmake_policy (SET CMP0074 NEW)
+endif()
 
 #-------------------------------------------------------------------------------
 
@@ -141,6 +143,8 @@ add_library (
     test/lib_asio.cpp
 )
 
+target_link_libraries(lib-asio PUBLIC Threads::Threads)
+
 set_property(TARGET lib-asio PROPERTY FOLDER "static-libs")
 
 add_library (
@@ -148,12 +152,16 @@ add_library (
     test/lib_asio_ssl.cpp
 )
 
+target_link_libraries(lib-asio-ssl PUBLIC Threads::Threads)
+
 set_property(TARGET lib-asio-ssl PROPERTY FOLDER "static-libs")
 
 add_library (
     lib-beast STATIC
     test/lib_beast.cpp
 )
+
+target_link_libraries(lib-beast PUBLIC Threads::Threads)
 
 set_property(TARGET lib-beast PROPERTY FOLDER "static-libs")
 
@@ -164,10 +172,14 @@ add_library (
 
 set_property(TARGET lib-beast-extra PROPERTY FOLDER "static-libs")
 
+target_link_libraries(lib-beast-extra PUBLIC Threads::Threads)
+
 add_library (
     lib-test STATIC
     test/lib_test.cpp
 )
+
+target_link_libraries(lib-test PUBLIC Threads::Threads)
 
 set_property(TARGET lib-test PROPERTY FOLDER "static-libs")
 
