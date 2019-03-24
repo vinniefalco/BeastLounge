@@ -3,7 +3,7 @@
 build_dir=$2
 
 branch="master"
-if [ $1 == "master" ]; then
+if [ "$1" = "master" ]; then
     branch="develop"
 fi
 
@@ -37,6 +37,7 @@ git submodule update --init libs/algorithm
 git submodule update --init libs/array
 git submodule update --init libs/atomic
 git submodule update --init libs/bind
+git submodule update --init libs/beast
 git submodule update --init libs/chrono
 git submodule update --init libs/concept_check
 git submodule update --init libs/container
@@ -76,5 +77,8 @@ git submodule update --init libs/tuple
 git submodule update --init libs/type_index
 git submodule update --init libs/typeof
 git submodule update --init libs/unordered
+
+./bootstrap.sh
+sudo ./b2 install --with-system
 
 echo Submodule update complete

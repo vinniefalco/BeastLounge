@@ -13,6 +13,7 @@
 #include <boost/beast/_experimental/unit_test/suite.hpp>
 
 #include <boost/beast/core/static_string.hpp>
+#include <cmath>
 
 namespace boost {
 namespace beast {

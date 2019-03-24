@@ -20,7 +20,7 @@ namespace json {
 
 class value_test : public unit_test::suite
 {
-public:     
+public:
     struct unique_storage : storage
     {
         void
@@ -523,17 +523,17 @@ public:
         {
             value v3("Hello!");
             value(std::string("Hello!"));
-            value(short{});
-            value(int{});
-            value(long{});
-            value(long long{});
-            value(unsigned short{});
-            value(unsigned int{});
-            value(unsigned long{});
-            value(unsigned long long{});
-            value(float{});
-            value(double{});
-            value(long double{});
+            value(short{0});
+            value(int{0});
+            value(long{0});
+            value((long long)0);
+            value((unsigned short)0);
+            value((unsigned int)0);
+            value((unsigned long)0);
+            value((unsigned long long)0);
+            value(float{0});
+            value(double{0});
+            value((long double)0);
             value(true);
             value(false);
             value v4(null);
@@ -548,14 +548,14 @@ public:
             jv = short{};
             jv = int{};
             jv = long{};
-            jv = long long{};
-            jv = unsigned short{};
-            jv = unsigned int{};
-            jv = unsigned long{};
-            jv = unsigned long long{};
+            jv = (long long)0;
+            jv = (unsigned short)0;
+            jv = (unsigned int)0;
+            jv = (unsigned long)0;
+            jv = (unsigned long long)0;
             jv = float{};
             jv = double{};
-            jv = long double{};
+            jv = (long double)0;
             jv = true;
             jv = false;
             jv = null;
