@@ -7,38 +7,50 @@
 # Official repository: https://github.com/boostorg/beast
 #
 
-sudo: false
 language: cpp
 addons:
   apt:
     sources: &base_sources
       - ubuntu-toolchain-r-test
 
-compiler:
-  - gcc
-  - clang
-addons:
-  apt:
-    sources:
-    #- llvm-toolchain-precise-3.9
-    packages:
-    #- g++-7
-    #- clang-3.9
+matrix:
+  include:
+    - os: linux
+      dist: xenial
+      addons:
+        apt:
+          packages:
+            - g++-7
+          sources:
+            - *base_sources
+      compiler: g++-7
+      before_install: # Travis overwrite these, if we use env
+        - export CXX=g++-7
+        - export CC=gcc-7
+
+    - os: linux
+      dist: xenial
+      # addons:
+      #     apt:
+      #       sources:
+      #         - llvm-toolchain-precise-3.9
+      #       packages:
+      #         - clang-3.9
+      compiler: clang++
+      # before_install:
+      #   - export CXX=clang
+      #   - export CC=clang
+      #   - export CXX_FLAGS="-stdlib=libstdc++"
+
 install:
-  - "[ $CXX = g++ ] || true"
-  - "[ $CXX = clang++ ] || true"
   - cd ..
   - $TRAVIS_BUILD_DIR/tools/get-boost.sh $TRAVIS_BRANCH $TRAVIS_BUILD_DIR
-  - cd boost-root
-  - ./bootstrap.sh
-  - export BOOST_ROOT=$TRAVIS_BUILD_DIR/../boost-root
   - cd $TRAVIS_BUILD_DIR
+
 script:
-  - mkdir build
-  - cd build
-  - cmake ..
-  - cmake --build .
-  - ctest
+  - cmake -H. -Bbuild
+  - make -C build all test
+
 notifications:
   email:
     on_success: never

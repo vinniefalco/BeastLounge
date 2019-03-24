@@ -155,7 +155,7 @@ add_library (
     test/lib_asio_ssl.cpp
 )
 
-target_link_libraries (lib-asio-ssl PUBLIC Threads::Threads)
+target_link_libraries (lib-asio-ssl PUBLIC Threads::Threads lib-asio)
 
 set_property (TARGET lib-asio-ssl PROPERTY FOLDER "static-libs")
 
@@ -166,9 +166,10 @@ add_library (
     test/lib_beast.cpp
 )
 
-target_link_libraries (lib-beast PUBLIC Threads::Threads)
+target_link_libraries(lib-beast PUBLIC Threads::Threads lib-asio)
 
 set_property (TARGET lib-beast PROPERTY FOLDER "static-libs")
+
 
 #-------------------------------------------------------------------------------
 
@@ -177,7 +178,7 @@ add_library (
     test/lib_beast_extra.cpp
 )
 
-target_link_libraries (lib-beast-extra PUBLIC Threads::Threads)
+target_link_libraries (lib-beast-extra PUBLIC Threads::Threads lib-beast)
 
 set_property (TARGET lib-beast-extra PROPERTY FOLDER "static-libs")
 
