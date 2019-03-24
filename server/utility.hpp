@@ -13,8 +13,34 @@
 #include "config.hpp"
 #include <boost/smart_ptr/enable_shared_from_this.hpp>
 #include <boost/smart_ptr/shared_ptr.hpp>
+#include <chrono>
 #include <type_traits>
 
+template<class T>
+struct is_duration : std::false_type
+{
+};
+
+template<class Rep, class Period>
+struct is_duration<
+    std::chrono::duration<Rep, Period>> : std::true_type
+{
+};
+ 
+template<
+    class To, class Rep, class Period,
+    class = typename std::enable_if<
+        is_duration<To>::value>::type
+>
+constexpr
+To
+ceil(std::chrono::duration<Rep, Period> const& d)
+{
+    To t = std::chrono::duration_cast<To>(d);
+    if (t < d)
+        return t + To{1};
+    return t;
+}
 //------------------------------------------------------------------------------
 
 struct enable_shared_from

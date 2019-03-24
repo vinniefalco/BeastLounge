@@ -12,6 +12,12 @@
 
 //------------------------------------------------------------------------------
 
+system_channel::
+system_channel()
+    : channel("System")
+{
+}
+
 void
 system_channel::
 on_insert(user& u)

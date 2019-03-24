@@ -13,6 +13,7 @@
 #include "config.hpp"
 #include "types.hpp"
 #include <boost/beast/core/string.hpp>
+#include <chrono>
 #include <functional>
 #include <memory>
 #include <utility>
@@ -48,21 +49,18 @@ public:
     insert(
         std::unique_ptr<service> sp) = 0;
 
-    /// Return the document root path
+    /// Returns `true` if the server is shutting down gracefully
     virtual
-    beast::string_view
-    doc_root() const = 0;
-
-    /// Perform a stat
-    virtual
-    void
-    stat(json::value& jv) = 0;
+    bool
+    is_shutting_down() = 0;
 
     //--------------------------------------------------------------------------
     //
     // Services
     //
     //--------------------------------------------------------------------------
+
+    virtual beast::string_view  doc_root() const = 0;
 
     virtual logger&             log() = 0;
     virtual ::dispatcher&       dispatcher() = 0;
@@ -80,6 +78,11 @@ public:
     void
     run() = 0;
 
+    /** Shut down the server gracefully
+    */
+    virtual
+    void
+    shutdown(std::chrono::seconds cooldown) = 0;
 };
 
 //------------------------------------------------------------------------------

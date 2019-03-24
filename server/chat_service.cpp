@@ -27,9 +27,11 @@ class room : public channel
     server& srv_;
     
 public:
-    explicit
-    room(server& srv)
-        : srv_(srv)
+    room(
+        beast::string_view name,
+        server& srv)
+        : channel(name)
+        , srv_(srv)
     {
     }
 
@@ -68,7 +70,7 @@ public:
     chat_service(
         server& srv)
         : srv_(srv)
-        , room_(srv)
+        , room_("General", srv)
     {
     }
 
@@ -91,12 +93,6 @@ public:
     void
     on_stop() override
     {
-    }
-
-    void
-    on_stat(json::value& jv) override
-    {
-        boost::ignore_unused(jv);
     }
 
     //--------------------------------------------------------------------------
@@ -142,6 +138,7 @@ public:
             json::value jv;
             jv["verb"] = "say";
             jv["channel"] = room_.cid();
+            jv["name"] = room_.name();
             jv["user"] = u.name;
             jv["message"] = text;
             room_.send(jv);

@@ -13,13 +13,14 @@
 #include <atomic>
 
 channel::
-channel()
+channel(beast::string_view name)
     : cid_(
         []
         {
             static std::atomic<std::size_t> cid = 0;
             return ++cid;
         }())
+    , name_(name)
 {
 }
 

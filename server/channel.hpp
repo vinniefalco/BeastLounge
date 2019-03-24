@@ -26,18 +26,27 @@ class channel
     std::mutex mutex_;
     boost::container::flat_set<user*> users_;
     std::size_t cid_;
+    std::string name_;
 
 public:
     ~channel();
 
     /// Construct a new channel with a unique channel id
-    channel();
+    explicit
+    channel(beast::string_view name);
 
     /// Return the channel id
     std::size_t
     cid() const noexcept
     {
         return cid_;
+    }
+
+    /// Return the channel name
+    beast::string_view
+    name() const noexcept
+    {
+        return name_;
     }
 
     /** Add a user to the channel.

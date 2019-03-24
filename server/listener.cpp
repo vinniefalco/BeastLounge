@@ -406,20 +406,6 @@ public:
                 &listener_impl::do_stop,
                 this));
     }
-
-    void
-    on_stat(json::value& ja) override
-    {
-        std::lock_guard<std::mutex> lock(mutex_);
-        ja.as_array().push_back({});
-        auto& jv = ja.as_array().back();
-        jv.emplace_object();
-        jv["type"] = "listener";
-        jv["name"] = cfg_.name;
-        jv["address"] = cfg_.address.to_string();
-        jv["port_num"] = cfg_.port_num;
-        jv["sessions"] = sessions_.size();
-    }
 };
 
 } // (anon)

@@ -12,6 +12,7 @@
 #include "rpc.hpp"
 #include "server.hpp"
 #include "service.hpp"
+#include "system_channel.hpp"
 #include "user.hpp"
 #include <boost/make_unique.hpp>
 
@@ -51,12 +52,6 @@ public:
     {
     }
 
-    void
-    on_stat(json::value& jv) override
-    {
-        boost::ignore_unused(jv);
-    }
-
     //--------------------------------------------------------------------------
 
     void
@@ -81,6 +76,8 @@ public:
         if(req.id.has_value())
             res["id"] = std::move(*req.id);
         u.send(make_message(res));
+
+        srv_.system_channel().insert(u);
     }
 
 };

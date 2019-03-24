@@ -38,12 +38,6 @@ public:
     virtual
     void
     on_stop() = 0;
-
-    /** Called when statistics are gathered
-    */
-    virtual
-    void
-    on_stat(json::value& jv) = 0;
 };
 
 #endif

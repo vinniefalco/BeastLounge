@@ -13,11 +13,13 @@
 #include "server.hpp"
 #include "service.hpp"
 #include "system_channel.hpp"
+#include "utility.hpp"
 #include <boost/beast/_experimental/json/assign_string.hpp>
 #include <boost/beast/_experimental/json/assign_vector.hpp>
 #include <boost/beast/_experimental/json/parse_file.hpp>
 #include <boost/beast/_experimental/json/parser.hpp>
-#include <boost/asio/signal_set.hpp>
+#include <boost/asio/basic_waitable_timer.hpp>
+#include <boost/asio/basic_signal_set.hpp>
 #include <boost/assert.hpp>
 #include <boost/make_unique.hpp>
 #include <boost/throw_exception.hpp>
@@ -168,17 +170,32 @@ public:
 class server_impl
     : public server_impl_base
 {
+    using clock_type = std::chrono::steady_clock;
+    using time_point = clock_type::time_point;
+
     server_config cfg_;
     std::shared_ptr<logger> log_;
     std::vector<std::unique_ptr<service>> services_;
-    asio::signal_set signals_;
+    net::basic_waitable_timer<
+        clock_type,
+        boost::asio::wait_traits<clock_type>,
+        executor_type> timer_;
+    asio::basic_signal_set<executor_type> signals_;
     std::condition_variable cv_;
     std::mutex mutex_;
+    time_point shutdown_time_;
     bool running_ = false;
     bool stop_ = false;
 
     std::unique_ptr<::dispatcher> dispatcher_;
     ::system_channel system_channel_;
+
+    static
+    std::chrono::steady_clock::time_point
+    never() noexcept
+    {
+        return (time_point::max)();
+    }
 
 public:
     explicit
@@ -187,12 +204,15 @@ public:
         std::shared_ptr<logger> log)
         : cfg_(std::move(cfg))
         , log_(std::move(log))
+        , timer_(this->make_executor())
         , signals_(
-            this->make_executor(),
-                SIGINT,
-                SIGTERM)
+            timer_.get_executor(),
+            SIGINT,
+            SIGTERM)
         , dispatcher_(make_dispatcher(*this))
+        , shutdown_time_(never())
     {
+        timer_.expires_at(never());
     }
 
     ~server_impl()
@@ -262,27 +282,111 @@ public:
     #endif
     }
 
+    //--------------------------------------------------------------------------
+    //
+    // shutdown / stop
+    //
+    //--------------------------------------------------------------------------
+
+    bool
+    is_shutting_down() override
+    {
+        return false;
+    }
+
+    void
+    shutdown(std::chrono::seconds cooldown) override
+    {
+        if(! timer_.get_executor().running_in_this_thread())
+            return net::post(
+                timer_.get_executor(),
+                beast::bind_front_handler(
+                    &server_impl::shutdown,
+                    this,
+                    cooldown));
+
+        // Can't shutdown twice
+        if(timer_.expiry() != never())
+            return;
+
+        shutdown_time_ = clock_type::now() + cooldown;
+        on_timer();
+    }
+
+    void
+    notify_shutdown()
+    {
+    }
+
+    void
+    on_timer(beast::error_code ec = {})
+    {
+        if(ec == net::error::operation_aborted)
+            return;
+
+        auto const remain =
+            ::ceil<std::chrono::seconds>(
+                shutdown_time_ - clock_type::now());
+
+        // Countdown finished?
+        if(remain.count() <= 0)
+        {
+            stop();
+            return;
+        }
+
+        std::chrono::seconds amount(remain.count());
+        if(amount.count() > 10)
+            amount = std::chrono::seconds(10);
+
+        // Notify users of impending shutdown
+        json::value jv;
+        jv["verb"] = "say";
+        jv["channel"] = system_channel_.cid();
+        jv["name"] = system_channel_.name();
+        jv["message"] = "Server is shutting down in " +
+            std::to_string(remain.count()) + " seconds";
+
+        system_channel_.send(jv);
+        timer_.expires_from_now(amount);
+        timer_.async_wait(bind_front(
+            this, &server_impl::on_timer));
+    }
+
     void
     on_signal(beast::error_code ec, int signum)
     {
+        if(ec == net::error::operation_aborted)
+            return;
+
         log_->cerr() <<
             "server_impl::on_signal: #" <<
             signum << ", " << ec.message() << "\n";
-        stop();
+        if(timer_.expiry() == never())
+        {
+            // Capture signals again
+            signals_.async_wait(
+                bind_front(this, &server_impl::on_signal));
+
+            this->shutdown(std::chrono::seconds(30));
+        }
+        else
+        {
+            // second time hard stop
+            stop();
+        }
     }
 
     void
     stop()
     {
-        net::post(
-            signals_.get_executor(),
-            bind_front(this, &server_impl::on_stop));
-    }
+        // Get on the strand
+        if(! timer_.get_executor().running_in_this_thread())
+            return net::post(
+                timer_.get_executor(),
+                bind_front(this, &server_impl::stop));
 
-    void
-    on_stop()
-    {
-        // only call once
+        // Only call once
         if(stop_)
             return;
 
@@ -293,29 +397,19 @@ public:
             cv_.notify_all();
         }
 
-        // Cancel the signal wait operation
-        {
-            beast::error_code ec;
-            signals_.cancel(ec);
-        }
+        // Cancel our outstanding I/O
+        beast::error_code ec;
+        timer_.cancel(ec);
+        signals_.cancel(ec);
     }
+
+    //--------------------------------------------------------------------------
 
     beast::string_view
     doc_root() const override
     {
         return cfg_.doc_root;
     }
-
-    void
-    stat(json::value& jv) override
-    {
-        jv.emplace_array();
-        std::lock_guard<std::mutex> lock(mutex_);
-        for(auto& ag : services_)
-            ag->on_stat(jv);
-    }
-
-    //--------------------------------------------------------------------------
 
     logger&
     log() noexcept override

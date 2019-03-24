@@ -15,6 +15,9 @@
 
 class system_channel : public channel
 {
+public:
+    system_channel();
+
 protected:
     void
     on_insert(user& u) override;

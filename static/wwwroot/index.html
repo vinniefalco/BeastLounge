@@ -70,15 +70,21 @@
           switch(jv["verb"])
           {
             case "join":
-              messages.innerText += jv["channel"] + ". " + jv["user"] + " joins\n";
+              messages.innerText +=
+                "[" + jv["channel"] + ". " + jv["name"] + "] " +
+                jv["user"] + " joins\n";
               break;
 
             case "leave":
-              messages.innerText += jv["channel"] + ". " + jv["user"] + " leaves\n";
+              messages.innerText +=
+                "[" + jv["channel"] + ". " + jv["name"] + "] " +
+                jv["user"] + " leaves\n";
               break;
 
             case "say":
-              messages.innerText += jv["channel"] + ". " + jv["user"] + ": " + jv["message"] + "\n";
+              messages.innerText +=
+                "[" + jv["channel"] + ". " + jv["name"] + "] " +
+                jv["user"] + ": " + jv["message"] + "\n";
 
           }
         }
@@ -103,7 +109,7 @@
       {
         jv.method = "say";
         jv.params = {
-          "channel" : 1,
+          "channel" : 2,
           "message" : sendMessage.value
         }
       }
@@ -112,7 +118,7 @@
         jv.method = "slash";
         jv.agent = "chat";
         jv.params = {
-          "channel" : 1,
+          "channel" : 2,
           "command" : sendMessage.value
         }
       }
