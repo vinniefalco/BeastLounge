@@ -17,7 +17,6 @@ add_executable (beast-core-tests
     ${BEAST_EXTRA_FILES}
     Jamfile
     expected.cpp
-    src.cpp
 )
 target_link_libraries (beast-core-tests
     lib-asio

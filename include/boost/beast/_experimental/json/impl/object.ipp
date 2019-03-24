@@ -608,7 +608,7 @@ insert(value_type&& v) ->
     value v2(
         std::move(v.second),
         sp_);
-    return emplace_impl(
+    return emplace_impl(end(),
         v.first,
         value(std::move(v.second), sp_));
 }
@@ -618,29 +618,29 @@ object::
 insert(value_type const& v) ->
     std::pair<iterator, bool>
 {
-    return emplace_impl(v);
+    return emplace_impl(end(), v);
 }
 
 auto
 object::
 insert(
-    const_iterator hint,
+    const_iterator before,
     value_type const& v) ->
         iterator
 {
-    boost::ignore_unused(hint);
-    return emplace_impl(v).first;
+    boost::ignore_unused(before);
+    return emplace_impl(end(), v).first;
 }
 
 auto
 object::
 insert(
-    const_iterator hint,
+    const_iterator before,
     value_type&& v) ->
         iterator
 {
-    boost::ignore_unused(hint);
-    return emplace_impl(
+    boost::ignore_unused(before);
+    return emplace_impl(end(),
         std::move(v)).first;
 }
 
@@ -663,15 +663,14 @@ insert(node_type&& nh) ->
 {
     if(! nh.e_)
         return {end(), false, {}};
-    auto const hash =
-        hasher{}(nh.e_->key());
+    auto const hash = hasher{}(nh.e_->key());
+    auto before = cend();
     auto e = prepare_insert(
-        nh.key(), hash);
+        &before, nh.key(), hash);
     if(e)
-        return {
-        e, false, std::move(nh) };
+        return { e, false, std::move(nh) };
     e = nh.e_;
-    finish_insert(e, hash);
+    finish_insert(before, e, hash);
     nh.e_ = nullptr;
     return {e, true, {}};
 }
@@ -679,11 +678,11 @@ insert(node_type&& nh) ->
 auto
 object::
 insert(
-    const_iterator hint,
+    const_iterator before,
     node_type&& nh) ->
         iterator
 {
-    boost::ignore_unused(hint);
+    boost::ignore_unused(before);
     return insert(std::move(nh)).position;
 }
 
@@ -817,7 +816,7 @@ operator[](key_type key) ->
     value&
 {
     auto const result =
-        emplace_impl(
+        emplace_impl(end(),
             key, kind::null, sp_);
     return result.first->second;
 }
@@ -1309,29 +1308,30 @@ find_element(
 
 auto
 object::
-emplace_impl(value_type&& v) ->
+emplace_impl(
+    const_iterator before,
+    value_type&& v) ->
     std::pair<iterator, bool>
 {
-    return emplace_impl(
-        v.first,
-        std::move(v.second),
-        sp_);
+    return emplace_impl(before,
+        v.first, std::move(v.second), sp_);
 }
 
 auto
 object::
-emplace_impl(value_type const& v) ->
+emplace_impl(
+    const_iterator before,
+    value_type const& v) ->
     std::pair<iterator, bool>
 {
-    return emplace_impl(
-        v.first,
-        v.second,
-        sp_);
+    return emplace_impl(before,
+        v.first, v.second, sp_);
 }
 
 auto
 object::
 prepare_insert(
+    const_iterator* before,
     key_type key,
     std::size_t hash) ->
         element*
@@ -1346,10 +1346,13 @@ prepare_insert(
     if(size() + 1 > bc * max_load_factor()
         || bc == 0)
     {
+        auto const at_end = *before == end();
         rehash(static_cast<size_type>(
             (std::ceil)(
                 float(size()+1) /
                 max_load_factor())));
+        if(at_end)
+            *before = end();
     }
     return nullptr;
 }
@@ -1373,7 +1376,9 @@ prepare_inserts(
 void
 object::
 finish_insert(
-    element* e, std::size_t hash)
+    const_iterator before,
+    element* e,
+    std::size_t hash)
 {
     auto const bn = constrain_hash(
         hash, tab_->bucket_count);
@@ -1382,16 +1387,19 @@ finish_insert(
     head = e;
     if(tab_->head == tab_->end)
     {
+        BOOST_ASSERT(before.e_ == tab_->end);
         tab_->head = e;
         tab_->end->prev_ = e;
         e->next_ = tab_->end;
     }
     else
     {
-        e->prev_ = tab_->end->prev_;
-        e->next_ = tab_->end;
+        e->prev_ = before.e_->prev_;
+        e->next_ = before.e_;
         e->prev_->next_ = e;
         e->next_->prev_ = e;
+        if(tab_->head == before.e_)
+            tab_->head = e;
     }
     ++tab_->count;
 }
@@ -1464,7 +1472,7 @@ copy(object const& other)
         auto e = element::allocate(
             sp_, it->key(), it->v_, sp_);
         finish_insert(
-            e, hasher{}(e->key()));
+            end(), e, hasher{}(e->key()));
         it = it->next_;
     }
 }

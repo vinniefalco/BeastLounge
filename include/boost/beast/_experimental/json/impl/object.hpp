@@ -340,6 +340,7 @@ public:
     operator=(iterator it) noexcept
     {
         e_ = it.e_;
+        return *this;
     }
 
     bool
@@ -784,7 +785,7 @@ emplace(
     Args&&... args) ->
         std::pair<iterator, bool>
 {
-    return emplace_impl(
+    return emplace_impl(end(),
         std::forward<Args>(args)...);
 }
 
@@ -848,21 +849,21 @@ template<class... Args>
 auto
 object::
 emplace_impl(
+    const_iterator before,
     key_type key,
     Args&&... args) ->
         std::pair<iterator, bool>
 {
-    auto const hash =
-        hasher{}(key);
+    auto const hash = hasher{}(key);
     auto e = prepare_insert(
-        key, hash);
+        &before, key, hash);
     if(e)
         return {e, false};
     e = element::allocate(sp_, key,
         std::forward<Args>(args)...);
     BOOST_ASSERT(
         *e->v_.get_storage() == *sp_);
-    finish_insert(e, hash);
+    finish_insert(before, e, hash);
     return {e, true};
 }
 

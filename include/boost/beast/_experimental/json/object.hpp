@@ -262,13 +262,13 @@ public:
     BOOST_BEAST_DECL
     iterator
     insert(
-        const_iterator hint,
+        const_iterator before,
         value_type const& v);
 
     BOOST_BEAST_DECL
     iterator
     insert(
-        const_iterator hint,
+        const_iterator before,
         value_type&& v);
 
     template<class P
@@ -280,7 +280,7 @@ public:
     >
     iterator
     insert(
-        const_iterator hint,
+        const_iterator before,
         P&& p);
 
     template<class InputIt>
@@ -299,7 +299,7 @@ public:
     BOOST_BEAST_DECL
     iterator
     insert(
-        const_iterator hint,
+        const_iterator before,
         node_type&& nh);
 
     template<class M>
@@ -310,7 +310,7 @@ public:
     template <class M>
     iterator
     insert_or_assign(
-        const_iterator hint,
+        const_iterator before,
         key_type key,
         M&& obj);
 
@@ -323,7 +323,7 @@ public:
     template<class... Args>
     iterator
     emplace_hint(
-        const_iterator hint,
+        const_iterator before,
         Args&&... args);
 
     template<class... Args>
@@ -335,7 +335,7 @@ public:
     template<class... Args>
     std::pair<iterator, bool>
     try_emplace(
-        const_iterator hint,
+        const_iterator before,
         key_type key,
         Args&&... args);
 
@@ -562,21 +562,27 @@ private:
 
     BOOST_BEAST_DECL
     std::pair<iterator, bool>
-    emplace_impl(value_type&& v);
+    emplace_impl(
+        const_iterator before,
+        value_type&& v);
 
     BOOST_BEAST_DECL
     std::pair<iterator, bool>
-    emplace_impl(value_type const& v);
+    emplace_impl(
+        const_iterator before,
+        value_type const& v);
 
     template<class... Args>
     std::pair<iterator, bool>
     emplace_impl(
+        const_iterator before,
         key_type key,
         Args&&... args);
 
     BOOST_BEAST_DECL
     element*
     prepare_insert(
+        const_iterator* before,
         key_type key,
         std::size_t hash);
 
@@ -588,7 +594,9 @@ private:
     BOOST_BEAST_DECL
     void
     finish_insert(
-        element* e, std::size_t hash);
+        const_iterator before,
+        element* e,
+        std::size_t hash);
 
     BOOST_BEAST_DECL
     void
