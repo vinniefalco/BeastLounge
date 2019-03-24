@@ -744,9 +744,11 @@ private:
 } // beast
 } // boost
 
+#include <boost/beast/_experimental/json/impl/array.hpp>
 #include <boost/beast/_experimental/json/impl/object.hpp>
 #include <boost/beast/_experimental/json/impl/value.hpp>
 #ifdef BOOST_BEAST_HEADER_ONLY
+#include <boost/beast/_experimental/json/impl/array.ipp>
 #include <boost/beast/_experimental/json/impl/object.ipp>
 #include <boost/beast/_experimental/json/impl/value.ipp>
 #endif

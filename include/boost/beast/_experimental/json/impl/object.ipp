@@ -501,7 +501,7 @@ begin() const noexcept ->
 
 auto
 object::
-cbegin() noexcept ->
+cbegin() const noexcept ->
     const_iterator
 {
     if(! tab_)
@@ -531,7 +531,7 @@ end() const noexcept ->
 
 auto
 object::
-cend() noexcept ->
+cend() const noexcept ->
     const_iterator
 {
     if(! tab_)
@@ -628,8 +628,7 @@ insert(
     value_type const& v) ->
         iterator
 {
-    boost::ignore_unused(before);
-    return emplace_impl(end(), v).first;
+    return emplace_impl(before, v).first;
 }
 
 auto
@@ -639,8 +638,7 @@ insert(
     value_type&& v) ->
         iterator
 {
-    boost::ignore_unused(before);
-    return emplace_impl(end(),
+    return emplace_impl(before,
         std::move(v)).first;
 }
 
@@ -662,17 +660,17 @@ insert(node_type&& nh) ->
     insert_return_type
 {
     if(! nh.e_)
-        return {end(), false, {}};
+        return { end(), false, {} };
     auto const hash = hasher{}(nh.e_->key());
     auto before = cend();
     auto e = prepare_insert(
         &before, nh.key(), hash);
     if(e)
-        return { e, false, std::move(nh) };
+        return { iterator(e), false, std::move(nh) };
     e = nh.e_;
     finish_insert(before, e, hash);
     nh.e_ = nullptr;
-    return {e, true, {}};
+    return { iterator(e), true, {} };
 }
 
 auto
@@ -682,8 +680,18 @@ insert(
     node_type&& nh) ->
         iterator
 {
-    boost::ignore_unused(before);
-    return insert(std::move(nh)).position;
+    if(! nh.e_)
+        return end();
+    auto const hash = hasher{}(nh.e_->key());
+    auto e = prepare_insert(
+        &before, nh.key(), hash);
+    if(! e)
+    {
+        e = nh.e_;
+        finish_insert(before, e, hash);
+        nh.e_ = nullptr;
+    }
+    return iterator(e);
 }
 
 auto

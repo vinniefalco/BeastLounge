@@ -146,9 +146,7 @@ value::
 value(
     array arr,
     storage_ptr store)
-    : arr_(std::move(arr),
-        array::allocator_type(
-            std::move(store)))
+    : arr_(std::move(arr), std::move(store))
     , kind_(json::kind::array)
 {
 }
@@ -251,8 +249,7 @@ operator=(array arr)
 {
     array tmp(
         std::move(arr),
-        array::allocator_type(
-            get_storage()));
+        get_storage());
     clear();
     ::new(&arr_) array(
         std::move(tmp));
@@ -355,7 +352,7 @@ get_storage() const noexcept
         return obj_.get_storage();
 
     case json::kind::array:
-        return arr_.get_allocator().get_storage();
+        return arr_.get_storage();
 
     case json::kind::string:
         return str_.get_allocator().get_storage();
@@ -373,7 +370,7 @@ release_storage() noexcept
         return obj_.get_storage();
 
     case json::kind::array:
-        return arr_.get_allocator().get_storage();
+        return arr_.get_storage();
 
     case json::kind::string:
         return str_.get_allocator().get_storage();
@@ -396,9 +393,7 @@ construct(
 
     case json::kind::array:
         // requires: noexcept construction
-        ::new(&arr_) array(
-            array::allocator_type(
-                std::move(sp)));
+        ::new(&arr_) array(std::move(sp));
         break;
 
     case json::kind::string:
@@ -485,8 +480,7 @@ move(
         {
     #endif
             ::new(&arr_) array(
-                std::move(other.arr_), typename
-                array::allocator_type(sp));
+                std::move(other.arr_), sp);
     #ifndef BOOST_NO_EXCEPTIONS
         } 
         catch(...)
@@ -583,8 +577,8 @@ copy(
         {
     #endif
             ::new(&arr_) array(
-                other.arr_, typename
-                array::allocator_type(sp));
+                other.arr_, sp);
+                
     #ifndef BOOST_NO_EXCEPTIONS
         } 
         catch(...)
@@ -602,7 +596,7 @@ copy(
         try
         {
     #endif
-            ::new(&arr_) string(
+            ::new(&str_) string(
                 other.str_, typename
                 string::allocator_type(sp));
     #ifndef BOOST_NO_EXCEPTIONS

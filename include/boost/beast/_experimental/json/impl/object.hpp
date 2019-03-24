@@ -29,6 +29,8 @@ public:
     element* next_;
 };
 
+//------------------------------------------------------------------------------
+
 struct object::element
     : public list_hook
 {
@@ -157,6 +159,8 @@ public:
     operator()(key_type key) const noexcept;
 };
 
+//------------------------------------------------------------------------------
+
 class object::key_equal
 {
 public:
@@ -187,6 +191,8 @@ public:
         return &t_;
     }
 };
+
+//------------------------------------------------------------------------------
 
 class object::const_pointer
 {

@@ -44,26 +44,15 @@ class object
 
 public:
     using key_type = beast::string_view;
-
     using mapped_type = value;
-
-    using value_type =
-        std::pair<string_view, value>;
-
+    using value_type = std::pair<string_view, value>;
     using size_type = std::size_t;
-
     using difference_type = std::ptrdiff_t;
+    using reference = std::pair<string_view, value&>;
+    using const_reference = std::pair<string_view, value const&>;
 
     class hasher;
-
     class key_equal;
-
-    using reference =
-        std::pair<string_view, value&>;
-
-    using const_reference =
-        std::pair<string_view, value const&>;
-
     class pointer;
     class const_pointer;
     class iterator;
@@ -196,11 +185,11 @@ public:
 
     BOOST_BEAST_DECL
     const_iterator
-    cbegin() noexcept;
+    cbegin() const noexcept;
 
     BOOST_BEAST_DECL
     iterator
-    end()  noexcept;
+    end() noexcept;
 
     BOOST_BEAST_DECL
     const_iterator
@@ -208,7 +197,7 @@ public:
 
     BOOST_BEAST_DECL
     const_iterator
-    cend() noexcept;
+    cend() const noexcept;
 
     //--------------------------------------------------------------------------
     //
@@ -239,13 +228,11 @@ public:
     clear() noexcept;
 
     BOOST_BEAST_DECL
-    std::pair<
-        iterator, bool>
+    std::pair<iterator, bool>
     insert(value_type&& v);
 
     BOOST_BEAST_DECL
-    std::pair<
-        iterator, bool>
+    std::pair<iterator, bool>
     insert(value_type const& v);
 
     template<class P
@@ -255,8 +242,7 @@ public:
                 P&&>::value>::type
 #endif
     >
-    std::pair<
-        iterator, bool>
+    std::pair<iterator, bool>
     insert(P&& p);
 
     BOOST_BEAST_DECL

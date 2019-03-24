@@ -20,8 +20,16 @@ class array_test : public unit_test::suite
 {
 public:
     void
+    testSpecial()
+    {
+        array a1{1, "two", false};
+        array a2(std::move(a1));
+    }
+
+    void
     run() override
     {
+        testSpecial();
         pass();
     }
 };

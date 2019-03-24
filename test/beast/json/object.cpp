@@ -360,31 +360,46 @@ public:
     void
     testModifiers()
     {
-        // insert
+        // insert(value_type&&)
         {
             object obj;
             auto p = object::value_type("a", 1);
             auto result = obj.insert(std::move(p));
             BEAST_EXPECT(p.second.is_null());
             BEAST_EXPECT(result.second);
-            BEAST_EXPECT(
-                result.first->first == "a");
-            BEAST_EXPECT(
-                ! obj.insert({"a", 2}).second);
+            BEAST_EXPECT(result.first->first == "a");
+            BEAST_EXPECT(obj.insert(
+                object::value_type("a", 2)).first ==
+                    result.first);
+            BEAST_EXPECT(! obj.insert(
+                object::value_type("a", 2)).second);
         }
+
+        // insert(value_type const&)
         {
             object obj;
             auto p = object::value_type("a", 1);
             auto result = obj.insert(p);
             BEAST_EXPECT(! p.second.is_null());
             BEAST_EXPECT(result.second);
-            BEAST_EXPECT(
-                result.first->first == "a");
-            BEAST_EXPECT(
-                ! obj.insert({"a", 2}).second);
+            BEAST_EXPECT(result.first->first == "a");
+            BEAST_EXPECT(obj.insert(
+                object::value_type("a", 2)).first ==
+                    result.first);
+            BEAST_EXPECT(! obj.insert(
+                object::value_type("a", 2)).second);
         }
 
         // insert P
+        {
+            auto p = std::make_pair("x", 1);
+            {
+                object obj;
+                auto result = obj.insert(p);
+
+            }
+        }
+
         // TODO
 
         // insert hint
