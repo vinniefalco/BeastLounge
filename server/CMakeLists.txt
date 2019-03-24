@@ -45,10 +45,7 @@ target_link_libraries (lounge-server
         OpenSSL::SSL OpenSSL::Crypto
     )
 
-if (NOT WIN32)
-  find_package (Threads)
-  target_link_libraries (lounge-server PRIVATE Threads::Threads ${Boost_SYSTEM_LIBRARY})
-endif()
+target_link_libraries (lounge-server PRIVATE Threads::Threads ${Boost_SYSTEM_LIBRARY})
 
 set_target_properties (lounge-server PROPERTIES
   VS_DEBUGGER_WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR})

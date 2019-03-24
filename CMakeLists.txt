@@ -74,7 +74,6 @@ if (MSVC)
 
 else()
     set (THREADS_PREFER_PTHREAD_FLAG ON)
-    find_package (Threads)
 
     set( CMAKE_CXX_FLAGS
       "${CMAKE_CXX_FLAGS} -std=c++11 -Wall -Wextra -Wpedantic -Wno-unused-parameter")
@@ -84,6 +83,8 @@ else()
     endif ()
 
 endif()
+
+find_package (Threads)
 
 #-------------------------------------------------------------------------------
 #
@@ -143,11 +144,9 @@ add_library (
     test/lib_asio.cpp
 )
 
-if (NOT WIN32)
-  target_link_libraries(lib-asio PUBLIC Threads::Threads)
-endif()
+target_link_libraries (lib-asio PUBLIC Threads::Threads)
 
-set_property(TARGET lib-asio PROPERTY FOLDER "static-libs")
+set_property (TARGET lib-asio PROPERTY FOLDER "static-libs")
 
 #-------------------------------------------------------------------------------
 
@@ -156,11 +155,9 @@ add_library (
     test/lib_asio_ssl.cpp
 )
 
-if (NOT WIN32)
-  target_link_libraries(lib-asio-ssl PUBLIC Threads::Threads)
-endif()
+target_link_libraries (lib-asio-ssl PUBLIC Threads::Threads)
 
-set_property(TARGET lib-asio-ssl PROPERTY FOLDER "static-libs")
+set_property (TARGET lib-asio-ssl PROPERTY FOLDER "static-libs")
 
 #-------------------------------------------------------------------------------
 
@@ -169,11 +166,9 @@ add_library (
     test/lib_beast.cpp
 )
 
-if (NOT WIN32)
-  target_link_libraries(lib-beast PUBLIC Threads::Threads)
-endif()
+target_link_libraries (lib-beast PUBLIC Threads::Threads)
 
-set_property(TARGET lib-beast PROPERTY FOLDER "static-libs")
+set_property (TARGET lib-beast PROPERTY FOLDER "static-libs")
 
 #-------------------------------------------------------------------------------
 
@@ -182,11 +177,9 @@ add_library (
     test/lib_beast_extra.cpp
 )
 
-if (NOT WIN32)
-  target_link_libraries(lib-beast-extra PUBLIC Threads::Threads)
-endif()
+target_link_libraries (lib-beast-extra PUBLIC Threads::Threads)
 
-set_property(TARGET lib-beast-extra PROPERTY FOLDER "static-libs")
+set_property (TARGET lib-beast-extra PROPERTY FOLDER "static-libs")
 
 #-------------------------------------------------------------------------------
 
@@ -195,11 +188,9 @@ add_library (
     test/lib_test.cpp
 )
 
-if (NOT WIN32)
-  target_link_libraries(lib-test PUBLIC Threads::Threads)
-endif()
+target_link_libraries (lib-test PUBLIC Threads::Threads)
 
-set_property(TARGET lib-test PROPERTY FOLDER "static-libs")
+set_property (TARGET lib-test PROPERTY FOLDER "static-libs")
 
 #-------------------------------------------------------------------------------
 
@@ -213,4 +204,3 @@ include_directories (${PROJECT_SOURCE_DIR}/include)
 
 add_subdirectory (server)
 add_subdirectory (test)
-
