@@ -20,13 +20,19 @@ compiler:
 addons:
   apt:
     sources:
-    - llvm-toolchain-precise-3.9
+    #- llvm-toolchain-precise-3.9
     packages:
-    - g++-7
-    - clang-3.9
+    #- g++-7
+    #- clang-3.9
 install:
-- "[ $CXX = g++ ] && export CXX=g++-7 || true"
-- "[ $CXX = clang++ ] && export CXX=clang++-3.9 || true"
+  - "[ $CXX = g++ ] || true"
+  - "[ $CXX = clang++ ] || true"
+  - cd ..
+  - $TRAVIS_BUILD_DIR/tools/get-boost.sh $TRAVIS_BRANCH $TRAVIS_BUILD_DIR
+  - cd boost-root
+  - ./bootstrap.sh
+  - export BOOST_ROOT=$TRAVIS_BUILD_DIR/../boost-root
+  - cd $TRAVIS_BUILD_DIR
 script:
   - mkdir build
   - cd build

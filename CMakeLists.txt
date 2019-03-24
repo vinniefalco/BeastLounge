@@ -7,7 +7,7 @@
 # Official repository: https://github.com/vinniefalco/BeastLounge
 #
 
-cmake_minimum_required (VERSION 3.10 FATAL_ERROR)
+cmake_minimum_required (VERSION 3.9.2 FATAL_ERROR)
 if(NOT ${CMAKE_VERSION} VERSION_LESS "3.12.0")
     cmake_policy (SET CMP0074 NEW)
 endif()
