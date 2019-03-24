@@ -143,45 +143,65 @@ add_library (
     test/lib_asio.cpp
 )
 
-target_link_libraries(lib-asio PUBLIC Threads::Threads)
+if (NOT WIN32)
+  target_link_libraries(lib-asio PUBLIC Threads::Threads)
+endif()
 
 set_property(TARGET lib-asio PROPERTY FOLDER "static-libs")
+
+#-------------------------------------------------------------------------------
 
 add_library (
     lib-asio-ssl STATIC
     test/lib_asio_ssl.cpp
 )
 
-target_link_libraries(lib-asio-ssl PUBLIC Threads::Threads)
+if (NOT WIN32)
+  target_link_libraries(lib-asio-ssl PUBLIC Threads::Threads)
+endif()
 
 set_property(TARGET lib-asio-ssl PROPERTY FOLDER "static-libs")
+
+#-------------------------------------------------------------------------------
 
 add_library (
     lib-beast STATIC
     test/lib_beast.cpp
 )
 
-target_link_libraries(lib-beast PUBLIC Threads::Threads)
+if (NOT WIN32)
+  target_link_libraries(lib-beast PUBLIC Threads::Threads)
+endif()
 
 set_property(TARGET lib-beast PROPERTY FOLDER "static-libs")
+
+#-------------------------------------------------------------------------------
 
 add_library (
     lib-beast-extra STATIC
     test/lib_beast_extra.cpp
 )
 
+if (NOT WIN32)
+  target_link_libraries(lib-beast-extra PUBLIC Threads::Threads)
+endif()
+
 set_property(TARGET lib-beast-extra PROPERTY FOLDER "static-libs")
 
-target_link_libraries(lib-beast-extra PUBLIC Threads::Threads)
+#-------------------------------------------------------------------------------
 
 add_library (
     lib-test STATIC
     test/lib_test.cpp
 )
 
-target_link_libraries(lib-test PUBLIC Threads::Threads)
+if (NOT WIN32)
+  target_link_libraries(lib-test PUBLIC Threads::Threads)
+endif()
 
 set_property(TARGET lib-test PROPERTY FOLDER "static-libs")
+
+#-------------------------------------------------------------------------------
 
 include_directories (.)
 

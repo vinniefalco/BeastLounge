@@ -45,7 +45,7 @@ target_link_libraries (lounge-server
         OpenSSL::SSL OpenSSL::Crypto
     )
 
-if(NOT WIN32)
+if (NOT WIN32)
   find_package (Threads)
   target_link_libraries (lounge-server PRIVATE Threads::Threads ${Boost_SYSTEM_LIBRARY})
 endif()
