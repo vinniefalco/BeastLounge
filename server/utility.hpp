@@ -32,7 +32,6 @@ template<
     class = typename std::enable_if<
         is_duration<To>::value>::type
 >
-constexpr
 To
 ceil(std::chrono::duration<Rep, Period> const& d)
 {

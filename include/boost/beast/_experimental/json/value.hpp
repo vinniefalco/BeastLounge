@@ -115,7 +115,7 @@ class value
         native    nat_;
     };
 
-    kind kind_;
+    json::kind kind_;
 
 public:
 
@@ -300,7 +300,7 @@ public:
     */
     BOOST_BEAST_DECL
     void
-    reset(json::kind k = kind::null) noexcept;
+    reset(json::kind k = json::kind::null) noexcept;
 
     /** Reset the json to the specified type.
 
@@ -322,66 +322,66 @@ public:
 
     /** Set the value to an empty object, and return it.
 
-        This calls `reset(kind::object)` and returns
+        This calls `reset(json::kind::object)` and returns
         `as_object()`. The previous contents of the value
         are destroyed.
     */
     object&
     emplace_object() noexcept
     {
-        reset(kind::object);
+        reset(json::kind::object);
         return as_object();
     }
 
     /** Set the value to an empty array, and return it.
 
-        This calls `reset(kind::array)` and returns
+        This calls `reset(json::kind::array)` and returns
         `as_array()`. The previous contents of the value
         are destroyed.
     */
     array&
     emplace_array() noexcept
     {
-        reset(kind::array);
+        reset(json::kind::array);
         return as_array();
     }
 
     /** Set the value to an empty string, and return it.
 
-        This calls `reset(kind::string)` and returns
+        This calls `reset(json::kind::string)` and returns
         `as_string()`. The previous contents of the value
         are destroyed.
     */
     string&
     emplace_string() noexcept
     {
-        reset(kind::string);
+        reset(json::kind::string);
         return as_string();
     }
 
     /** Set the value to an uninitialized number, and return it.
 
-        This calls `reset(kind::number)` and returns
+        This calls `reset(json::kind::number)` and returns
         `as_number()`. The previous contents of the value
         are destroyed.
     */
     number&
     emplace_number() noexcept
     {
-        reset(kind::number);
+        reset(json::kind::number);
         return as_number();
     }
 
     /** Set the value to an uninitialized boolean, and return it.
 
-        This calls `reset(kind::boolean)` and returns
+        This calls `reset(json::kind::boolean)` and returns
         `as_bool()`. The previous contents of the value
         are destroyed.
     */
     bool&
     emplace_bool() noexcept
     {
-        reset(kind::boolean);
+        reset(json::kind::boolean);
         return as_bool();
     }
 
@@ -508,7 +508,7 @@ public:
     //--------------------------------------------------------------------------
 
     /// Returns the kind of this JSON value
-    kind
+    json::kind
     kind() const noexcept
     {
         return kind_;
@@ -518,40 +518,40 @@ public:
     bool
     is_object() const noexcept
     {
-        return kind_ == kind::object;
+        return kind_ == json::kind::object;
     }
 
     /// Returns `true` if this is an array
     bool
     is_array() const noexcept
     {
-        return kind_ == kind::array;
+        return kind_ == json::kind::array;
     }
 
     /// Returns `true` if this is a string
     bool
     is_string() const noexcept
     {
-        return kind_ == kind::string;
+        return kind_ == json::kind::string;
     }
 
     /// Returns `true` if this is a number
     bool
     is_number() const noexcept
     {
-        return kind_ == kind::number;
+        return kind_ == json::kind::number;
     }
 
     bool
     is_bool() const noexcept
     {
-        return kind_ == kind::boolean;
+        return kind_ == json::kind::boolean;
     }
 
     bool
     is_null() const noexcept
     {
-        return kind_ == kind::null;
+        return kind_ == json::kind::null;
     }
 
     //---
@@ -562,8 +562,8 @@ public:
     {
         switch(kind_)
         {
-        case kind::object:
-        case kind::array:
+        case json::kind::object:
+        case json::kind::array:
             return false;
         default:
             return true;
@@ -583,7 +583,7 @@ public:
     is_int64() const noexcept
     {
         return
-            kind_ == kind::number &&
+            kind_ == json::kind::number &&
             nat_.num_.is_int64();
     }
 
@@ -592,7 +592,7 @@ public:
     is_uint64() const noexcept
     {
         return
-            kind_ == kind::number &&
+            kind_ == json::kind::number &&
             nat_.num_.is_uint64();
     }
 
@@ -604,7 +604,7 @@ public:
     bool
     is_double() const noexcept
     {
-        return kind_ == kind::number;
+        return kind_ == json::kind::number;
     }
 
     //--------------------------------------------------------------------------

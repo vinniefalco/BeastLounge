@@ -47,13 +47,13 @@ template<class T
     ,class = typename std::enable_if<
         detail::is_range<T>::value
         && ! std::is_same<typename T::value_type, char>::value
-        && can_assign_to<typename T::value_type>::value
+        && can_value_to<typename T::value_type>::value
             >::type
 >
 void
 assign(value& v, T const& t)
 {
-    v.reset(kind::array);
+    v.reset(json::kind::array);
     for(auto const& e : t)
         v.as_array().push_back(e);
 }
@@ -101,7 +101,7 @@ inline
 void
 assign(value& v, std::nullptr_t)
 {
-    v.reset(kind::null);
+    v.reset(json::kind::null);
 }
 
 //------------------------------------------------------------------------------

@@ -36,8 +36,7 @@ public:
         throw_on_copy(
             throw_on_copy const&)
         {
-            throw std::exception(
-                "throw_on_copy");
+            throw std::exception();
         }
     };
 

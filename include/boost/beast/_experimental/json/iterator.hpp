@@ -63,11 +63,11 @@ class const_iterator
 public:
     struct value_type
     {
-        std::size_t  depth;
-        string_view  key;
-        value const& value;
-        bool         last;
-        bool         end;
+        std::size_t         depth;
+        string_view         key;
+        json::value const&  value;
+        bool                last;
+        bool                end;
 
         value_type const*
         operator->() const noexcept

@@ -858,13 +858,13 @@ emplace_impl(
     auto e = prepare_insert(
         &before, key, hash);
     if(e)
-        return {e, false};
+        return {iterator(e), false};
     e = element::allocate(sp_, key,
         std::forward<Args>(args)...);
     BOOST_ASSERT(
         *e->v_.get_storage() == *sp_);
     finish_insert(before, e, hash);
-    return {e, true};
+    return {iterator(e), true};
 }
 
 } // json

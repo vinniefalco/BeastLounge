@@ -933,8 +933,8 @@ equal_range(
         static_cast<object const&>(
             *this).equal_range(key, hash);
     return {
-        result.first.e_,
-        result.second.e_};
+        iterator(result.first.e_),
+        iterator(result.second.e_)};
 }
 
 auto
@@ -960,7 +960,9 @@ equal_range(
     auto it = find(key, hash);
     if(it == end())
         return {it, it};
-    return {it.e_, it.e_->next_};
+    return {
+        const_iterator(it.e_),
+        const_iterator(it.e_->next_)};
 }
 
 //------------------------------------------------------------------------------

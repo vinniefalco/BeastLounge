@@ -485,7 +485,7 @@ make_server(
             return nullptr;
         }
         if(! log->open(std::move(cfg)))
-            return false;
+            return nullptr;
     }
 
     // Read the server configuration
