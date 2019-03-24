@@ -213,6 +213,11 @@ public:
         , shutdown_time_(never())
     {
         timer_.expires_at(never());
+
+        // Register RPC commands
+        auto& d = this->dispatcher();
+        d.insert("shutdown", &server_impl::rpc_shutdown, this);
+        d.insert("stop", &server_impl::rpc_stop, this);
     }
 
     ~server_impl()
@@ -288,6 +293,20 @@ public:
     //
     //--------------------------------------------------------------------------
 
+    void
+    rpc_shutdown(
+        user&, rpc_request&)
+    {
+        shutdown(std::chrono::seconds(60));
+    }
+
+    void
+    rpc_stop(
+        user&, rpc_request&)
+    {
+        stop();
+    }
+
     bool
     is_shutting_down() override
     {
@@ -297,6 +316,7 @@ public:
     void
     shutdown(std::chrono::seconds cooldown) override
     {
+        // Get on the strand
         if(! timer_.get_executor().running_in_this_thread())
             return net::post(
                 timer_.get_executor(),
@@ -305,7 +325,7 @@ public:
                     this,
                     cooldown));
 
-        // Can't shutdown twice
+        // Only callable once
         if(timer_.expiry() != never())
             return;
 
@@ -386,7 +406,7 @@ public:
                 timer_.get_executor(),
                 bind_front(this, &server_impl::stop));
 
-        // Only call once
+        // Only callable once
         if(stop_)
             return;
 
