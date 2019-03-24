@@ -21,6 +21,7 @@ addons:
   apt:
     sources:
     - llvm-toolchain-precise-3.9
+    - *base_sources
     packages:
     - g++-7
     - clang-3.9
