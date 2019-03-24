@@ -1,16 +1,25 @@
-# Copyright 2018 Vinnie Falco
-# Distributed under the Boost Software License, Version 1.0.
-# (See accompanying file LICENSE_1_0.txt or copy at http://boost.org/LICENSE_1_0.txt)
+#
+# Copyright (c) 2013-2019 Vinnie Falco (vinnie dot falco at gmail dot com)
+#
+# Distributed under the Boost Software License, Version 1.0. (See accompanying
+# file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
+#
+# Official repository: https://github.com/boostorg/beast
+#
 
-sudo: true
+sudo: false
 language: cpp
+addons:
+  apt:
+    sources: &base_sources
+      - ubuntu-toolchain-r-test
+
 compiler:
   - gcc
   - clang
 addons:
   apt:
     sources:
-    - ubuntu-toolchain-r-test
     - llvm-toolchain-precise-3.9
     packages:
     - g++-7

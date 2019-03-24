@@ -10,6 +10,7 @@
 #ifndef BOOST_BEAST_JSON_DETAIL_VARINT_IPP
 #define BOOST_BEAST_JSON_DETAIL_VARINT_IPP
 
+#include <boost/beast/_experimental/json/detail/varint.hpp>
 #include <utility>
 
 namespace boost {

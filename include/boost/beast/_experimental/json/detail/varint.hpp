@@ -11,6 +11,7 @@
 #define BOOST_BEAST_JSON_DETAIL_VARINT_HPP
 
 #include <cstdlib>
+#include <cstdint>
 #include <utility>
 
 namespace boost {

@@ -7,30 +7,24 @@
 # Official repository: https://github.com/boostorg/beast
 #
 
-set (TEST_MAIN ${Boost_INCLUDE_DIRS}/boost/beast/_experimental/unit_test/main.cpp)
-
 source_group (TREE ${Boost_INCLUDE_DIRS}/boost/beast PREFIX beast FILES ${BEAST_FILES})
 source_group (TREE ${PROJECT_SOURCE_DIR}/include/boost/beast PREFIX beast FILES ${BEAST_EXTRA_FILES})
-source_group ("beast-test" FILES ${TEST_MAIN})
 
-#source_group (TREE ${PROJECT_SOURCE_DIR}/test/beast/json PREFIX "" FILES *)
 GroupSources(test/beast/json "/")
-
-add_definitions (-DBOOST_BEAST_SPLIT_COMPILATION)
 
 add_executable (beast-json-tests
     ${BEAST_FILES}
     ${BEAST_EXTRA_FILES}
-    ${TEST_MAIN}
+    Jamfile
     _detail_stack.cpp
     allocator.cpp
     array.cpp
     assign_string.cpp
     assign_vector.cpp
     basic_parser.cpp
-    json.cpp
     error.cpp
     iterator.cpp
+    json.cpp
     key_param.cpp
     kind.cpp
     number.cpp
@@ -43,3 +37,11 @@ add_executable (beast-json-tests
     string.cpp
     value.cpp
 )
+
+target_link_libraries (beast-json-tests
+    lib-asio
+    lib-beast
+    lib-beast-extra
+    lib-test
+    )
+

@@ -13,7 +13,6 @@ source_group (TREE ${Boost_INCLUDE_DIRS}/boost/beast PREFIX beast FILES ${BEAST_
 source_group (TREE ${PROJECT_SOURCE_DIR}/include/boost/beast PREFIX beast FILES ${BEAST_EXTRA_FILES})
 source_group ("beast-test" FILES ${TEST_MAIN})
 
-#source_group (TREE ${PROJECT_SOURCE_DIR}/test/beast/json PREFIX "" FILES *)
 GroupSources(test/server "/")
 
 add_definitions (-DBOOST_BEAST_SPLIT_COMPILATION)
@@ -23,6 +22,12 @@ include_directories (${PROJECT_SOURCE_DIR}/server)
 add_executable (server-tests
     ${BEAST_FILES}
     ${BEAST_EXTRA_FILES}
-    ${TEST_MAIN}
     message_test.cpp
+)
+
+target_link_libraries (server-tests
+    lib-asio
+    lib-beast
+    lib-beast-extra
+    lib-test
 )

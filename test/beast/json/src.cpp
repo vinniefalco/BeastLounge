@@ -7,7 +7,7 @@
 // Official repository: https://github.com/vinniefalco/BeastLounge
 //
 
-#ifdef BOOST_BEAST_SPLIT_COMPILATION
+#ifdef BOOST_BEAST_SEPARATE_COMPILATION
 
 #include <boost/beast/src.hpp>
 #include <boost/beast/src_extra.hpp>

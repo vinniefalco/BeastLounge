@@ -8,26 +8,7 @@
 #
 
 local SOURCES =
-    _detail_stack.cpp
-    allocator.cpp
-    array.cpp
-    assign_string.cpp
-    assign_vector.cpp
-    basic_parser.cpp
-    error.cpp
-    iterator.cpp
-    json.cpp
-    key_param.cpp
-    kind.cpp
-    number.cpp
-    object.cpp
-    parse_file.cpp
-    parser.cpp
-    serializer.cpp
-    src.cpp
-    storage.cpp
-    string.cpp
-    value.cpp
+    message_test.cpp
     ;
 
 exe fat-tests :
@@ -36,6 +17,8 @@ exe fat-tests :
     /lounge//lib-beast
     /lounge//lib-beast-extra
     /lounge//lib-test
+    :
+    <include>../../server
     ;
 
 explicit fat-tests ;
@@ -45,6 +28,8 @@ run $(SOURCES)
     /lounge//lib-beast
     /lounge//lib-beast-extra
     /lounge//lib-test
-    : : : : run-tests ;
+    : : :
+    <include>../../server
+    : run-tests ;
 
 explicit run-tests ;

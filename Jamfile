@@ -1,0 +1,107 @@
+#
+# Copyright (c) 2013-2019 Vinnie Falco (vinnie dot falco at gmail dot com)
+#
+# Distributed under the Boost Software License, Version 1.0. (See accompanying
+# file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
+#
+# Official repository: https://github.com/boostorg/beast
+#
+
+import ac ;
+import os ;
+import feature ;
+import boost ;
+import modules ;
+import testing ;
+#import ../../config/checks/config : requires ;
+#import config/checks/config
+
+boost.use-project ;
+
+lib ws2_32 ; # NT
+lib mswsock ; # NT
+lib ssl ;
+lib crypto ;
+lib crypt32 ;
+lib ssl : : <target-os>windows <name>ssleay32 ;
+lib crypto : : <target-os>windows <name>libeay32 ;
+
+local defines =
+    <include>.
+    <include>./include
+    <implicit-dependency>/boost//headers
+    <define>BOOST_ALL_NO_LIB=1
+    <define>BOOST_ASIO_SEPARATE_COMPILATION
+    <define>BOOST_ASIO_NO_DEPRECATED=1
+    <define>BOOST_ASIO_DISABLE_BOOST_ARRAY=1
+    <define>BOOST_ASIO_DISABLE_BOOST_BIND=1
+    <define>BOOST_ASIO_DISABLE_BOOST_DATE_TIME=1
+    <define>BOOST_ASIO_DISABLE_BOOST_REGEX=1
+    <define>BOOST_BEAST_SEPARATE_COMPILATION
+    <define>BOOST_COROUTINES_NO_DEPRECATION_WARNING=1
+    <toolset>msvc:<cxxflags>"/bigobj"
+    <toolset>msvc-14.1:<cxxflags>"/permissive-"
+    <toolset>msvc-14.2:<cxxflags>"/permissive-"
+    <toolset>msvc:<define>_SCL_SECURE_NO_WARNINGS=1
+    <toolset>msvc:<define>_CRT_SECURE_NO_WARNINGS=1
+    <toolset>msvc:<define>_SILENCE_CXX17_ALLOCATOR_VOID_DEPRECATION_WARNING
+    <toolset>msvc:<define>_SILENCE_CXX17_ADAPTOR_TYPEDEFS_DEPRECATION_WARNING
+    <toolset>msvc,<variant>release:<cxxflags>"/Ob2 /Oi /Ot"
+    <target-os>linux:<define>_XOPEN_SOURCE=600
+    <target-os>linux:<define>_GNU_SOURCE=1
+    <target-os>windows:<define>_WIN32_WINNT=0x0601
+    <target-os>windows,<toolset>gcc:<library>ws2_32
+    <target-os>windows,<toolset>gcc:<library>mswsock
+    <target-os>windows,<toolset>gcc-cygwin:<define>__USE_W32_SOCKETS
+    ;
+
+project /lounge
+    : build-dir bin
+    ;
+
+lib lib-asio
+    : test/lib_asio.cpp
+    : requirements
+        <link>static
+        $(defines)
+    : usage-requirements
+        $(defines)
+    ;
+
+lib lib-asio-ssl
+    : test/lib_asio_ssl.cpp
+    : requirements
+        <link>static
+        $(defines)
+        [ ac.check-library /lounge//ssl : <library>/lounge//ssl/<link>shared : <build>no ]
+        [ ac.check-library /lounge//crypto : <library>/lounge//crypto/<link>shared : <build>no ]
+    : usage-requirements
+        $(defines)
+    ;
+
+lib lib-beast
+    : test/lib_beast.cpp
+    : requirements
+        <link>static
+        $(defines)
+    : usage-requirements
+        $(defines)
+    ;
+
+lib lib-beast-extra
+    : test/lib_beast_extra.cpp
+    : requirements
+        <link>static
+        $(defines)
+    : usage-requirements
+        $(defines)
+    ;
+
+lib lib-test
+    : test/lib_test.cpp
+    : requirements
+        <link>static
+        $(defines)
+    : usage-requirements
+        $(defines)
+    ;

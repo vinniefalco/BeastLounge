@@ -7,23 +7,40 @@
 # Official repository: https://github.com/vinniefalco/BeastLounge
 #
 
-file (GLOB_RECURSE APP_FILES . *.*)
-
 source_group (TREE ${Boost_INCLUDE_DIRS}/boost/beast PREFIX beast FILES ${BEAST_FILES})
 source_group (TREE ${PROJECT_SOURCE_DIR}/include/boost/beast PREFIX beast FILES ${BEAST_EXTRA_FILES})
-source_group (TREE ${CMAKE_CURRENT_SOURCE_DIR} PREFIX "" FILES ${APP_FILES})
+GroupSources (server "/")
 
-add_definitions (-DBOOST_BEAST_SPLIT_COMPILATION)
+add_definitions (-DBOOST_BEAST_SEPARATE_COMPILATION)
+
+file (GLOB_RECURSE SERVER_HEADERS . *.hpp)
 
 add_executable (lounge-server
-    ${APP_FILES}
     ${BEAST_FILES}
     ${BEAST_EXTRA_FILES}
-    ${NLOHMANN_FILES}
+    ${SERVER_HEADERS}
+    Jamfile
     README.md
+    channel.cpp
+    chat_service.cpp
+    dispatcher.cpp
+    http_session.cpp
+    ident_service.cpp
+    listener.cpp
+    logger.cpp
+    main.cpp
+    message.cpp
+    rpc.cpp
+    server.cpp
+    system_channel.cpp
+    user.cpp
+    ws_user.cpp
     )
 
 target_link_libraries (lounge-server
+    lib-beast
+    lib-asio
+    lib-asio-ssl
     OpenSSL::SSL OpenSSL::Crypto
     )
 

@@ -348,7 +348,7 @@ public:
             std::to_string(remain.count()) + " seconds";
 
         system_channel_.send(jv);
-        timer_.expires_from_now(amount);
+        timer_.expires_after(amount);
         timer_.async_wait(bind_front(
             this, &server_impl::on_timer));
     }
@@ -398,8 +398,8 @@ public:
         }
 
         // Cancel our outstanding I/O
+        timer_.cancel();
         beast::error_code ec;
-        timer_.cancel(ec);
         signals_.cancel(ec);
     }
 

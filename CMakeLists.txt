@@ -10,6 +10,33 @@
 cmake_minimum_required (VERSION 3.13 FATAL_ERROR)
 cmake_policy (SET CMP0074 NEW)
 
+#-------------------------------------------------------------------------------
+
+function (DoGroupSources curdir rootdir folder)
+    file (GLOB children RELATIVE ${PROJECT_SOURCE_DIR}/${curdir} ${PROJECT_SOURCE_DIR}/${curdir}/*)
+    foreach (child ${children})
+        if (IS_DIRECTORY ${PROJECT_SOURCE_DIR}/${curdir}/${child})
+            DoGroupSources (${curdir}/${child} ${rootdir} ${folder})
+        elseif (${child} STREQUAL "CMakeLists.txt")
+            source_group("" FILES ${PROJECT_SOURCE_DIR}/${curdir}/${child})
+        else()
+            string (REGEX REPLACE ^${rootdir} ${folder} groupname ${curdir})
+            string (REPLACE "/" "\\" groupname ${groupname})
+            source_group (${groupname} FILES ${PROJECT_SOURCE_DIR}/${curdir}/${child})
+        endif()
+    endforeach()
+endfunction()
+
+function (GroupSources curdir folder)
+    DoGroupSources (${curdir} ${curdir} ${folder})
+endfunction()
+
+#-------------------------------------------------------------------------------
+#
+# Beast Lounge
+#
+#-------------------------------------------------------------------------------
+
 project (beast-lounge VERSION 0.1.0 LANGUAGES CXX)
 
 set_property (GLOBAL PROPERTY USE_FOLDERS ON)
@@ -60,10 +87,19 @@ endif()
 #
 # Boost / Beast
 #
+#-------------------------------------------------------------------------------
 
 find_package (Boost REQUIRED COMPONENTS system)
 include_directories (${Boost_INCLUDE_DIRS})
 link_directories (${Boost_LIBRARY_DIRS})
+
+add_definitions (-DBOOST_ASIO_NO_DEPRECATED=1)
+add_definitions (-DBOOST_ASIO_DISABLE_BOOST_ARRAY=1)
+add_definitions (-DBOOST_ASIO_DISABLE_BOOST_BIND=1)
+add_definitions (-DBOOST_ASIO_DISABLE_BOOST_DATE_TIME=1)
+add_definitions (-DBOOST_ASIO_DISABLE_BOOST_REGEX=1)
+add_definitions (-DBOOST_ASIO_SEPARATE_COMPILATION=1)
+add_definitions (-DBOOST_BEAST_SEPARATE_COMPILATION=1)
 
 file (GLOB_RECURSE BEAST_FILES
   ${Boost_INCLUDE_DIRS}/boost/beast/*.hpp
@@ -79,6 +115,7 @@ file (GLOB_RECURSE BEAST_EXTRA_FILES
 #
 # OpenSSL
 #
+#-------------------------------------------------------------------------------
 
 if (APPLE AND NOT DEFINED ENV{OPENSSL_ROOT_DIR})
   find_program(HOMEBREW brew)
@@ -91,29 +128,54 @@ endif()
 
 find_package(OpenSSL)
 
+#-------------------------------------------------------------------------------
+#
+# Static Libraries
 #
 #-------------------------------------------------------------------------------
 
-function (DoGroupSources curdir rootdir folder)
-    file (GLOB children RELATIVE ${PROJECT_SOURCE_DIR}/${curdir} ${PROJECT_SOURCE_DIR}/${curdir}/*)
-    foreach (child ${children})
-        if (IS_DIRECTORY ${PROJECT_SOURCE_DIR}/${curdir}/${child})
-            DoGroupSources (${curdir}/${child} ${rootdir} ${folder})
-        elseif (${child} STREQUAL "CMakeLists.txt")
-            source_group("" FILES ${PROJECT_SOURCE_DIR}/${curdir}/${child})
-        else()
-            string (REGEX REPLACE ^${rootdir} ${folder} groupname ${curdir})
-            string (REPLACE "/" "\\" groupname ${groupname})
-            source_group (${groupname} FILES ${PROJECT_SOURCE_DIR}/${curdir}/${child})
-        endif()
-    endforeach()
-endfunction()
+GroupSources (test "/")
 
-function (GroupSources curdir folder)
-    DoGroupSources (${curdir} ${curdir} ${folder})
-endfunction()
+add_library (
+    lib-asio STATIC
+    test/lib_asio.cpp
+)
 
-#-------------------------------------------------------------------------------
+set_property(TARGET lib-asio PROPERTY FOLDER "static-libs")
+
+add_library (
+    lib-asio-ssl STATIC
+    test/lib_asio_ssl.cpp
+)
+
+set_property(TARGET lib-asio-ssl PROPERTY FOLDER "static-libs")
+
+add_library (
+    lib-beast STATIC
+    test/lib_beast.cpp
+)
+
+set_property(TARGET lib-beast PROPERTY FOLDER "static-libs")
+
+add_library (
+    lib-beast-extra STATIC
+    test/lib_beast_extra.cpp
+)
+
+set_property(TARGET lib-beast-extra PROPERTY FOLDER "static-libs")
+
+add_library (
+    lib-test STATIC
+    test/lib_test.cpp
+)
+
+set_property(TARGET lib-test PROPERTY FOLDER "static-libs")
+
+include_directories (.)
+
+if (OPENSSL_FOUND)
+    include_directories (${OPENSSL_INCLUDE_DIR})
+endif()
 
 include_directories (${PROJECT_SOURCE_DIR}/include)
 
