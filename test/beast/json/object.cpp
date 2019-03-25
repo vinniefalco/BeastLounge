@@ -65,6 +65,60 @@ public:
         }
     };
 
+    struct fail_storage : storage
+    {
+        std::size_t fail_max = 1;
+        std::size_t fail = 0;
+
+        void
+        addref() noexcept override
+        {
+        }
+
+        void
+        release() noexcept override
+        {
+        }
+
+        void*
+        allocate(
+            std::size_t n,
+            std::size_t) override
+        {
+            if(++fail == fail_max)
+            {
+                ++fail_max;
+                fail = 0;
+                throw std::bad_alloc{};
+            }
+            return std::allocator<
+                char>{}.allocate(n);
+        }
+
+        void
+        deallocate(
+            void* p,
+            std::size_t n,
+            std::size_t) noexcept override
+        {
+            auto cp =
+                reinterpret_cast<char*>(p);
+            return std::allocator<
+                char>{}.deallocate(cp, n);
+        }
+        bool
+        is_equal(
+            storage const& other
+                ) const noexcept override
+        {
+            auto p = dynamic_cast<
+                fail_storage const*>(&other);
+            if(! p)
+                return false;
+            return this == p;
+        }
+    };
+
     void
     check(
         object const& obj,
@@ -74,12 +128,9 @@ public:
         BEAST_EXPECT(obj.size() == 3);
         BEAST_EXPECT(
             obj.bucket_count() == bucket_count);
-        BEAST_EXPECT(
-            obj["a"].as_number() == 1);
-        BEAST_EXPECT(
-            obj["b"].as_bool());
-        BEAST_EXPECT(
-            obj["c"].as_string() == "hello");
+        BEAST_EXPECT(obj["a"].as_number() == 1);
+        BEAST_EXPECT(obj["b"].as_bool());
+        BEAST_EXPECT(obj["c"].as_string() == "hello");
 
         // ordering, storage
 
@@ -111,39 +162,39 @@ public:
             default_storage();
         BEAST_EXPECT(*sp != *sp0);
 
-        // basic ctors
+        // object()
         {
             object obj;
             BEAST_EXPECT(obj.empty());
             BEAST_EXPECT(obj.size() == 0);
-            BEAST_EXPECT(
-                obj.bucket_count() == 0);
-            BEAST_EXPECT(
-                *obj.get_storage() == *sp0);
+            BEAST_EXPECT(obj.bucket_count() == 0);
+            BEAST_EXPECT(*obj.get_storage() == *sp0);
         }
+
+        // object(size_type)
         {
             object obj(50);
             BEAST_EXPECT(obj.empty());
             BEAST_EXPECT(obj.size() == 0);
             BEAST_EXPECT(obj.bucket_count() == 53);
-            BEAST_EXPECT(
-                *obj.get_storage() == *sp0);
+            BEAST_EXPECT(*obj.get_storage() == *sp0);
         }
+
+        // object(storage_ptr)
         {
             object obj(sp);
-            BEAST_EXPECT(
-                *obj.get_storage() == *sp);
+            BEAST_EXPECT(*obj.get_storage() == *sp);
         }
+
+        // object(size_type, storage_ptr)
         {
             object obj(50, sp);
             BEAST_EXPECT(obj.empty());
             BEAST_EXPECT(obj.size() == 0);
             BEAST_EXPECT(obj.bucket_count() == 53);
-            BEAST_EXPECT(
-                *obj.get_storage() == *sp);
+            BEAST_EXPECT(*obj.get_storage() == *sp);
         }
        
-        // iterator ctors
         {
             std::initializer_list<std::pair<
                 beast::string_view, value>> init = {
@@ -151,146 +202,218 @@ public:
                     {"b", true},
                     {"c", "hello"}};
             {
+                // object(InputIt, InputIt)
                 object obj(init.begin(), init.end());
                 check(obj, 3);
             }
             {
+                // object(InputIt, InputIt, size_type)
                 object obj(init.begin(), init.end(), 5);
                 check(obj, 7);
             }
             {
+                // object(InputIt, InputIt, storage_ptr)
                 object obj(init.begin(), init.end(), sp);
-                BEAST_EXPECT(
-                    *obj.get_storage() == *sp);
+                BEAST_EXPECT(*obj.get_storage() == *sp);
                 check(obj, 3);
             }
             {
+                // object(InputIt, InputIt, size_type, storage_ptr)
                 object obj(init.begin(), init.end(), 5, sp);
                 BEAST_EXPECT(! obj.empty());
                 BEAST_EXPECT(obj.size() == 3);
                 BEAST_EXPECT(obj.bucket_count() == 7);
-                BEAST_EXPECT(
-                    *obj.get_storage() == *sp);
+                BEAST_EXPECT(*obj.get_storage() == *sp);
                 check(obj, 7);
             }
         }
-        
-        // move/copy ctors
+
+        // object(object&&)
+        {
+            object obj1({
+                {"a", 1},
+                {"b", true},
+                {"c", "hello"}
+                });
+            object obj2(std::move(obj1));
+            BEAST_EXPECT(
+                *obj1.get_storage() ==
+                *obj2.get_storage());
+            BEAST_EXPECT(obj1.empty());
+            BEAST_EXPECT(obj1.size() == 0);
+            check(obj2, 3);
+        }
+
+        // object(object&&, storage_ptr)
+        {
+            object obj1({
+                {"a", 1},
+                {"b", true},
+                {"c", "hello"}
+                });
+            object obj2(std::move(obj1), sp);
+            BEAST_EXPECT(! obj1.empty());
+            BEAST_EXPECT(
+                *obj1.get_storage() !=
+                *obj2.get_storage());
+            check(obj2, 3);
+        }
+
+        // object(object const&)
+        {
+
+            object obj1({
+                {"a", 1},
+                {"b", true},
+                {"c", "hello"}
+                });
+            object obj2(obj1);
+            BEAST_EXPECT(! obj1.empty());
+            BEAST_EXPECT(
+                *obj1.get_storage() ==
+                *obj2.get_storage());
+            check(obj2, 3);
+        }
+
+        // object(object const&, storage_ptr)
+        {
+
+            object obj1({
+                {"a", 1},
+                {"b", true},
+                {"c", "hello"}
+                });
+            object obj2(obj1, sp);
+            BEAST_EXPECT(! obj1.empty());
+            BEAST_EXPECT(
+                *obj1.get_storage() !=
+                *obj2.get_storage());
+            check(obj2, 3);
+        }
+
+        // object(init_list)
+        {
+            object obj({
+                {"a", 1},
+                {"b", true},
+                {"c", "hello"}
+                });
+            check(obj, 3);
+        }
+
+        // object(init_list, size_type)
+        {
+            object obj({
+                {"a", 1},
+                {"b", true},
+                {"c", "hello"}
+                },
+                5);
+            check(obj, 7);
+        }
+
+        // object(init_list, storage_ptr)
+        {
+            object obj({
+                {"a", 1},
+                {"b", true},
+                {"c", "hello"}
+                },
+                sp);
+            BEAST_EXPECT(
+                *obj.get_storage() == *sp);
+            check(obj, 3);
+        }
+
+        // object(init_list, size_type, storage_ptr)
+        {
+            object obj({
+                {"a", 1},
+                {"b", true},
+                {"c", "hello"}
+                },
+                5, sp);
+            BEAST_EXPECT(
+                *obj.get_storage() == *sp);
+            check(obj, 7);
+        }
+
+        // operator=(object&&)
         {
             {
                 object obj1({
                     {"a", 1},
                     {"b", true},
-                    {"c", "hello"}
-                    });
-                object obj2(std::move(obj1));
+                    {"c", "hello"}});
+                object obj2;
+                obj2 = std::move(obj1);
+                check(obj2, 3);
+                BEAST_EXPECT(obj1.empty());
+                BEAST_EXPECT(
+                    *obj1.get_storage() == *sp0);
                 BEAST_EXPECT(
                     *obj1.get_storage() ==
                     *obj2.get_storage());
-                BEAST_EXPECT(obj1.empty());
-                BEAST_EXPECT(obj1.size() == 0);
-                check(obj2, 3);
             }
             {
                 object obj1({
                     {"a", 1},
                     {"b", true},
-                    {"c", "hello"}
-                    });
-                object obj2(std::move(obj1), sp);
-                BEAST_EXPECT(obj1.empty());
+                    {"c", "hello"}});
+                object obj2(sp);
+                obj2 = std::move(obj1);
+                check(obj2, 3);
+                check(obj1, 3);
                 BEAST_EXPECT(
                     *obj1.get_storage() !=
                     *obj2.get_storage());
-                check(obj2, 3);
-            }
-            {
-
-                object obj1({
-                    {"a", 1},
-                    {"b", true},
-                    {"c", "hello"}
-                    });
-                object obj2(obj1);
-                BEAST_EXPECT(
-                    *obj1.get_storage() ==
-                    *obj2.get_storage());
-                check(obj2, 3);
-            }
-            {
-
-                object obj1({
-                    {"a", 1},
-                    {"b", true},
-                    {"c", "hello"}
-                    });
-                object obj2(obj1, sp);
-                BEAST_EXPECT(
-                    *obj1.get_storage() !=
-                    *obj2.get_storage());
-                check(obj2, 3);
             }
         }
 
-        // init-list ctor
+        // operator=(object const&)
         {
             {
-                object obj({
+                object obj1({
                     {"a", 1},
                     {"b", true},
-                    {"c", "hello"}
-                    });
-                check(obj, 3);
-            }
-            {
-                object obj({
-                    {"a", 1},
-                    {"b", true},
-                    {"c", "hello"}
-                    },
-                    5);
-                check(obj, 7);
-            }
-            {
-                object obj({
-                    {"a", 1},
-                    {"b", true},
-                    {"c", "hello"}
-                    },
-                    sp);
+                    {"c", "hello"}});
+                object obj2;
+                obj2 = obj1;
+                check(obj1, 3);
+                check(obj2, 3);
                 BEAST_EXPECT(
-                    *obj.get_storage() == *sp);
-                check(obj, 3);
+                    *obj1.get_storage() ==
+                    *obj2.get_storage());
             }
             {
-                object obj({
+                object obj1({
                     {"a", 1},
                     {"b", true},
-                    {"c", "hello"}
-                    },
-                    5, sp);
+                    {"c", "hello"}});
+                object obj2(sp);
+                obj2 = obj1;
+                check(obj1, 3);
+                check(obj2, 3);
                 BEAST_EXPECT(
-                    *obj.get_storage() == *sp);
-                check(obj, 7);
+                    *obj1.get_storage() !=
+                    *obj2.get_storage());
             }
         }
 
-        // assignment
+        // operator=(init_list)
         {
             {
                 object obj;
-
                 obj = {
                     {"a", 1},
                     {"b", true},
                     {"c", "hello"} },
-                check(obj, 3);
                 BEAST_EXPECT(
                     *obj.get_storage() == *sp0);
+                check(obj, 3);
             }
             {
                 object obj(sp);
-
                 obj = {
                     {"a", 1},
                     {"b", true},
@@ -360,77 +483,105 @@ public:
     void
     testModifiers()
     {
+        // clear
+        {
+            object obj;
+            obj.emplace("x", 1);
+            BEAST_EXPECT(! obj.empty());
+            obj.clear();
+            BEAST_EXPECT(obj.empty());
+        }
+
         // insert(value_type&&)
         {
             object obj;
-            auto p = object::value_type("a", 1);
-            auto result = obj.insert(std::move(p));
-            BEAST_EXPECT(p.second.is_null());
+            auto v = object::value_type("a", 1);
+            auto result = obj.insert(std::move(v));
+            BEAST_EXPECT(v.second.is_null());
             BEAST_EXPECT(result.second);
             BEAST_EXPECT(result.first->first == "a");
-            BEAST_EXPECT(obj.insert(
-                object::value_type("a", 2)).first ==
-                    result.first);
-            BEAST_EXPECT(! obj.insert(
-                object::value_type("a", 2)).second);
+            auto v2 = object::value_type("a", 2);
+            BEAST_EXPECT(
+                obj.insert(std::move(v2)).first == result.first);
+            BEAST_EXPECT(
+                ! obj.insert(std::move(v2)).second);
         }
 
         // insert(value_type const&)
         {
             object obj;
-            auto p = object::value_type("a", 1);
-            auto result = obj.insert(p);
-            BEAST_EXPECT(! p.second.is_null());
+            auto v = object::value_type("a", 1);
+            auto result = obj.insert(v);
+            BEAST_EXPECT(! v.second.is_null());
             BEAST_EXPECT(result.second);
             BEAST_EXPECT(result.first->first == "a");
-            BEAST_EXPECT(obj.insert(
-                object::value_type("a", 2)).first ==
-                    result.first);
-            BEAST_EXPECT(! obj.insert(
-                object::value_type("a", 2)).second);
+            auto v2 = object::value_type("a", 2);
+            BEAST_EXPECT(
+                obj.insert(v2).first == result.first);
+            BEAST_EXPECT(! obj.insert(v2).second);
         }
 
-        // insert P
+        // insert(P&&)
         {
-            auto p = std::make_pair("x", 1);
             {
                 object obj;
+                auto result = obj.insert(
+                    std::make_pair("x", 1));
+                BEAST_EXPECT(result.second);
+                BEAST_EXPECT(result.first->first == "x");
+                BEAST_EXPECT(result.first->second.as_number() == 1);
+            }
+            {
+                object obj;
+                auto const p = std::make_pair("x", 1);
                 auto result = obj.insert(p);
-
+                BEAST_EXPECT(result.second);
+                BEAST_EXPECT(result.first->first == "x");
+                BEAST_EXPECT(result.first->second.as_number() == 1);
             }
         }
 
-        // TODO
-
-        // insert hint
+        // insert(before, value_type const&)
         {
             object obj;
-            auto hint = obj.end();
-            auto p = object::value_type("a", 1);
-            auto it =
-                obj.insert(hint, std::move(p));
-            BEAST_EXPECT(it != obj.end());
-            BEAST_EXPECT(p.second.is_null());
-            BEAST_EXPECT(it->first == "a");
-            BEAST_EXPECT(
-                ! obj.insert({"a", 2}).second);
+            obj.emplace("a", 1);
+            obj.emplace("c", "hello");
+            object::value_type const p("b", true);
+            obj.insert(obj.find("c"), p);
+            check(obj, 3);
         }
+
+        // insert(before, value_type&&)
         {
             object obj;
-            auto hint = obj.end();
-            auto p = object::value_type("a", 1);
-            auto it = obj.insert(hint, p);
-            BEAST_EXPECT(it != obj.end());
-            BEAST_EXPECT(! p.second.is_null());
-            BEAST_EXPECT(it->first == "a");
-            BEAST_EXPECT(
-                ! obj.insert({"a", 2}).second);
+            obj.emplace("a", 1);
+            obj.emplace("c", "hello");
+            obj.insert(obj.find("c"), { "b", true });
+            check(obj, 3);
         }
 
-        // insert P hint
-        // TODO
+        // insert(before, P&&)
+        {
+            {
+                object obj;
+                obj.emplace("a", 1);
+                obj.emplace("c", "hello");
+                obj.insert(obj.find("c"),
+                    std::make_pair("b", true));
+                check(obj, 3);
+            }
+            {
+                object obj;
+                obj.emplace("a", 1);
+                obj.emplace("c", "hello");
+                auto const p =
+                    std::make_pair("b", true);
+                obj.insert(obj.find("c"), p);
+                check(obj, 3);
+            }
+        }
 
-        // insert range
+        // insert(InputIt, InputIt)
         {
             std::initializer_list<std::pair<
                 beast::string_view, value>> init = {
@@ -441,20 +592,285 @@ public:
             obj.insert(init.begin(), init.end());
             check(obj, 3);
         }
+
+        // insert(init_list)
         {
-            std::initializer_list<std::pair<
-                beast::string_view, value>> init = {
-                    {"a", 1},
-                    {"b", true},
-                    {"c", "hello"}};
             object obj;
-            obj.insert(init);
+            obj.emplace("a", 1);
+            obj.insert({
+                { "b", true },
+                { "c", "hello" }});
             check(obj, 3);
+        }
+
+        // insert(node_type&&)
+        {
+            object obj1({
+                {"a", 1},
+                {"b", true},
+                {"c", "hello"}});
+            object obj2;
+            obj2.insert(obj1.extract(obj1.begin()));
+            obj2.insert(obj1.extract("b"));
+            auto result =
+                obj2.insert(obj1.extract(obj1.find("c")));
+            check(obj2, 3);
+            BEAST_EXPECT(obj1.empty());
+            BEAST_EXPECT(result.inserted == true);
+            BEAST_EXPECT(result.node.empty());
+            BEAST_EXPECT(result.position->first == "c");
+
+            // failed insertion
+            result = obj2.insert(obj1.extract(
+                obj1.insert({"a", 1}).first));
+            BEAST_EXPECT(result.inserted == false);
+            BEAST_EXPECT(! result.node.empty());
+            BEAST_EXPECT(result.position->first == "a");
+
+        }
+
+        // insert(before, node_type&&)
+        {
+            object obj1({
+                {"a", 1},
+                {"b", true},
+                {"c", "hello"}});
+            object obj2;
+            obj2.insert(obj1.extract(obj1.begin()));
+            obj2.insert(obj1.extract(obj1.find("c")));
+            auto result =
+                obj2.insert(obj2.find("c"), obj1.extract("b"));
+            check(obj2, 3);
+            BEAST_EXPECT(obj1.empty());
+            BEAST_EXPECT(result.inserted == true);
+            BEAST_EXPECT(result.node.empty());
+            BEAST_EXPECT(result.position->first == "b");
+
+            // failed insertion
+            result = obj2.insert(obj2.find("c"),
+                obj1.extract(obj1.insert({"b", 1}).first));
+            BEAST_EXPECT(result.inserted == false);
+            BEAST_EXPECT(! result.node.empty());
+            BEAST_EXPECT(result.position->first == "b");
+        }
+
+        // insert_or_assign(key, obj);
+        {
+            {
+                object obj({{"a", 1}});
+                obj.insert_or_assign("b", true);
+                obj.insert_or_assign("c", "hello");
+                check(obj, 3);
+            }
+            {
+                object obj({{"a", 1}});
+                BEAST_EXPECT(
+                    ! obj.insert_or_assign("a", 2).second);
+                BEAST_EXPECT(obj["a"].as_number() == 2);
+            }
+        }
+
+        // insert_or_assign(before, key, obj);
+        {
+            {
+                object obj({{"a", 1}});
+                obj.insert_or_assign("c", "hello");
+                obj.insert_or_assign(obj.find("c"), "b", true);
+                check(obj, 3);
+            }
+            {
+                object obj({{"a", 1}});
+                obj.insert_or_assign("b", true);
+                obj.insert_or_assign("c", "hello");
+                BEAST_EXPECT(! obj.insert_or_assign(
+                    obj.find("b"), "a", 2).second);
+                BEAST_EXPECT(obj["a"].as_number() == 2);
+            }
+        }
+
+        // emplace(key, arg)
+        {
+            object obj;
+            obj.emplace("a", 1);
+            obj.emplace("b", true);
+            obj.emplace("c", "hello");
+            check(obj, 3);
+        }
+
+        // emplace(before, key, arg)
+        {
+            object obj;
+            obj.emplace("a", 1);
+            obj.emplace("c", "hello");
+            obj.emplace(obj.find("c"), "b", true);
+            check(obj, 3);
+        }
+
+        // erase(pos)
+        {
+            object obj({
+                {"d", nullptr },
+                {"a", 1},
+                {"b", true},
+                {"c", "hello"}});
+            auto it = obj.erase(obj.begin());
+            BEAST_EXPECT(it->first == "a");
+            BEAST_EXPECT(it->second.as_number() == 1);
+            check(obj, 7);
+        }
+
+        // erase(first, last)
+        {
+            object obj({
+                {"a", 1},
+                {"b", true},
+                {"b2", 2},
+                {"b3", 3},
+                {"b4", 4},
+                {"c", "hello"}});
+            auto first = obj.find("b2");
+            auto last = std::next(first, 3);
+            auto it = obj.erase(first, last);
+            BEAST_EXPECT(it->first == "c");
+            BEAST_EXPECT(
+                it->second.as_string() == "hello");
+            check(obj, 7);
+        }
+
+        // erase(key)
+        {
+            object obj({
+                {"a", 1},
+                {"b", true},
+                {"b2", 2},
+                {"c", "hello"}});
+            BEAST_EXPECT(obj.erase("b2") == 1);
+            check(obj, 7);
         }
     }
 
     void
-    testRehash()
+    testLookup()
+    {
+        // at(key)
+        {
+            object obj;
+            try
+            {
+                obj.at("a");
+                BEAST_FAIL();
+            }
+            catch(std::out_of_range const&)
+            {
+                BEAST_PASS();
+            }
+        }
+
+        // at(key) const
+        {
+            object const obj;
+            try
+            {
+                obj.at("a");
+                BEAST_FAIL();
+            }
+            catch(std::out_of_range const&)
+            {
+                BEAST_PASS();
+            }
+        }
+
+        // operator[](key)
+        {
+            object obj;
+            obj["a"].emplace_bool() = true;
+            BEAST_EXPECT(obj.find("a") != obj.end());
+        }
+
+        // operator[](key) const
+        {
+            object const obj({
+                {"a", 1},
+                {"b", true},
+                {"c", "hello"}});
+            BEAST_EXPECT(obj["a"].is_number());
+        }
+
+        // count(key)
+        {
+            object const obj({
+                {"a", 1},
+                {"b", true},
+                {"c", "hello"}});
+            BEAST_EXPECT(obj.count("b") == 1);
+            BEAST_EXPECT(obj.count("d") == 0);
+        }
+
+        // count(key, hash)
+        {
+            object const obj({
+                {"a", 1},
+                {"b", true},
+                {"c", "hello"}});
+            auto const hash =
+                obj.hash_function()("b");
+            BEAST_EXPECT(obj.count("b", hash) == 1);
+        }
+
+        // find(key)
+        {
+            object const obj({
+                {"a", 1},
+                {"b", true},
+                {"c", "hello"}});
+            BEAST_EXPECT(
+                obj.find("b")->second.is_bool());
+        }
+
+        // find(key, hash)
+        {
+            object const obj({
+                {"a", 1},
+                {"b", true},
+                {"c", "hello"}});
+            auto const hash =
+                obj.hash_function()("c");
+            BEAST_EXPECT(
+                obj.find("c")->second.is_string());
+        }
+
+        // contains(key)
+        {
+            object const obj({
+                {"a", 1},
+                {"b", true},
+                {"c", "hello"}});
+            BEAST_EXPECT(obj.contains("a"));
+            BEAST_EXPECT(! obj.contains("d"));
+        }
+
+        // find(key, hash)
+        {
+            object const obj({
+                {"a", 1},
+                {"b", true},
+                {"c", "hello"}});
+            BEAST_EXPECT(obj.contains(
+                "b", obj.hash_function()("b")));
+            BEAST_EXPECT(! obj.contains(
+                "d", obj.hash_function()("d")));
+        }
+
+
+    }
+
+    void
+    testBuckets()
+    {
+    }
+
+    void
+    testHashPolicy()
     {
         object obj;
         for(std::size_t i = 0; i < 1000; ++i)
@@ -464,12 +880,176 @@ public:
     }
 
     void
+    testObservers()
+    {
+        // hash_function
+        {
+            object obj;
+            object::hasher h = obj.hash_function();
+        }
+
+        // key_eq
+        {
+            object obj;
+            object::key_equal eq = obj.key_eq();
+            BEAST_EXPECT(eq("a", "a"));
+        }
+    }
+
+    void
+    testNodeType()
+    {
+        BOOST_STATIC_ASSERT(
+            std::is_same<
+                object::node_type::key_type,
+                object::key_type>::value);
+
+        BOOST_STATIC_ASSERT(
+            std::is_same<
+                object::node_type::mapped_type,
+                object::mapped_type>::value);
+
+        // node_type()
+        {
+            object::node_type nh;
+            BEAST_EXPECT(nh.empty());
+            BEAST_EXPECT(! nh);
+            BEAST_EXPECT(
+                nh.get_storage() == nullptr);
+        }
+
+        // node_type(node_type&&)
+        {
+            {
+                object::node_type nh1;
+                object::node_type nh2(std::move(nh1));
+                BEAST_EXPECT(nh1.empty());
+                BEAST_EXPECT(nh2.empty());
+                BEAST_EXPECT(
+                    nh1.get_storage() == nullptr);
+                BEAST_EXPECT(
+                    nh2.get_storage() == nullptr);
+            }
+            {
+                object obj({
+                    {"a", 1},
+                    {"b", true},
+                    {"c", "hello"}});
+                object::node_type nh;
+                BEAST_EXPECT(nh.empty());
+                nh = obj.extract("b");
+                BEAST_EXPECT(! nh.empty());
+                BEAST_EXPECT(nh.key() == "b");
+                BEAST_EXPECT(
+                    nh.get_storage() ==
+                    obj.get_storage());
+                auto nh2 = std::move(nh);
+                BEAST_EXPECT(nh.empty());
+                BEAST_EXPECT(
+                    nh.get_storage() == nullptr);
+                BEAST_EXPECT(! nh2.empty());
+                BEAST_EXPECT(nh2.key() == "b");
+                BEAST_EXPECT(
+                    nh2.get_storage() ==
+                    obj.get_storage());
+            }
+        }
+    }
+
+    void
+    testExceptions()
+    {
+        // operator=(object const&)
+        {
+            object obj0({
+                { "a", 1 },
+                { "b", true },
+                { "c", "hello" }});
+            fail_storage fs;
+            storage_ptr sp(&fs);
+            object obj1;
+            while(fs.fail < 200)
+            {
+                try
+                {
+                    object obj(sp);
+                    obj.emplace("a", 2);
+                    obj = obj0;
+                    obj1 = obj;
+                    break;
+                }
+                catch(std::bad_alloc const&)
+                {
+                }
+            }
+            check(obj1, 3);
+        }
+
+        // operator=(object&&)
+        {
+            fail_storage fs;
+            storage_ptr sp(&fs);
+            object obj1;
+            while(fs.fail < 200)
+            {
+                try
+                {
+                    object obj0({
+                        { "a", 1 },
+                        { "b", true },
+                        { "c", "hello" }});
+                    object obj(sp);
+                    obj.emplace("a", 2);
+                    obj = std::move(obj0);
+                    obj1 = obj;
+                    break;
+                }
+                catch(std::bad_alloc const&)
+                {
+                }
+            }
+            check(obj1, 3);
+        }
+
+        // operator=(init_list)
+        {
+            fail_storage fs;
+            storage_ptr sp(&fs);
+            object obj1;
+            while(fs.fail < 200)
+            {
+                try
+                {
+                    object obj(sp);
+                    obj.emplace("a", 2);
+                    obj = {
+                        { "a", 1 },
+                        { "b", true },
+                        { "c", "hello" }};
+                    obj1 = obj;
+                    break;
+                }
+                catch(std::bad_alloc const&)
+                {
+                }
+            }
+            check(obj1, 3);
+        }
+
+    }
+
+    void
     run() override
     {
         testSpecial();
         testIterators();
         testModifiers();
-        testRehash();
+        testLookup();
+        testBuckets();
+        testHashPolicy();
+        testObservers();
+        testNodeType();
+        testExceptions();
     }
 };
 

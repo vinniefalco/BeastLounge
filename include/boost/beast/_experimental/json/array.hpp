@@ -379,6 +379,10 @@ public:
     swap(array& other) noexcept;
 
 private:
+    template<class It>
+    using iter_cat = typename
+        std::iterator_traits<It>::iterator_category;
+
     template<class InputIt>
     array(
         InputIt first, InputIt last,

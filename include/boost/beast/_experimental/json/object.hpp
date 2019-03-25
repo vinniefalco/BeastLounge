@@ -76,7 +76,7 @@ public:
 
     BOOST_BEAST_DECL
     object(
-        size_type bucket_count);
+        size_type capacity);
 
     BOOST_BEAST_DECL
     object(
@@ -84,7 +84,7 @@ public:
 
     BOOST_BEAST_DECL
     object(
-        size_type bucket_count,
+        size_type capacity,
         storage_ptr store);
 
     template<class InputIt>
@@ -98,7 +98,7 @@ public:
     object(
         InputIt first,
         InputIt last,
-        size_type bucket_count);
+        size_type capacity);
 
     template<class InputIt>
     BOOST_BEAST_DECL
@@ -112,7 +112,7 @@ public:
     object(
         InputIt first,
         InputIt last,
-        size_type bucket_count,
+        size_type capacity,
         storage_ptr store);
 
     BOOST_BEAST_DECL
@@ -134,22 +134,22 @@ public:
 
     BOOST_BEAST_DECL
     object(
-        std::initializer_list<value_type> init);
+        std::initializer_list<value_type> list);
 
     BOOST_BEAST_DECL
     object(
-        std::initializer_list<value_type> init,
-        size_type bucket_count);
+        std::initializer_list<value_type> list,
+        size_type capacity);
 
     BOOST_BEAST_DECL
     object(
-        std::initializer_list<value_type> init,
+        std::initializer_list<value_type> list,
         storage_ptr store);
         
     BOOST_BEAST_DECL
     object(
-        std::initializer_list<value_type> init,
-        size_type bucket_count,
+        std::initializer_list<value_type> list,
+        size_type capacity,
         storage_ptr store);
 
     BOOST_BEAST_DECL
@@ -163,7 +163,7 @@ public:
     BOOST_BEAST_DECL
     object&
     operator=(
-        std::initializer_list<value_type> init);
+        std::initializer_list<value_type> list);
 
     BOOST_BEAST_DECL
     storage_ptr const&
@@ -246,13 +246,13 @@ public:
     insert(P&& p);
 
     BOOST_BEAST_DECL
-    iterator
+    std::pair<iterator, bool>
     insert(
         const_iterator before,
         value_type const& v);
 
     BOOST_BEAST_DECL
-    iterator
+    std::pair<iterator, bool>
     insert(
         const_iterator before,
         value_type&& v);
@@ -264,7 +264,7 @@ public:
                 P&&>::value>::type
 #endif
     >
-    iterator
+    std::pair<iterator, bool>
     insert(
         const_iterator before,
         P&& p);
@@ -276,14 +276,14 @@ public:
     BOOST_BEAST_DECL
     void
     insert(std::initializer_list<
-        value_type> init);
+        value_type> list);
 
     BOOST_BEAST_DECL
     insert_return_type
     insert(node_type&& nh);
 
     BOOST_BEAST_DECL
-    iterator
+    insert_return_type
     insert(
         const_iterator before,
         node_type&& nh);
@@ -294,36 +294,21 @@ public:
         key_type key, M&& obj);
 
     template <class M>
-    iterator
+    std::pair<iterator, bool>
     insert_or_assign(
         const_iterator before,
         key_type key,
         M&& obj);
 
-    template<class... Args>
-    std::pair<
-        iterator, bool>
+    template<class Arg>
+    std::pair<iterator, bool>
+    emplace(key_type key, Arg&& arg);
+
+    template<class Arg>
+    std::pair<iterator, bool>
     emplace(
-        Args&&... args);
-
-    template<class... Args>
-    iterator
-    emplace_hint(
         const_iterator before,
-        Args&&... args);
-
-    template<class... Args>
-    std::pair<iterator, bool>
-    try_emplace(
-        key_type key,
-        Args&&... args);
-
-    template<class... Args>
-    std::pair<iterator, bool>
-    try_emplace(
-        const_iterator before,
-        key_type key,
-        Args&&... args);
+        key_type key, Arg&& arg);
 
     BOOST_BEAST_DECL
     iterator
@@ -345,8 +330,7 @@ public:
 
     BOOST_BEAST_DECL
     node_type
-    extract(
-        const_iterator pos);
+    extract(const_iterator pos);
 
     BOOST_BEAST_DECL
     node_type
@@ -421,30 +405,6 @@ public:
     contains(
         key_type key,
         std::size_t hash ) const;
-
-    BOOST_BEAST_DECL
-    std::pair<iterator, iterator>
-    equal_range(key_type key);
-
-    BOOST_BEAST_DECL
-    std::pair<iterator,iterator>
-    equal_range(
-        key_type key,
-        std::size_t hash);
-
-    BOOST_BEAST_DECL
-    std::pair<
-        const_iterator,
-        const_iterator>
-    equal_range(key_type key) const;
-
-    BOOST_BEAST_DECL
-    std::pair<
-        const_iterator,
-        const_iterator>
-    equal_range(
-        key_type key,
-        std::size_t hash) const;
 
     //--------------------------------------------------------------------------
     //
@@ -533,6 +493,49 @@ public:
     key_eq() const;
 
 private:
+    struct cleanup_replace;
+
+    template<class It>
+    using iter_cat = typename
+        std::iterator_traits<It>::iterator_category;
+
+    template<class InputIt>
+    void
+    construct(
+        InputIt first,
+        InputIt last,
+        size_type capacity,
+        std::forward_iterator_tag);
+
+    template<class InputIt>
+    void
+    construct(
+        InputIt first,
+        InputIt last,
+        size_type capacity,
+        std::input_iterator_tag);
+
+    template<class InputIt>
+    void
+    insert(
+        InputIt first,
+        InputIt last,
+        std::forward_iterator_tag);
+
+    template<class InputIt>
+    void
+    insert(
+        InputIt first,
+        InputIt last,
+        std::input_iterator_tag);
+
+    template<class Arg>
+    std::pair<iterator, bool>
+    emplace_impl(
+        const_iterator before,
+        key_type key,
+        Arg&& arg);
+
     BOOST_BEAST_DECL
     static
     size_type
@@ -547,35 +550,11 @@ private:
         std::size_t hash) const noexcept;
 
     BOOST_BEAST_DECL
-    std::pair<iterator, bool>
-    emplace_impl(
-        const_iterator before,
-        value_type&& v);
-
-    BOOST_BEAST_DECL
-    std::pair<iterator, bool>
-    emplace_impl(
-        const_iterator before,
-        value_type const& v);
-
-    template<class... Args>
-    std::pair<iterator, bool>
-    emplace_impl(
-        const_iterator before,
-        key_type key,
-        Args&&... args);
-
-    BOOST_BEAST_DECL
     element*
     prepare_insert(
         const_iterator* before,
         key_type key,
         std::size_t hash);
-
-    BOOST_BEAST_DECL
-    void
-    prepare_inserts(
-        size_type count);
 
     BOOST_BEAST_DECL
     void
@@ -587,14 +566,6 @@ private:
     BOOST_BEAST_DECL
     void
     remove(element* e);
-
-    BOOST_BEAST_DECL
-    void
-    destroy_elements() noexcept;
-
-    BOOST_BEAST_DECL
-    void
-    copy(object const& other);
 };
 
 } // json

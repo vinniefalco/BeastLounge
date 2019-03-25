@@ -136,8 +136,7 @@ array(
     : array(
         first, last,
         std::move(store),
-        typename std::iterator_traits<
-            InputIt>::iterator_category{})
+        iter_cat<InputIt>{})
 {
 }
 
@@ -150,8 +149,7 @@ insert(
         iterator
 {
     return insert(before, first, last,
-        typename std::iterator_traits<
-            InputIt>::iterator_category{});
+        iter_cat<InputIt>{});
 }
 
 template<class... Args>

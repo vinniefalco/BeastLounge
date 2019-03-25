@@ -41,36 +41,6 @@ struct object::element
     string_view
     key() const noexcept;
 
-    BOOST_BEAST_DECL
-    static
-    element*
-    allocate(
-        storage_ptr const& sp,
-        value_type const& v);
-
-    BOOST_BEAST_DECL
-    static
-    element*
-    allocate(
-        storage_ptr const& sp,
-        value_type const& v,
-        storage_ptr const&);
-
-    BOOST_BEAST_DECL
-    static
-    element*
-    allocate(
-        storage_ptr const& sp,
-        value_type&& v);
-
-    BOOST_BEAST_DECL
-    static
-    element*
-    allocate(
-        storage_ptr const& sp,
-        value_type&& v,
-        storage_ptr const&);
-
     struct cleanup
     {
         std::size_t size;
@@ -85,20 +55,20 @@ struct object::element
         }
     };
 
-    template<class... Args>
+    template<class Arg>
     static
     element*
     allocate(
         storage_ptr const& sp,
         key_type key,
-        Args&&... args)
+        Arg&& arg)
     {
         auto up =
             prepare_allocate(sp, key);
         auto const p = up.get();
         auto const n = up.get_deleter().n;
-        ::new(up.get()) element(
-            std::forward<Args>(args)...);
+        auto e = ::new(up.get()) element(
+            std::forward<Arg>(arg), sp);
         up.release();
         detail::varint_write(
             p + sizeof(element), key.size());
@@ -108,6 +78,8 @@ struct object::element
             key.size());
         p[sizeof(element) +
             n + key.size()] = '\0';
+        BOOST_ASSERT(
+            *e->v_.get_storage() == *sp);
         return reinterpret_cast<element*>(p);
     }
 
@@ -118,14 +90,13 @@ struct object::element
         element const* e,
         storage_ptr const& sp);
 
-    // varint key size
-    // char[] key name follows
-
 private:
-    template<class... Args>
-    explicit
-    element(Args&&... args)
-        : v_(std::forward<Args>(args)...)
+    template<class Arg>
+    element(
+        Arg&& arg,
+        storage_ptr sp)
+        : v_(std::forward<Arg>(arg),
+            std::move(sp))
     {
     }
 
@@ -628,6 +599,9 @@ class object::node_type
     }
 
 public:
+    using key_type = beast::string_view;
+    using mapped_type = value;
+
     node_type() = default;
     node_type(node_type const&) = delete;
 
@@ -645,25 +619,55 @@ public:
     {
     }
 
+    node_type&
+    operator=(node_type&& other)
+    {
+        if(e_)
+        {
+            element::destroy(e_, sp_);
+            e_ = nullptr;
+            sp_ = nullptr;
+        }
+        if(other.e_)
+        {
+            e_ = boost::exchange(
+                other.e_, nullptr);
+            sp_ = std::move(other.sp_);
+        }
+        return *this;
+    }
+
     storage_ptr const&
     get_storage() const noexcept
     {
         return sp_;
     }
 
-    beast::string_view
+    bool
+    empty() const noexcept
+    {
+        return e_ == nullptr;
+    }
+
+    explicit
+    operator bool() const noexcept
+    {
+        return e_ != nullptr;
+    }
+
+    key_type
     key() const noexcept
     {
         return e_->key();
     }
 
-    json::value&
+    mapped_type&
     value() noexcept
     {
         return e_->v_;
     }
 
-    json::value const&
+    mapped_type const&
     value() const noexcept
     {
         return e_->v_;
@@ -685,11 +689,10 @@ object::
 object(
     InputIt first,
     InputIt last)
-    : object(
-        first, last,
-        std::distance(first, last),
-        default_storage())
+    : sp_(default_storage())
 {
+    construct(first, last, 0,
+        iter_cat<InputIt>{});
 }
 
 template<class InputIt>
@@ -697,12 +700,11 @@ object::
 object(
     InputIt first,
     InputIt last,
-    size_type bucket_count)
-    : object(
-        first, last,
-        bucket_count,
-        default_storage())
+    size_type capacity)
+    : sp_(default_storage())
 {
+    construct(first, last, capacity,
+        iter_cat<InputIt>{});
 }
 
 template<class InputIt>
@@ -711,11 +713,10 @@ object(
     InputIt first,
     InputIt last,
     storage_ptr store)
-    : object(
-        first, last,
-        std::distance(first, last),
-        std::move(store))
+    : sp_(std::move(store))
 {
+    construct(first, last, 0,
+        iter_cat<InputIt>{});
 }
 
 template<class InputIt>
@@ -723,14 +724,15 @@ object::
 object(
     InputIt first,
     InputIt last,
-    size_type bucket_count,
+    size_type capacity,
     storage_ptr store)
-    : object(
-        bucket_count,
-        std::move(store))
+    : sp_(std::move(store))
 {
-    insert(first, last);
+    construct(first, last, capacity,
+        iter_cat<InputIt>{});
 }
+
+//------------------------------------------------------------------------------
 
 template<class P, class>
 auto
@@ -738,20 +740,18 @@ object::
 insert(P&& p)->
     std::pair<iterator, bool>
 {
-    return emplace(
-        std::forward<P>(p));
+    return insert(end(), std::forward<P>(p));
 }
 
 template<class P, class>
 auto
 object::
-insert(
-    const_iterator hint,
-    P&& p) ->
-        iterator
+insert(const_iterator before, P&& p) ->
+    std::pair<iterator, bool>
 {
-    return emplace_hint(hint,
-        std::forward<P>(p));
+    value_type v(std::forward<P>(p));
+    return emplace_impl(before, v.first,
+        std::move(v.second));
 }
 
 template<class InputIt>
@@ -759,9 +759,7 @@ void
 object::
 insert(InputIt first, InputIt last)
 {
-    for(auto it = first;
-        it != last; ++it)
-        insert(std::move(*it));
+    insert(first, last, iter_cat<InputIt>{});
 }
 
 template<class M>
@@ -771,66 +769,51 @@ insert_or_assign(
     key_type key, M&& obj) ->
         std::pair<iterator, bool>
 {
+    return insert_or_assign(end(), key,
+        std::forward<M>(obj));
 }
 
 template<class M>
 auto
 object::
 insert_or_assign(
-    const_iterator hint,
+    const_iterator before,
     key_type key,
     M&& obj) ->
-        iterator
-{
-}
-
-template<class... Args>
-auto
-object::
-emplace(
-    Args&&... args) ->
         std::pair<iterator, bool>
 {
-    return emplace_impl(end(),
-        std::forward<Args>(args)...);
+    auto const hash = hasher{}(key);
+    auto e = prepare_insert(&before, key, hash);
+    if(e)
+    {
+        e->v_ = std::forward<M>(obj);
+        return { iterator(e), false };
+    }
+    e = element::allocate(sp_, key,
+        std::forward<M>(obj));
+    finish_insert(before, e, hash);
+    return { iterator(e), true, };
 }
 
-template<class... Args>
+template<class Arg>
 auto
 object::
-emplace_hint(
-    const_iterator hint,
-    Args&&... args) ->
-        iterator
+emplace(key_type key, Arg&& arg) ->
+    std::pair<iterator, bool>
 {
-    boost::ignore_unused(hint);
-    return emplace(
-        std::forward<Args>(args)...).first;
+    return emplace_impl(end(), key,
+        std::forward<Arg>(arg));
 }
 
-template<class... Args>
+template<class Arg>
 auto
 object::
-try_emplace(
-    key_type key,
-    Args&&... args) ->
+emplace(const_iterator before,
+    key_type key, Arg&& arg) ->
         std::pair<iterator, bool>
 {
-    return emplace(key,
-        std::forward<Args>(args)...);
-}
-
-template<class... Args>
-auto
-object::
-try_emplace(
-    const_iterator hint,
-    key_type key,
-    Args&&... args) ->
-        std::pair<iterator, bool>
-{
-    return emplace(hint, key,
-        std::forward<Args>(args)...);
+    return emplace_impl(before, key,
+        std::forward<Arg>(arg));
 }
 
 inline
@@ -851,26 +834,93 @@ key_eq() const ->
     return key_equal{};
 }
 
-template<class... Args>
+//------------------------------------------------------------------------------
+
+template<class InputIt>
+void
+object::
+construct(
+    InputIt first,
+    InputIt last,
+    size_type capacity,
+    std::forward_iterator_tag)
+{
+    reserve(std::max<size_type>(capacity,
+        std::distance(first, last)));
+    while(first != last)
+    {
+        value_type v(*first++);
+        emplace_impl(end(), v.first,
+            std::move(v.second));
+    }
+}
+
+template<class InputIt>
+void
+object::
+construct(
+    InputIt first,
+    InputIt last,
+    size_type capacity,
+    std::input_iterator_tag)
+{
+    reserve(capacity);
+    while(first != last)
+    {
+        value_type v(*first++);
+        emplace_impl(end(), v.first,
+            std::move(v.second));
+    }
+}
+
+template<class InputIt>
+void
+object::
+insert(InputIt first, InputIt last,
+    std::forward_iterator_tag)
+{
+    reserve(size() +
+        std::distance(first, last));
+    while(first != last)
+    {
+        value_type v(*first++);
+        emplace_impl(end(), v.first,
+            std::move(v.second));
+    }
+}
+
+template<class InputIt>
+void
+object::
+insert(InputIt first, InputIt last,
+    std::input_iterator_tag)
+{
+    while(first != last)
+    {
+        value_type v(*first++);
+        emplace_impl(end(), v.first,
+            std::move(v.second));
+    }
+}
+
+template<class Arg>
 auto
 object::
 emplace_impl(
     const_iterator before,
     key_type key,
-    Args&&... args) ->
+    Arg&& arg) ->
         std::pair<iterator, bool>
 {
     auto const hash = hasher{}(key);
     auto e = prepare_insert(
         &before, key, hash);
     if(e)
-        return {iterator(e), false};
+        return { iterator(e), false };
     e = element::allocate(sp_, key,
-        std::forward<Args>(args)...);
-    BOOST_ASSERT(
-        *e->v_.get_storage() == *sp_);
+        std::forward<Arg>(arg));
     finish_insert(before, e, hash);
-    return {iterator(e), true};
+    return { iterator(e), true };
 }
 
 } // json

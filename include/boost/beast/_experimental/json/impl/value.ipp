@@ -202,10 +202,8 @@ value(std::initializer_list<
     : value(json::kind::object, std::move(store))
 {
     for(auto& e : init)
-        obj_.emplace(
-            e.first,
-            std::move(e.second),
-            get_storage());
+        obj_.emplace(e.first,
+            std::move(e.second));
 }
 
 #if 0
