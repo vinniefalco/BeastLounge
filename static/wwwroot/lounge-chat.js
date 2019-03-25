@@ -38,25 +38,25 @@ function LoungeChat(uri, user_name) {
     this.on_error = function() {}
     this.on_message = function() {}
 
-    ws.addEventListener('open', (event) => {
+    ws.addEventListener('open', function(event) {
         this.send_message("identify", { name: user_name } )
         this.send_message("join", { channel: 1 } )
         this.on_open()
-    })
+    }.bind(this))
 
-    ws.addEventListener('close', (event) => {
+    ws.addEventListener('close', function(event) {
         this.on_close()
-    })
+    }.bind(this))
 
-    ws.addEventListener('error', (event) => {
+    ws.addEventListener('error', function(event) {
         this.on_error(event)
-    })
+    }.bind(this))
 
-    ws.addEventListener('message', (event) => {
+    ws.addEventListener('message', function(event) {
         try {
             this.on_message(JSON.parse(event.data))
         } catch (error) {
             this.on_error(error)
         }
-    })
+    }.bind(this))
 }
