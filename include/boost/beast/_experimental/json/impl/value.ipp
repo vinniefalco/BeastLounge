@@ -89,7 +89,7 @@ value::
 value() noexcept
     : value(
         json::kind::null,
-        get_default_storage_ptr())
+        default_storage())
 {
 }
 
@@ -105,7 +105,7 @@ value::
 value(json::kind k) noexcept
     : value(
         k,
-        get_default_storage_ptr())
+        default_storage())
 {
 }
 
@@ -172,7 +172,7 @@ value(
 value::
 value(number num)
     : value(num,
-        get_default_storage_ptr())
+        default_storage())
 {
 }
 
@@ -191,7 +191,7 @@ value::
 value(std::initializer_list<
     std::pair<string_view, value>> init)
     : value(init,
-        get_default_storage_ptr())
+        default_storage())
 {
 }
 
@@ -212,7 +212,7 @@ value(std::initializer_list<
 value::
 value(std::initializer_list<value> init)
     : value(init,
-        get_default_storage_ptr())
+        default_storage())
 {
 }
 

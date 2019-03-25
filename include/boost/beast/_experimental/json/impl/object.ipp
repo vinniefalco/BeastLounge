@@ -302,7 +302,7 @@ object::
 object::
 object()
     : object(0,
-        get_default_storage_ptr())
+        default_storage())
 {
 }
 
@@ -310,7 +310,7 @@ object::
 object(
     size_type bucket_count)
     : object(bucket_count,
-        get_default_storage_ptr())
+        default_storage())
 {
 }
 
@@ -385,7 +385,7 @@ object(
         init,
         std::distance(
             init.begin(), init.end()),
-        get_default_storage_ptr())
+        default_storage())
 {
 }
 
@@ -396,7 +396,7 @@ object(
     : object(
         init,
         bucket_count,
-        get_default_storage_ptr())
+        default_storage())
 {
 }
 
@@ -1261,10 +1261,8 @@ rehash(size_type count)
     for(auto e = tab_->head;
         e != tab_->end; e = e->next_)
     {
-        auto const n =
-            bucket(e->key());
-        auto& head =
-            tab_->bucket(n);
+        auto const n = bucket(e->key());
+        auto& head = tab_->bucket(n);
         e->local_next_ = head;
         head = e;
     }

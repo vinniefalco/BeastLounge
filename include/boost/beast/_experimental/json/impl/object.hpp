@@ -688,7 +688,7 @@ object(
     : object(
         first, last,
         std::distance(first, last),
-        get_default_storage_ptr())
+        default_storage())
 {
 }
 
@@ -701,7 +701,7 @@ object(
     : object(
         first, last,
         bucket_count,
-        get_default_storage_ptr())
+        default_storage())
 {
 }
 

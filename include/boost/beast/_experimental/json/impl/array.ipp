@@ -144,7 +144,7 @@ array::
 
 array::
 array()
-    : array(get_default_storage_ptr())
+    : array(default_storage())
 {
 }
 
@@ -160,7 +160,7 @@ array(
     : array(
         count,
         kind::null,
-        get_default_storage_ptr())
+        default_storage())
 {
 }
 
@@ -181,7 +181,7 @@ array(
     value_type const& v)
     : array(
         count, v,
-        get_default_storage_ptr())
+        default_storage())
 {
 }
 
@@ -199,7 +199,7 @@ array::
 array(array const& other)
     : array(
         other.begin(), other.end(),
-        get_default_storage_ptr())
+        default_storage())
 {
 }
 
@@ -234,7 +234,7 @@ array::
 array(
     std::initializer_list<value_type> list)
     : array(list,
-        get_default_storage_ptr())
+        default_storage())
 {
 }
 

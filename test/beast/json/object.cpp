@@ -108,7 +108,7 @@ public:
         unique_storage us;
         storage_ptr sp(&us);
         storage_ptr sp0 =
-            get_default_storage_ptr();
+            default_storage();
         BEAST_EXPECT(*sp != *sp0);
 
         // basic ctors

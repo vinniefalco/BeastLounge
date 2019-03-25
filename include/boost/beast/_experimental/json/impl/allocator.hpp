@@ -20,7 +20,7 @@ namespace json {
 template<typename T>
 allocator<T>::
 allocator()
-    : sp_(get_default_storage_ptr())
+    : sp_(default_storage())
 {
 }
 

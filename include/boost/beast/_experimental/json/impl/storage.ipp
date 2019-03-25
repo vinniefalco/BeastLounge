@@ -94,13 +94,13 @@ raw_default_storage() noexcept
 } // detail
 
 storage_ptr
-get_default_storage_ptr()
+default_storage()
 {
     return detail::raw_default_storage();
 }
 
 void
-set_default_storage_ptr(storage_ptr sp)
+default_storage(storage_ptr sp)
 {
     detail::raw_default_storage() = std::move(sp);
 }

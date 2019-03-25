@@ -197,16 +197,16 @@ make_storage_ptr(Allocator const& a);
 */
 BOOST_BEAST_DECL
 storage_ptr
-get_default_storage_ptr();
+default_storage();
 
 /** Set the current default storage
 
     This function may not be called concurrently,
-    or concurrent with @ref get_default_storage_ptr.
+    or concurrent with @ref default_storage.
 */
 BOOST_BEAST_DECL
 void
-set_default_storage_ptr(storage_ptr sp);
+default_storage(storage_ptr sp);
 
 } // json
 } // beast

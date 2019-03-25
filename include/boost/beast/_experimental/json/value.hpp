@@ -400,7 +400,7 @@ public:
     #endif
     >
     value(T const& t)
-        : value(t, get_default_storage_ptr())
+        : value(t, default_storage())
     {
     }
 

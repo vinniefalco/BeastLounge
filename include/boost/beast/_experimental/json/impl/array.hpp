@@ -124,7 +124,7 @@ array(
     InputIt first, InputIt last)
     : array(
         first, last,
-        get_default_storage_ptr())
+        default_storage())
 {
 }
 

@@ -163,16 +163,16 @@ public:
             storage_ptr sp = make_storage_ptr(
                 std::allocator<void>{});
             storage_ptr spd =
-                get_default_storage_ptr();
+                default_storage();
             BEAST_EXPECT(us1 != us2);
             BEAST_EXPECT(us1 != *spd);
             BEAST_EXPECT(us2 != *spd);
             BEAST_EXPECT(us1 != *sp);
             BEAST_EXPECT(us2 != *sp);
             BEAST_EXPECT(
-                *spd == *get_default_storage_ptr());
+                *spd == *default_storage());
             BEAST_EXPECT(
-                *sp != *get_default_storage_ptr());
+                *sp != *default_storage());
         }
 
         p->release();
