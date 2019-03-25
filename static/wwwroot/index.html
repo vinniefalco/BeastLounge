@@ -1,8 +1,10 @@
 ﻿<!DOCTYPE html>
 <html>
 <head>
-  <meta charset="utf-8" />
+  <meta content="text/html;charset=utf-8" http-equiv="Content-Type">
+  <meta content="utf-8" http-equiv="encoding">
   <title>Beast Lounge</title>
+  <script defer type="text/javascript" src="lounge-chat.js"></script>
 </head>
 <body>
   <h1>Beast Lounge</h1>
@@ -21,117 +23,75 @@
     <button class="echo-button" id="send">Send</button>
   </div>
   <script>
-    var ws = null;
-    var id = 1;
-
-    connect.onclick = function()
-    {
-      ws = new WebSocket(uri.value);
-    
-      ws.onopen = function(ev)
-      {
-        messages.innerText += "[connection opened]\n";
-        ws.send(JSON.stringify(
-          {
-            "jsonrpc" : "2.0",
-            "method" : "identify",
-            "id" : id,
-            "params" : {
-              "name" : userName.value
-            }
-          }));
-        ++id;
-        ws.send(JSON.stringify(
-          {
-            "jsonrpc" : "2.0",
-            "method" : "join",
-            "id" : id,
-            "params" : {
-              "channel" : 1
-            }
-          }));
-        ++id;
-      };
-
-      ws.onclose = function(ev)
-      {
-        messages.innerText += "[connection closed]\n";
-      };
-
-      ws.onmessage = function(ev)
-      {
-        var jv = JSON.parse(ev.data);
-        if(jv["error"] != null)
-        {
-          messages.innerText += "Error: " + jv["error"]["message"] + "(" + jv["error"]["code"] + ")\n"
-        }
-        else
-        {
-          switch(jv["verb"])
-          {
-            case "join":
-              messages.innerText +=
-                "[" + jv["channel"] + ". " + jv["name"] + "] " +
-                jv["user"] + " joins\n";
-              break;
-
-            case "leave":
-              messages.innerText +=
-                "[" + jv["channel"] + ". " + jv["name"] + "] " +
-                jv["user"] + " leaves\n";
-              break;
-
-            case "say":
-              messages.innerText +=
-                "[" + jv["channel"] + ". " + jv["name"] + "] " +
-                jv["user"] + ": " + jv["message"] + "\n";
-
+      let ws = null
+      function close_ws() {
+          if (ws !== null) {
+              ws.disconnect()
+              ws == null
           }
-        }
-      };
+      }
 
-      ws.onerror = function(ev)
-      {
-        messages.innerText += "[error]\n";
-        console.log(ev);
-      };
+      connect.onclick = function() {
+          close_ws()
 
-    };
-    disconnect.onclick = function() {
-      ws.close();
-    };
-    send.onclick = function() 
-    {
-      var jv = new Object();
-      jv.jsonrpc = "2.0";
-      jv.id = id;
-      if(sendMessage.value.charAt(0) != '/')
-      {
-        jv.method = "say";
-        jv.params = {
-          "channel" : 2,
-          "message" : sendMessage.value
-        }
+          ws = new LoungeChat(uri.value, userName.value);
+          ws.on_open = function() {
+              messages.innerText += "[connection opened]\n";
+          }
+          ws.on_close = function() {
+              messages.innerText += "[connection closed]\n";
+          }
+          ws.on_error = function(error) {
+              messages.innerText += "[error]\n";
+              console.log(error);
+          }
+
+          ws.on_message = function(json) {
+              if (json.error !== undefined && json.error !== null) {
+                  messages.innerText += "Error: " + json.error.message + "(" + json.error.code + ")\n"
+              } else {
+                  switch (json.verb) {
+                      case "join":
+                        messages.innerText += "[" + json.channel + ". " + json.name + "] " + json.user + " joins\n";
+                        break;
+                      case "leave":
+                        messages.innerText += "[" + json.channel + ". " + json.name + "] " + json.user + " leaves\n";
+                        break;
+                      case "say":
+                        messages.innerText += "[" + json.channel + ". " + json.name + "] " + json.user + ": " + json.message + "\n";
+                        break;
+                  }
+              }
+          }
       }
-      else
-      {
-        jv.method = "slash";
-        jv.agent = "chat";
-        jv.params = {
-          "channel" : 2,
-          "command" : sendMessage.value
-        }
-      }
-      ws.send(JSON.stringify(jv));
-      sendMessage.value = "";
-      ++id;
-    };
-    sendMessage.onkeyup = function(ev) {
-      ev.preventDefault();
-      if (event.keyCode === 13) {
-        send.click();
-      }
-    }
+
+      disconnect.addEventListener('click', close_ws)
+
+      send.addEventListener('click', function() {
+          if (ws !== null) {
+              if (sendMessage.value.charAt(0) !== '/') {
+                  ws.send_message('say', {
+                      channel: 2,
+                      message: sendMessage.value
+                  })
+              } else {
+                  ws.send_message('slash', {
+                      agent: 'chat',
+                      channel: 2,
+                      command: sendMessage.value,
+                  })
+              }
+
+              sendMessage.value = ""
+          }
+      })
+
+      sendMessage.addEventListener('keyup', function(ev) {
+          ev.preventDefault()
+          if (event.keyCode === 13) {
+              send.click()
+          }
+      })
   </script>
 </body>
 </html>
