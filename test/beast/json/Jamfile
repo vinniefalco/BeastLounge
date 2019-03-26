@@ -17,7 +17,6 @@ local SOURCES =
     error.cpp
     iterator.cpp
     json.cpp
-    key_param.cpp
     kind.cpp
     number.cpp
     object.cpp

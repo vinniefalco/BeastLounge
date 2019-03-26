@@ -572,46 +572,6 @@ clear() noexcept
     tab_ = nullptr;
 }
 
-auto
-object::
-insert(value_type&& v) ->
-    std::pair<iterator, bool>
-{
-    return emplace_impl(end(), v.first,
-        std::move(v.second));
-}
-
-auto
-object::
-insert(value_type const& v) ->
-    std::pair<iterator, bool>
-{
-    return emplace_impl(end(), v.first,
-        v.second);
-}
-
-auto
-object::
-insert(
-    const_iterator before,
-    value_type const& v) ->
-        std::pair<iterator, bool>
-{
-    return emplace_impl(before, v.first,
-        v.second);
-}
-
-auto
-object::
-insert(
-    const_iterator before,
-    value_type&& v) ->
-        std::pair<iterator, bool>
-{
-    return emplace_impl(before, v.first,
-        std::move(v.second));
-}
-
 void
 object::
 insert(

@@ -735,6 +735,7 @@ public:
             BEAST_EXPECT(arr1[4].is_bool());
         }
 
+    #if _ITERATOR_DEBUG_LEVEL == 0
         // insert(before, InputIt, InputIt)
         {
             std::initializer_list<value> list(
@@ -758,6 +759,7 @@ public:
             }
             check(arr1);
         }
+    #endif
 
         // emplace(before, arg)
         {
@@ -783,12 +785,9 @@ public:
             BEAST_EXPECT(arr1[2].is_null());
         }
 
-    #if 0
+    #if _ITERATOR_DEBUG_LEVEL == 0
         // emplace(before, arg)
         {
-            // VFALCO   This test fails on MSVC when moving the string
-            //          "hello" due to ITERATOR_DEBUG_LEVEL, causes
-            //          basic_string move ctor to allocate memory and throw.
             fail_storage fs;
             storage_ptr sp(&fs);
             array arr1;
@@ -809,7 +808,7 @@ public:
             BEAST_EXPECT(arr1.size() == 3);
             BEAST_EXPECT(arr1[0].is_number());
             BEAST_EXPECT(arr1[1].is_bool());
-            BEAST_EXPECT(arr1[2].is_null());
+            BEAST_EXPECT(arr1[2].is_string());
         }
     #endif
     }

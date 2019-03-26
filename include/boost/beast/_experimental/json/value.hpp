@@ -13,7 +13,6 @@
 #include <boost/beast/core/detail/config.hpp>
 #include <boost/beast/_experimental/json/array.hpp>
 #include <boost/beast/_experimental/json/error.hpp>
-#include <boost/beast/_experimental/json/key_param.hpp>
 #include <boost/beast/_experimental/json/kind.hpp>
 #include <boost/beast/_experimental/json/number.hpp>
 #include <boost/beast/_experimental/json/object.hpp>
@@ -26,6 +25,7 @@
 #include <initializer_list>
 #include <iosfwd>
 #include <type_traits>
+#include <utility>
 
 namespace boost {
 namespace beast {
@@ -118,7 +118,6 @@ class value
     json::kind kind_;
 
 public:
-
     //--------------------------------------------------------------------------
     //
     // Special members
@@ -479,27 +478,33 @@ public:
                 detail::remove_cr<T>
                     >::assign(t, *this, ec);
     }
+
     //--------------------------------------------------------------------------
+    //
+    // Container
+    //
+    //--------------------------------------------------------------------------
+    
+    using key_type = beast::string_view;
+
+    class iterator;
+    class const_iterator;
 
     BOOST_BEAST_DECL
     value&
-    operator[](key_param key);
+    operator[](key_type key);
 
     BOOST_BEAST_DECL
     value const&
-    operator[](key_param key) const;
+    operator[](key_type key) const;
 
-#if 0
     BOOST_BEAST_DECL
     value&
-    value::
-    operator[](std::size_t i) noexcept;
+    operator[](std::size_t i);
 
     BOOST_BEAST_DECL
     value const&
-    value::
-    operator[](std::size_t i) const noexcept;
-#endif
+    operator[](std::size_t i) const;
 
     //--------------------------------------------------------------------------
     //

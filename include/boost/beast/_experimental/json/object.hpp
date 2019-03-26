@@ -227,15 +227,7 @@ public:
     void
     clear() noexcept;
 
-    BOOST_BEAST_DECL
-    std::pair<iterator, bool>
-    insert(value_type&& v);
-
-    BOOST_BEAST_DECL
-    std::pair<iterator, bool>
-    insert(value_type const& v);
-
-    template<class P
+    template<class P = value_type
 #ifndef BOOST_BEAST_DOXYGEN
         ,class = typename std::enable_if<
             std::is_constructible<value_type,
@@ -245,19 +237,7 @@ public:
     std::pair<iterator, bool>
     insert(P&& p);
 
-    BOOST_BEAST_DECL
-    std::pair<iterator, bool>
-    insert(
-        const_iterator before,
-        value_type const& v);
-
-    BOOST_BEAST_DECL
-    std::pair<iterator, bool>
-    insert(
-        const_iterator before,
-        value_type&& v);
-
-    template<class P
+    template<class P = value_type
 #ifndef BOOST_BEAST_DOXYGEN
         ,class = typename std::enable_if<
             std::is_constructible<value_type,

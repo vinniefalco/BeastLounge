@@ -25,7 +25,6 @@ add_executable (beast-json-tests
     error.cpp
     iterator.cpp
     json.cpp
-    key_param.cpp
     kind.cpp
     number.cpp
     object.cpp

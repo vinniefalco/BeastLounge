@@ -1035,7 +1035,6 @@ public:
             }
             check(obj1, 3);
         }
-
     }
 
     void

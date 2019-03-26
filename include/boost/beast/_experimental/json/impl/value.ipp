@@ -325,29 +325,25 @@ reset(json::kind k) noexcept
 
 value&
 value::
-operator[](key_param key)
+operator[](key_type key)
 {
     // implicit conversion to object from null
     if(is_null())
         reset(json::kind::object);
     else
         BOOST_ASSERT(is_object());
-    // VFALCO unnecessary string conversion
-    auto s = key.str().to_string();
-    auto it = obj_.find(s);
+    auto it = obj_.find(key);
     if(it == obj_.end())
-        it = obj_.emplace(s, null).first;
+        it = obj_.emplace(key, null).first;
     return it->second;
 }
 
 value const&
 value::
-operator[](key_param key) const
+operator[](key_type key) const
 {
     BOOST_ASSERT(is_object());
-    // VFALCO unnecessary string conversion
-    auto s = key.str().to_string();
-    auto it = obj_.find(s);
+    auto it = obj_.find(key);
     if(it == obj_.end())
         BOOST_THROW_EXCEPTION(system_error{
             error_code{error::key_not_found}});
