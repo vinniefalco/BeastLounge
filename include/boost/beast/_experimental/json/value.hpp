@@ -481,6 +481,213 @@ public:
 
     //--------------------------------------------------------------------------
     //
+    // Observers
+    //
+    //--------------------------------------------------------------------------
+
+    /// Returns the kind of this JSON value
+    json::kind
+    kind() const noexcept
+    {
+        return kind_;
+    }
+
+    /// Returns `true` if this is an object
+    bool
+    is_object() const noexcept
+    {
+        return kind_ == json::kind::object;
+    }
+
+    /// Returns `true` if this is an array
+    bool
+    is_array() const noexcept
+    {
+        return kind_ == json::kind::array;
+    }
+
+    /// Returns `true` if this is a string
+    bool
+    is_string() const noexcept
+    {
+        return kind_ == json::kind::string;
+    }
+
+    /// Returns `true` if this is a number
+    bool
+    is_number() const noexcept
+    {
+        return kind_ == json::kind::number;
+    }
+
+    bool
+    is_bool() const noexcept
+    {
+        return kind_ == json::kind::boolean;
+    }
+
+    bool
+    is_null() const noexcept
+    {
+        return kind_ == json::kind::null;
+    }
+
+    //---
+
+    /// Returns `true` if this is not an array or object
+    bool
+    is_primitive() const noexcept
+    {
+        switch(kind_)
+        {
+        case json::kind::object:
+        case json::kind::array:
+            return false;
+        default:
+            return true;
+        }
+
+    }
+
+    /// Returns `true` if this is an array or object
+    bool
+    is_structured() const noexcept
+    {
+        return ! is_primitive();
+    }
+
+    /// Returns `true` if this is a number representable as a `std::int64_t`
+    bool
+    is_int64() const noexcept
+    {
+        return
+            kind_ == json::kind::number &&
+            nat_.num_.is_int64();
+    }
+
+    /// Returns `true` if this is a number representable as a `std::uint64_t`
+    bool
+    is_uint64() const noexcept
+    {
+        return
+            kind_ == json::kind::number &&
+            nat_.num_.is_uint64();
+    }
+
+    /** Returns `true` if this is a number representable as a `double`
+
+        The return value will always be the same as the
+        value returned from @ref is_number.
+    */
+    bool
+    is_double() const noexcept
+    {
+        return kind_ == json::kind::number;
+    }
+
+    //--------------------------------------------------------------------------
+    //
+    // Accessors
+    //
+    //--------------------------------------------------------------------------
+
+    BOOST_BEAST_DECL
+    storage_ptr
+    get_storage() const noexcept;
+
+    object&
+    as_object() noexcept
+    {
+        BOOST_ASSERT(is_object());
+        return obj_;
+    }
+
+    object const&
+    as_object() const noexcept
+    {
+        BOOST_ASSERT(is_object());
+        return obj_;
+    }
+
+    array&
+    as_array() noexcept
+    {
+        BOOST_ASSERT(is_array());
+        return arr_;
+    }
+
+    array const&
+    as_array() const noexcept
+    {
+        BOOST_ASSERT(is_array());
+        return arr_;
+    }
+
+    string&
+    as_string() noexcept
+    {
+        BOOST_ASSERT(is_string());
+        return str_;
+    }
+
+    string const&
+    as_string() const noexcept
+    {
+        BOOST_ASSERT(is_string());
+        return str_;
+    }
+
+    number&
+    as_number() noexcept
+    {
+        BOOST_ASSERT(is_number());
+        return nat_.num_;
+    }
+
+    number const&
+    as_number() const noexcept
+    {
+        BOOST_ASSERT(is_number());
+        return nat_.num_;
+    }
+
+    std::int64_t
+    get_int64() const noexcept
+    {
+        BOOST_ASSERT(is_int64());
+        return nat_.num_.get_int64();
+    }
+
+    std::uint64_t
+    get_uint64() const noexcept
+    {
+        BOOST_ASSERT(is_uint64());
+        return nat_.num_.get_uint64();
+    }
+
+    long double
+    get_double() const noexcept
+    {
+        BOOST_ASSERT(is_double());
+        return nat_.num_.get_double();
+    }
+
+    bool&
+    as_bool() noexcept
+    {
+        BOOST_ASSERT(is_bool());
+        return nat_.bool_;
+    }
+
+    bool const&
+    as_bool() const noexcept
+    {
+        BOOST_ASSERT(is_bool());
+        return nat_.bool_;
+    }
+
+    //--------------------------------------------------------------------------
+    //
     // Structured
     //
     //--------------------------------------------------------------------------
@@ -692,213 +899,6 @@ public:
     BOOST_BEAST_DECL
     void
     pop_back();
-
-    //--------------------------------------------------------------------------
-    //
-    // Observers
-    //
-    //--------------------------------------------------------------------------
-
-    /// Returns the kind of this JSON value
-    json::kind
-    kind() const noexcept
-    {
-        return kind_;
-    }
-
-    /// Returns `true` if this is an object
-    bool
-    is_object() const noexcept
-    {
-        return kind_ == json::kind::object;
-    }
-
-    /// Returns `true` if this is an array
-    bool
-    is_array() const noexcept
-    {
-        return kind_ == json::kind::array;
-    }
-
-    /// Returns `true` if this is a string
-    bool
-    is_string() const noexcept
-    {
-        return kind_ == json::kind::string;
-    }
-
-    /// Returns `true` if this is a number
-    bool
-    is_number() const noexcept
-    {
-        return kind_ == json::kind::number;
-    }
-
-    bool
-    is_bool() const noexcept
-    {
-        return kind_ == json::kind::boolean;
-    }
-
-    bool
-    is_null() const noexcept
-    {
-        return kind_ == json::kind::null;
-    }
-
-    //---
-
-    /// Returns `true` if this is not an array or object
-    bool
-    is_primitive() const noexcept
-    {
-        switch(kind_)
-        {
-        case json::kind::object:
-        case json::kind::array:
-            return false;
-        default:
-            return true;
-        }
-
-    }
-
-    /// Returns `true` if this is an array or object
-    bool
-    is_structured() const noexcept
-    {
-        return ! is_primitive();
-    }
-
-    /// Returns `true` if this is a number representable as a `std::int64_t`
-    bool
-    is_int64() const noexcept
-    {
-        return
-            kind_ == json::kind::number &&
-            nat_.num_.is_int64();
-    }
-
-    /// Returns `true` if this is a number representable as a `std::uint64_t`
-    bool
-    is_uint64() const noexcept
-    {
-        return
-            kind_ == json::kind::number &&
-            nat_.num_.is_uint64();
-    }
-
-    /** Returns `true` if this is a number representable as a `double`
-
-        The return value will always be the same as the
-        value returned from @ref is_number.
-    */
-    bool
-    is_double() const noexcept
-    {
-        return kind_ == json::kind::number;
-    }
-
-    //--------------------------------------------------------------------------
-    //
-    // Accessors
-    //
-    //--------------------------------------------------------------------------
-
-    BOOST_BEAST_DECL
-    storage_ptr
-    get_storage() const noexcept;
-
-    object&
-    as_object() noexcept
-    {
-        BOOST_ASSERT(is_object());
-        return obj_;
-    }
-
-    object const&
-    as_object() const noexcept
-    {
-        BOOST_ASSERT(is_object());
-        return obj_;
-    }
-
-    array&
-    as_array() noexcept
-    {
-        BOOST_ASSERT(is_array());
-        return arr_;
-    }
-
-    array const&
-    as_array() const noexcept
-    {
-        BOOST_ASSERT(is_array());
-        return arr_;
-    }
-
-    string&
-    as_string() noexcept
-    {
-        BOOST_ASSERT(is_string());
-        return str_;
-    }
-
-    string const&
-    as_string() const noexcept
-    {
-        BOOST_ASSERT(is_string());
-        return str_;
-    }
-
-    number&
-    as_number() noexcept
-    {
-        BOOST_ASSERT(is_number());
-        return nat_.num_;
-    }
-
-    number const&
-    as_number() const noexcept
-    {
-        BOOST_ASSERT(is_number());
-        return nat_.num_;
-    }
-
-    std::int64_t
-    get_int64() const noexcept
-    {
-        BOOST_ASSERT(is_int64());
-        return nat_.num_.get_int64();
-    }
-
-    std::uint64_t
-    get_uint64() const noexcept
-    {
-        BOOST_ASSERT(is_uint64());
-        return nat_.num_.get_uint64();
-    }
-
-    long double
-    get_double() const noexcept
-    {
-        BOOST_ASSERT(is_double());
-        return nat_.num_.get_double();
-    }
-
-    bool&
-    as_bool() noexcept
-    {
-        BOOST_ASSERT(is_bool());
-        return nat_.bool_;
-    }
-
-    bool const&
-    as_bool() const noexcept
-    {
-        BOOST_ASSERT(is_bool());
-        return nat_.bool_;
-    }
 
     //--------------------------------------------------------------------------
 

@@ -564,7 +564,7 @@ public:
     }
 
     void
-    testRaw()
+    testAccessors()
     {
         // raw
         value jv;
@@ -604,6 +604,30 @@ public:
         }
     }
 
+    void
+    testStructured()
+    {
+        // empty()
+        {
+            value v;
+            v = kind::object;
+            BEAST_EXPECT(v.empty());
+            v = kind::array;
+            BEAST_EXPECT(v.empty());
+        }
+
+        // size()
+        {
+            value v;
+            v = kind::object;
+            v.as_object().emplace("x", 1);
+            BEAST_EXPECT(v.size() == 1);
+            v = kind::array;
+            v.as_array().emplace_back(1);
+            BEAST_EXPECT(v.size() == 1);
+        }
+    }
+
     BOOST_STATIC_ASSERT(
         detail::is_range<std::vector<int>>::value);
 
@@ -627,10 +651,12 @@ public:
         log <<
             "sizeof(number) == " <<
             sizeof(number) << "\n";
+        
         testSpecial();
         testConstruct();
         testModifiers();
-        testExchange();
+        testAccessors();
+        testStructured();
     }
 };
 
