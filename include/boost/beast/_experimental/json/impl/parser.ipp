@@ -179,9 +179,7 @@ on_key_end(
     else if(stack_.front()->is_array())
     {
         BOOST_ASSERT(s_.empty());
-        jv.as_array().emplace_back(
-            kind::null,
-            jv_.get_storage());
+        jv.as_array().emplace_back(kind::null);
     }
     else
     {
@@ -209,9 +207,7 @@ on_string_data(
         else if(stack_.front()->is_array())
         {
             BOOST_ASSERT(s_.empty());
-            jv.as_array().emplace_back(
-                kind::string,
-                jv_.get_storage());
+            jv.as_array().emplace_back(kind::string);
             stack_.push_front(
                 &jv.as_array().back());
             stack_.front()->as_string().append(

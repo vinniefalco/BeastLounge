@@ -23,6 +23,84 @@ namespace boost {
 namespace beast {
 namespace json {
 
+//------------------------------------------------------------------------------
+
+struct number::pow10
+{
+    std::size_t
+    size() const noexcept
+    {
+        return size_;
+    }
+
+    mantissa_type const*
+    begin() const noexcept
+    {
+        return begin_;
+    }
+
+    mantissa_type const*
+    end() const noexcept
+    {
+        return end_;
+    }
+
+    mantissa_type
+    operator[](
+        exponent_type n) const
+    {
+        return begin_[n];
+    }
+        
+    static
+    pow10 const&
+    get() noexcept
+    {
+        struct pow10_impl : pow10
+        {
+            pow10_impl()
+            {
+                static mantissa_type constexpr list[] = {
+                    1ULL,
+                    10ULL,
+                    100ULL,
+                    1000ULL,
+                    10000ULL,
+                    100000ULL,
+                    1000000ULL,
+                    10000000ULL,
+                    100000000ULL,
+                    1000000000ULL,
+                    10000000000ULL,
+                    100000000000ULL,
+                    1000000000000ULL,
+                    10000000000000ULL,
+                    100000000000000ULL,
+                    1000000000000000ULL,
+                    10000000000000000ULL,
+                    100000000000000000ULL,
+                    1000000000000000000ULL,
+                    10000000000000000000ULL
+                };
+                size_ = std::extent<
+                    decltype(list)>::value;
+                begin_ = &list[0];
+                end_ = &list[size_];
+            }
+        };
+
+        static pow10_impl const tab;
+        return tab;
+    }
+
+protected:
+    std::size_t size_;
+    mantissa_type const* begin_;
+    mantissa_type const* end_;
+};
+
+//------------------------------------------------------------------------------
+
 number::
 number(
     mantissa_type mant,
@@ -252,49 +330,6 @@ print(char* dest) const noexcept
 }
 
 //------------------------------------------------------------------------------
-
-auto
-number::
-pow10::
-get() noexcept ->
-    pow10 const&
-{
-    struct pow10_impl : pow10
-    {
-        pow10_impl()
-        {
-            static mantissa_type constexpr list[] = {
-                1ULL,
-                10ULL,
-                100ULL,
-                1000ULL,
-                10000ULL,
-                100000ULL,
-                1000000ULL,
-                10000000ULL,
-                100000000ULL,
-                1000000000ULL,
-                10000000000ULL,
-                100000000000ULL,
-                1000000000000ULL,
-                10000000000000ULL,
-                100000000000000ULL,
-                1000000000000000ULL,
-                10000000000000000ULL,
-                100000000000000000ULL,
-                1000000000000000000ULL,
-                10000000000000000000ULL
-            };
-            size_ = std::extent<
-                decltype(list)>::value;
-            begin_ = &list[0];
-            end_ = &list[size_];
-        }
-    };
-
-    static pow10_impl const tab;
-    return tab;
-}
 
 void
 number::

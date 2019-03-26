@@ -152,28 +152,26 @@ insert(
         iter_cat<InputIt>{});
 }
 
-template<class... Args>
+template<class Arg>
 auto
 array::
 emplace(
     const_iterator before,
-    Args&&... args) ->
+    Arg&& arg) ->
         iterator
 {
-    return emplace_impl(before,
-        value_type(std::forward<Args>(args)...),
-        sp_);
+    return emplace_impl(
+        before, std::forward<Arg>(arg));
 }
 
-template<class... Args>
+template<class Arg>
 auto
 array::
-emplace_back(Args&&... args) ->
+emplace_back(Arg&& arg) ->
     reference
 {
-    return emplace_back_impl(
-        value_type(std::forward<Args>(args)...),
-        sp_);
+    return *emplace_impl(
+        end(), std::forward<Arg>(arg));
 }
 
 //------------------------------------------------------------------------------
@@ -187,8 +185,7 @@ array(
     : sp_(std::move(store))
 {
     while(first != last)
-        emplace_back_impl(
-            value_type(*first++, sp_));
+        emplace_impl(end(), *first++);
 }
 
 template<class InputIt>
@@ -201,8 +198,7 @@ array(
 {
     reserve(std::distance(first, last));
     while(first != last)
-        emplace_back_impl(
-            value_type(*first++, sp_));
+        emplace_impl(end(), *first++);
 }
 template<class InputIt>
 auto
@@ -230,47 +226,34 @@ insert(
 {
     auto count = std::distance(first, last);
     auto pos = before - begin();
+    reserve(size() + count);
     cleanup_insert c(pos, count, *this);
     while(count--)
     {
         ::new(&begin()[pos++]) value_type(
             *first++, sp_);
-        ++c.valid_;
+        ++c.valid;
     }
     c.ok = true;
     return begin() + c.pos;
 }
 
-template<class... Args>
+template<class Arg>
 auto
 array::
 emplace_impl(
     const_iterator before,
-    Args&&... args) ->
+    Arg&& arg) ->
         iterator
 {
-    cleanup_insert c(
-        before - begin(), 1, *this);
-    ::new(&tab_->begin()[c.pos]) value_type(
-        std::forward<Args>(args)...);
-    c.ok = true;
-    return begin() + c.pos;
-}
-
-template<class... Args>
-auto
-array::
-emplace_back_impl(
-    Args&&... args) ->
-    reference
-{
+    auto const pos = before - begin();
     reserve(size() + 1);
-    ::new(&tab_->begin()[size()]) value_type(
-        std::forward<Args>(args)...);
-    ++tab_->size;
-    return back();
+    cleanup_insert c(pos, 1, *this);
+    ::new(&tab_->begin()[pos]) value_type(
+        std::forward<Arg>(arg), sp_);
+    c.ok = true;
+    return begin() + pos;
 }
-
 
 } // json
 } // beast

@@ -131,7 +131,7 @@ public:
 
     /// Move constructor
     BOOST_BEAST_DECL
-    value(value&& other);
+    value(value&& other) noexcept;
 
     /// Move construct a value, using the specified storage
     BOOST_BEAST_DECL

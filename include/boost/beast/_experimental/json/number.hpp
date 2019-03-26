@@ -168,43 +168,7 @@ struct number
     print(char* dest) const noexcept;
 
 private:
-    struct pow10
-    {
-        std::size_t
-        size() const noexcept
-        {
-            return size_;
-        }
-
-        mantissa_type const*
-        begin() const noexcept
-        {
-            return begin_;
-        }
-
-        mantissa_type const*
-        end() const noexcept
-        {
-            return end_;
-        }
-
-        mantissa_type
-        operator[](
-            exponent_type n) const
-        {
-            return begin_[n];
-        }
-        
-        BOOST_BEAST_DECL
-        static
-        pow10 const&
-        get() noexcept;
-
-    protected:
-        std::size_t size_;
-        mantissa_type const* begin_;
-        mantissa_type const* end_;
-    };
+    struct pow10;
 
     BOOST_BEAST_DECL
     void

@@ -80,16 +80,17 @@ array::
 cleanup_assign::
 ~cleanup_assign()
 {
-    if(! ok)
+    if(ok)
+    {
+        if(tab)
+            table::destroy(tab, self.sp_);
+    }
+    else
     {
         if(self.tab_)
             table::destroy(
                 self.tab_, self.sp_);
         self.tab_ = tab;
-    }
-    else if(tab)
-    {
-        table::destroy(tab, self.sp_);
     }
 }
 
@@ -105,18 +106,21 @@ cleanup_insert(
     , pos(pos_)
     , n(n_)
 {
-    self.reserve(self.size() + n);
     self.move(
         self.data() + pos + n,
         self.data() + pos,
-        n);
+        self.size() - pos);
 }
 
 array::
 cleanup_insert::
 ~cleanup_insert()
 {
-    if(! ok)
+    if(ok)
+    {
+        self.tab_->size += n;
+    }
+    else
     {
         for(size_type i = n;
             valid--; ++i)
@@ -125,7 +129,7 @@ cleanup_insert::
         self.move(
             self.data() + pos,
             self.data() + pos + n,
-            n);
+            self.size() - pos);
     }
 }
 
@@ -144,7 +148,7 @@ array::
 
 array::
 array()
-    : array(default_storage())
+    : sp_(default_storage())
 {
 }
 
@@ -158,8 +162,7 @@ array::
 array(
     size_type count)
     : array(
-        count,
-        kind::null,
+        count, kind::null,
         default_storage())
 {
 }
@@ -169,8 +172,7 @@ array(
     size_type count,
     storage_ptr store)
     : array(
-        count,
-        kind::null,
+        count, kind::null,
         std::move(store))
 {
 }
@@ -197,20 +199,18 @@ array(
 
 array::
 array(array const& other)
-    : array(
-        other.begin(), other.end(),
-        default_storage())
+    : sp_(other.get_storage())
 {
+    *this = other;
 }
 
 array::
 array(
     array const& other,
     storage_ptr store)
-    : array(
-        other.begin(), other.end(),
-        std::move(store))
+    : sp_(std::move(store))
 {
+    *this = other;
 }
 
 array::
@@ -233,9 +233,9 @@ array(
 array::
 array(
     std::initializer_list<value_type> list)
-    : array(list,
-        default_storage())
+    : sp_(default_storage())
 {
+    *this = list;
 }
 
 array::
@@ -252,10 +252,16 @@ array::
 operator=(array&& other)
 {
     if(*sp_ == *other.sp_)
+    {
+        if(tab_)
+            table::destroy(tab_, sp_);
         tab_ = boost::exchange(
             other.tab_, nullptr);
+    }
     else
+    {
         *this = other;
+    }
     return *this;
 }
 
@@ -266,7 +272,7 @@ operator=(array const& other)
     cleanup_assign c(*this);
     reserve(other.size());
     for(auto const& v : other)
-        emplace_back_impl(v, sp_);
+        emplace_impl(end(), v);
     c.ok = true;
     return *this;
 }
@@ -280,7 +286,7 @@ operator=(
     reserve(list.size());
     for(auto it = list.begin();
             it != list.end(); ++it)
-        emplace_back_impl(std::move(*it), sp_);
+        emplace_impl(end(), std::move(*it));
     c.ok = true;
     return *this;
 }
@@ -537,8 +543,8 @@ clear() noexcept
 {
     if(! tab_)
         return;
-    table::destroy(tab_, sp_);
-    tab_ = nullptr;
+    destroy(begin(), end());
+    tab_->size = 0;
 }
 
 auto
@@ -548,8 +554,7 @@ insert(
     value_type const& v) ->
         iterator
 {
-    return emplace_impl(before,
-        v, sp_);
+    return emplace_impl(before, v);
 }
 
 auto
@@ -559,19 +564,20 @@ insert(
     value_type&& v) ->
         iterator
 {
-    return emplace_impl(before,
-        std::move(v), sp_);
+    return emplace_impl(
+        before, std::move(v));
 }
 
 auto
 array::
-insert (
+insert(
     const_iterator before,
     size_type count,
     value_type const& v) ->
         iterator
 {
     auto pos = before - begin();
+    reserve(size() + count);
     cleanup_insert c(pos, count, *this);
     while(count--)
     {
@@ -590,9 +596,10 @@ insert(
     std::initializer_list<value_type> list) ->
         iterator
 {
-    auto count = list.size();
     auto pos = before - begin();
-    cleanup_insert c(pos, count, *this);
+    reserve(size() + list.size());
+    cleanup_insert c(
+        pos, list.size(), *this);
     for(auto it = list.begin();
         it != list.end(); ++it)
     {
@@ -635,16 +642,14 @@ void
 array::
 push_back(value_type const& v)
 {
-    emplace_back_impl(
-        v, sp_);
+    emplace_impl(end(), v);
 }
 
 void
 array::
 push_back(value_type&& v)
 {
-    emplace_back_impl(
-        std::move(v), sp_);
+    emplace_impl(end(), std::move(v));
 }
 
 void
@@ -672,7 +677,7 @@ resize(
     {
         reserve(count);
         while(count--)
-            emplace_back_impl(v, sp_);
+            emplace_impl(end(), v);
     }
     else if(count < size())
     {
@@ -719,8 +724,8 @@ move(
         while(n--)
         {
             ::new(&*--to) value_type(
-                std::move(*from));
-            (*--from).~value();
+                std::move(*--from));
+            from->~value();
         }
     }
     else

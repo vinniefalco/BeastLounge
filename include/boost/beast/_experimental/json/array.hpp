@@ -320,7 +320,6 @@ public:
         value_type const& v);
 
     template<class InputIt>
-    BOOST_BEAST_DECL
     iterator
     insert(
         const_iterator before,
@@ -332,11 +331,11 @@ public:
         const_iterator before,
         std::initializer_list<value_type> list);
 
-    template<class... Args>
+    template<class Arg>
     iterator
     emplace(
         const_iterator before,
-        Args&&... args);
+        Arg&& arg);
 
     BOOST_BEAST_DECL
     iterator
@@ -356,9 +355,9 @@ public:
     void
     push_back(value_type&& v);
 
-    template<class... Args>
+    template<class Arg>
     reference
-    emplace_back(Args&&... args);
+    emplace_back(Arg&& arg);
 
     BOOST_BEAST_DECL
     void
@@ -409,15 +408,11 @@ private:
         InputIt first, InputIt last,
         std::forward_iterator_tag);
 
-    template<class... Args>
+    template<class Arg>
     iterator
     emplace_impl(
         const_iterator before,
-        Args&&... args);
-
-    template<class... Args>
-    reference
-    emplace_back_impl(Args&&... args);
+        Arg&& arg);
 
     BOOST_BEAST_DECL
     void

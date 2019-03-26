@@ -31,11 +31,49 @@ value::
 }
 
 value::
-value(value&& other)
-    : value(
-        std::move(other),
-        other.get_storage())
+value(value&& other) noexcept
 {
+    switch(other.kind_)
+    {
+    case json::kind::object:
+        ::new(&obj_) object(
+            std::move(other.obj_));
+        other.obj_.~object();
+        break;
+
+    case json::kind::array:
+        ::new(&arr_) array(
+            std::move(other.arr_));
+        other.arr_.~array();
+        break;
+
+    case json::kind::string:
+        ::new(&str_) string(
+            std::move(other.str_));
+        other.str_.~string();
+        break;
+
+    case json::kind::number:
+        ::new(&nat_.sp_)
+            storage_ptr(other.nat_.sp_);
+        ::new(&nat_.num_) number(
+            other.nat_.num_);
+        //other.nat_.num_.~number();
+        break;
+
+    case json::kind::boolean:
+        ::new(&nat_.sp_)
+            storage_ptr(other.nat_.sp_);
+        nat_.bool_ = other.nat_.bool_;
+        break;
+
+    case json::kind::null:
+        ::new(&nat_.sp_)
+            storage_ptr(other.nat_.sp_);
+        break;
+    }
+    kind_ = other.kind_;
+    other.kind_ = json::kind::null;
 }
 
 value::
@@ -500,7 +538,7 @@ move(
         try
         {
     #endif
-            ::new(&arr_) string(
+            ::new(&str_) string(
                 std::move(other.str_), typename
                 string::allocator_type(sp));
     #ifndef BOOST_NO_EXCEPTIONS
