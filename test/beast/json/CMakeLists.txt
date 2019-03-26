@@ -36,6 +36,8 @@ add_executable (beast-json-tests
     value.cpp
 )
 
+add_test(beast-json-tests beast-json-tests)
+
 target_link_libraries (beast-json-tests
     lib-asio
     lib-beast

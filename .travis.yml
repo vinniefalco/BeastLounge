@@ -17,6 +17,15 @@ matrix:
   include:
     - os: linux
       dist: xenial
+      compiler: g++
+      env:
+        - BEAST_LOUNGE_COVERAGE=1
+        - BEAST_LOUNGE_BUILD_TYPE=Debug
+      after_success:
+        - tools/coverage.sh
+
+    - os: linux
+      dist: xenial
       addons:
         apt:
           packages:
@@ -24,23 +33,31 @@ matrix:
           sources:
             - *base_sources
       compiler: g++-7
-      before_install: # Travis overwrite these, if we use env
-        - export CXX=g++-7
-        - export CC=gcc-7
+      env:
+        - BEAST_LOUNGE_BUILD_TYPE=Debug
+        - BEAST_LOUNGE_SANITIZE=address,undefined
+        - MATRIX_EVAL="CC=gcc-7 && CXX=g++-7"
 
     - os: linux
       dist: xenial
-      # addons:
-      #     apt:
-      #       sources:
-      #         - llvm-toolchain-precise-3.9
-      #       packages:
-      #         - clang-3.9
+      addons:
+        apt:
+          packages:
+            - g++-8
+          sources:
+            - *base_sources
+      compiler: g++-8
+      env:
+        - BEAST_LOUNGE_BUILD_TYPE=Release
+        - BEAST_LOUNGE_SANITIZE=address,undefined
+        - MATRIX_EVAL="CC=gcc-8 && CXX=g++-8"
+
+    - os: linux
+      dist: xenial
       compiler: clang++
-      # before_install:
-      #   - export CXX=clang
-      #   - export CC=clang
-      #   - export CXX_FLAGS="-stdlib=libstdc++"
+      env:
+        - BEAST_LOUNGE_BUILD_TYPE=Release
+        - BEAST_LOUNGE_SANITIZE=address,undefined
 
 install:
   - cd ..
@@ -48,8 +65,9 @@ install:
   - cd $TRAVIS_BUILD_DIR
 
 script:
-  - cmake -H. -Bbuild
-  - make -C build all test
+  - cmake -DCMAKE_TOOLCHAIN_FILE=tools/ci_toolchain.cmake -H. -Bbuild
+  - make -C build all -j2
+  - make -C build test ARGS="-V"
 
 notifications:
   email:
