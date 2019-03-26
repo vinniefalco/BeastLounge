@@ -27,7 +27,7 @@ namespace json {
 value::
 ~value()
 {
-    clear();
+    clear_impl();
 }
 
 value::
@@ -103,7 +103,7 @@ value::
 operator=(value&& other)
 {
     auto sp = release_storage();
-    clear();
+    clear_impl();
     move(std::move(sp), std::move(other));
     return *this;
 }
@@ -115,12 +115,16 @@ operator=(value const& other)
     if(this != &other)
     {
         auto sp = release_storage();
-        clear();
+        clear_impl();
         copy(std::move(sp), other);
     }
     return *this;
 }
 
+//------------------------------------------------------------------------------
+//
+// Construction and Assignment
+//
 //------------------------------------------------------------------------------
 
 value::
@@ -272,7 +276,7 @@ operator=(object obj)
     object tmp(
         std::move(obj),
         get_storage());
-    clear();
+    clear_impl();
     ::new(&obj_) object(
         std::move(tmp));
     kind_ = json::kind::object;
@@ -286,7 +290,7 @@ operator=(array arr)
     array tmp(
         std::move(arr),
         get_storage());
-    clear();
+    clear_impl();
     ::new(&arr_) array(
         std::move(tmp));
     kind_ = json::kind::array;
@@ -301,7 +305,7 @@ operator=(string str)
         std::move(str),
         string::allocator_type(
             get_storage()));
-    clear();
+    clear_impl();
     ::new(&str_) string(
         std::move(tmp));
     kind_ = json::kind::string;
@@ -309,66 +313,417 @@ operator=(string str)
 }
 
 //------------------------------------------------------------------------------
+//
+// Modifiers
+//
+//------------------------------------------------------------------------------
 
 void
 value::
 reset(json::kind k) noexcept
 {
     auto sp = release_storage();
-    clear();
+    clear_impl();
     construct(k, std::move(sp));
 }
 
 //------------------------------------------------------------------------------
+//
+// Structured
+//
+//------------------------------------------------------------------------------
 
-// modifiers
+//
+// Capacity
+//
+
+bool
+value::
+empty() const
+{
+    BOOST_ASSERT(this->is_structured());
+    if(is_object())
+        return obj_.empty();
+    return arr_.empty();
+}
+
+auto
+value::
+size() const ->
+    size_type
+{
+    BOOST_ASSERT(this->is_structured());
+    if(is_object())
+        return obj_.size();
+    return arr_.size();
+}
+
+//
+// Iterator
+//
+
+auto
+value::
+begin() ->
+    iterator
+{
+    BOOST_ASSERT(this->is_structured());
+    if(is_object())
+        return obj_.begin();
+    return arr_.begin();
+}
+
+auto
+value::
+begin() const ->
+    const_iterator
+{
+    BOOST_ASSERT(this->is_structured());
+    if(is_object())
+        return obj_.begin();
+    return arr_.begin();
+}
+
+auto
+value::
+cbegin() ->
+    const_iterator
+{
+    BOOST_ASSERT(this->is_structured());
+    if(is_object())
+        return obj_.cbegin();
+    return arr_.cbegin();
+}
+
+auto
+value::
+end() ->
+    iterator
+{
+    BOOST_ASSERT(this->is_structured());
+    if(is_object())
+        return obj_.end();
+    return arr_.end();
+}
+
+auto
+value::
+end() const ->
+    const_iterator
+{
+    BOOST_ASSERT(this->is_structured());
+    if(is_object())
+        return obj_.end();
+    return arr_.end();
+}
+
+auto
+value::
+cend() ->
+    const_iterator
+{
+    BOOST_ASSERT(this->is_structured());
+    if(is_object())
+        return obj_.cend();
+    return arr_.cend();
+}
+
+auto
+value::
+rbegin() ->
+    reverse_iterator
+{
+    BOOST_ASSERT(this->is_structured());
+    return reverse_iterator(end());
+}
+
+auto
+value::
+rbegin() const ->
+    const_reverse_iterator
+{
+    BOOST_ASSERT(this->is_structured());
+    return const_reverse_iterator(end());
+}
+
+auto
+value::
+crbegin() ->
+    const_reverse_iterator
+{
+    BOOST_ASSERT(this->is_structured());
+    return const_reverse_iterator(cend());
+}
+
+auto
+value::
+rend() ->
+    reverse_iterator
+{
+    BOOST_ASSERT(this->is_structured());
+    return reverse_iterator(begin());
+}
+
+auto
+value::
+rend() const ->
+    const_reverse_iterator
+{
+    BOOST_ASSERT(this->is_structured());
+    return const_reverse_iterator(begin());
+}
+
+auto
+value::
+crend() ->
+    const_reverse_iterator
+{
+    BOOST_ASSERT(this->is_structured());
+    return const_reverse_iterator(cbegin());
+}
+
+//
+// Lookup
+//
+
+value&
+value::
+at(key_type key)
+{
+    BOOST_ASSERT(this->is_object());
+    return obj_.at(key);
+}
+    
+value const&
+value::
+at(key_type key) const
+{
+    BOOST_ASSERT(this->is_object());
+    return obj_.at(key);
+}
 
 value&
 value::
 operator[](key_type key)
 {
-    // implicit conversion to object from null
-    if(is_null())
-        reset(json::kind::object);
-    else
-        BOOST_ASSERT(is_object());
-    auto it = obj_.find(key);
-    if(it == obj_.end())
-        it = obj_.emplace(key, null).first;
-    return it->second;
+    // implicit conversion to object
+    if(this->is_null())
+        *this = kind::object;
+    BOOST_ASSERT(this->is_object());
+    return obj_[key];
 }
 
 value const&
 value::
 operator[](key_type key) const
 {
-    BOOST_ASSERT(is_object());
-    auto it = obj_.find(key);
-    if(it == obj_.end())
-        BOOST_THROW_EXCEPTION(system_error{
-            error_code{error::key_not_found}});
-    return it->second;
+    BOOST_ASSERT(this->is_object());
+    return obj_[key];
 }
 
-#if 0
-value&
+auto
 value::
-operator[](std::size_t i) noexcept
+count(key_type key) const ->
+    size_type
+{
+    BOOST_ASSERT(this->is_object());
+    return obj_.count(key);
+}
+
+auto
+value::
+find(key_type key) ->
+    iterator
+{
+    BOOST_ASSERT(this->is_object());
+    return obj_.find(key);
+}
+
+auto
+value::
+find(key_type key) const ->
+    const_iterator
+{
+    BOOST_ASSERT(this->is_object());
+    return obj_.find(key);
+}
+
+bool
+value::
+contains(key_type key) const
+{
+    BOOST_ASSERT(this->is_object());
+    return obj_.contains(key);
+}
+
+//
+// Elements
+//
+
+auto
+value::
+at(size_type pos) ->
+    reference
 {
     BOOST_ASSERT(is_array());
-    BOOST_ASSERT(as_array().size() > i);
-    return as_array()[i];
+    return { "", arr_.at(pos) };
+}
+
+auto
+value::
+at(size_type pos) const ->
+    const_reference
+{
+    BOOST_ASSERT(is_array());
+    return { "", arr_.at(pos) };
+}
+
+value&
+value::
+operator[](size_type i)
+{
+    BOOST_ASSERT(is_array());
+    return arr_[i];
 }
 
 value const&
 value::
-operator[](std::size_t i) const noexcept
+operator[](size_type i) const
 {
     BOOST_ASSERT(is_array());
-    BOOST_ASSERT(as_array().size() > i);
-    return as_array()[i];
+    return arr_[i];
 }
-#endif
+
+auto
+value::
+front() ->
+    reference
+{
+    BOOST_ASSERT(is_structured());
+    if(is_object())
+        return *obj_.begin();
+    return { "", arr_.front() };
+}
+
+auto
+value::
+front() const ->
+    const_reference
+{
+    BOOST_ASSERT(is_structured());
+    if(is_object())
+        return *obj_.begin();
+    return { "", arr_.front() };
+}
+
+auto
+value::
+back() ->
+    reference
+{
+    BOOST_ASSERT(is_structured());
+    if(is_object())
+    {
+        auto it = obj_.end();
+        return *--it;
+    }
+    return { "", arr_.back() };
+}
+
+auto
+value::
+back() const ->
+    const_reference
+{
+    BOOST_ASSERT(is_structured());
+    if(is_object())
+    {
+        auto it = obj_.end();
+        return *--it;
+    }
+    return { "", arr_.back() };
+}
+
+//
+// Modifiers
+//
+
+void
+value::
+clear() noexcept
+{
+    switch(kind_)
+    {
+    case json::kind::object:
+        obj_.clear();
+        break;
+    case json::kind::array:
+        arr_.clear();
+        break;
+    case json::kind::string:
+        str_.clear();
+        break;
+    default:
+        break;
+    }
+}
+
+auto
+value::
+erase(key_type key) ->
+    size_type
+{
+    BOOST_ASSERT(is_object());
+    return obj_.erase(key);
+}
+
+auto
+value::
+erase(const_iterator pos) ->
+    iterator
+{
+    BOOST_ASSERT(is_structured());
+    if(is_object())
+        return obj_.erase(pos.obj_it_);
+    return arr_.erase(pos.arr_it_);
+}
+
+auto
+value::
+erase(
+    const_iterator first,
+    const_iterator last) ->
+        iterator
+{
+    BOOST_ASSERT(is_structured());
+    if(is_object())
+    {
+        BOOST_ASSERT(! first.arr_);
+        BOOST_ASSERT(! last.arr_);
+        return obj_.erase(
+            first.obj_it_, last.obj_it_);
+    }
+    BOOST_ASSERT(first.arr_);
+    BOOST_ASSERT(last.arr_);
+    return arr_.erase(
+        first.arr_it_, last.arr_it_);
+}
+
+
+void
+value::
+pop_back()
+{
+    BOOST_ASSERT(is_structured());
+    if(is_object())
+    {
+        auto it = obj_.end();
+        obj_.erase(--it);
+        return;
+    }
+    auto it = arr_.end();
+    arr_.erase(--it);
+}
 
 //------------------------------------------------------------------------------
 
@@ -388,6 +743,9 @@ get_storage() const noexcept
 
     case json::kind::string:
         return str_.get_allocator().get_storage();
+
+    default:
+        break;
     }
     return nat_.sp_;
 }
@@ -406,6 +764,9 @@ release_storage() noexcept
 
     case json::kind::string:
         return str_.get_allocator().get_storage();
+
+    default:
+        break;
     }
     return std::move(nat_.sp_);
 }
@@ -448,7 +809,7 @@ construct(
 // doesn't set kind_
 void
 value::
-clear() noexcept
+clear_impl() noexcept
 {
     switch(kind_)
     {

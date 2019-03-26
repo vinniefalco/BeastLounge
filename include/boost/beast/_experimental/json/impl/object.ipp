@@ -102,8 +102,6 @@ public:
             element*>(&end_element))
     {
         head = end;
-        end->prev_;
-        end->next_;
     }
 
     element*&
@@ -427,7 +425,7 @@ operator=(object const& other)
 {
     cleanup_replace c(*this);
     reserve(other.size());
-    for(auto&& v : other)
+    for(auto const& v : other)
         emplace_impl(end(), v.first,
             v.second);
     c.ok = true;

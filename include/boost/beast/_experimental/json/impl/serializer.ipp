@@ -52,6 +52,7 @@ next(net::mutable_buffer b)
                 state_ = state::done;
                 break;
             }
+            BOOST_FALLTHROUGH;
 
         case state::init:
             str_ = it_->key;

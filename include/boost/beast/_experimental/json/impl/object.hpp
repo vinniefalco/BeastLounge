@@ -151,7 +151,7 @@ class object::pointer
     reference t_;
 
 public:
-    pointer(reference const& t)
+    pointer(reference t)
         : t_(t)
     {
     }
@@ -171,7 +171,7 @@ class object::const_pointer
 
 public:
     const_pointer(
-        const_reference const& t)
+        const_reference t)
         : t_(t)
     {
     }
@@ -378,14 +378,14 @@ public:
         return tmp;
     }
 
-    const_pointer
+    pointer
     operator->() const noexcept
     {
         return const_reference{
             e_->key(), e_->v_ };
     }
 
-    const_reference
+    reference
     operator*() const noexcept
     {
         return {
@@ -600,7 +600,7 @@ class object::node_type
 
 public:
     using key_type = beast::string_view;
-    using mapped_type = value;
+    using mapped_type = json::value;
 
     node_type() = default;
     node_type(node_type const&) = delete;

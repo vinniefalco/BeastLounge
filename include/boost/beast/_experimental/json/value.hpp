@@ -481,14 +481,101 @@ public:
 
     //--------------------------------------------------------------------------
     //
-    // Container
+    // Structured
     //
     //--------------------------------------------------------------------------
     
     using key_type = beast::string_view;
-
+    using mapped_type = value;
+    using value_type = std::pair<key_type, value>;
+    using size_type = std::size_t;
+    using difference_type = std::ptrdiff_t;
+    using reference = std::pair<key_type, value&>;
+    using const_reference = std::pair<key_type, value const&>;
+    class pointer;
+    class const_pointer;
     class iterator;
     class const_iterator;
+    using reverse_iterator =
+        std::reverse_iterator<iterator>;
+    using const_reverse_iterator =
+        std::reverse_iterator<const_iterator>;
+
+    //
+    // Capacity
+    //
+
+    BOOST_BEAST_DECL
+    bool
+    empty() const;
+
+    BOOST_BEAST_DECL
+    size_type
+    size() const;
+
+    //
+    // Iterators
+    //
+
+    BOOST_BEAST_DECL
+    iterator
+    begin();
+
+    BOOST_BEAST_DECL
+    const_iterator
+    begin() const;
+
+    BOOST_BEAST_DECL
+    const_iterator
+    cbegin();
+
+    BOOST_BEAST_DECL
+    iterator
+    end();
+
+    BOOST_BEAST_DECL
+    const_iterator
+    end() const;
+
+    BOOST_BEAST_DECL
+    const_iterator
+    cend();
+
+    BOOST_BEAST_DECL
+    reverse_iterator
+    rbegin();
+
+    BOOST_BEAST_DECL
+    const_reverse_iterator
+    rbegin() const;
+
+    BOOST_BEAST_DECL
+    const_reverse_iterator
+    crbegin();
+
+    BOOST_BEAST_DECL
+    reverse_iterator
+    rend();
+
+    BOOST_BEAST_DECL
+    const_reverse_iterator
+    rend() const;
+
+    BOOST_BEAST_DECL
+    const_reverse_iterator
+    crend();
+
+    //
+    // Lookup
+    //
+
+    BOOST_BEAST_DECL
+    value&
+    at(key_type key);
+    
+    BOOST_BEAST_DECL
+    value const&
+    at(key_type key) const;
 
     BOOST_BEAST_DECL
     value&
@@ -499,12 +586,112 @@ public:
     operator[](key_type key) const;
 
     BOOST_BEAST_DECL
+    size_type
+    count(key_type key) const;
+
+    BOOST_BEAST_DECL
+    iterator
+    find(key_type key);
+
+    BOOST_BEAST_DECL
+    const_iterator
+    find(key_type key) const;
+
+    BOOST_BEAST_DECL
+    bool
+    contains(key_type key) const;
+
+    //
+    // Elements
+    //
+
+    BOOST_BEAST_DECL
+    reference
+    at(size_type pos);
+
+    BOOST_BEAST_DECL
+    const_reference
+    at(size_type pos) const;
+
+    BOOST_BEAST_DECL
     value&
-    operator[](std::size_t i);
+    operator[](size_type i);
 
     BOOST_BEAST_DECL
     value const&
-    operator[](std::size_t i) const;
+    operator[](size_type i) const;
+
+    BOOST_BEAST_DECL
+    reference
+    front();
+
+    BOOST_BEAST_DECL
+    const_reference
+    front() const;
+
+    BOOST_BEAST_DECL
+    reference
+    back();
+
+    BOOST_BEAST_DECL
+    const_reference
+    back() const;
+
+    // Modifiers
+
+    BOOST_BEAST_DECL
+    void
+    clear() noexcept;
+
+    template<class M>
+    std::pair<iterator, bool>
+    insert_or_assign(
+        key_type key, M&& obj);
+
+    template<class M>
+    std::pair<iterator, bool>
+    insert_or_assign(
+        const_iterator before,
+        key_type key,
+        M&& obj);
+
+    template<class Arg>
+    std::pair<iterator, bool>
+    emplace(key_type key, Arg&& arg);
+
+    template<class Arg>
+    std::pair<iterator, bool>
+    emplace(
+        const_iterator before,
+        key_type key, Arg&& arg);
+
+    template<class Arg>
+    iterator
+    emplace(
+        const_iterator before,
+        Arg&& arg);
+
+    BOOST_BEAST_DECL
+    size_type
+    erase(key_type key);
+
+    BOOST_BEAST_DECL
+    iterator
+    erase(const_iterator pos);
+
+    BOOST_BEAST_DECL
+    iterator
+    erase(
+        const_iterator first,
+        const_iterator last);
+
+    template<class Arg>
+    reference
+    emplace_back(Arg&& arg);
+
+    BOOST_BEAST_DECL
+    void
+    pop_back();
 
     //--------------------------------------------------------------------------
     //
@@ -727,7 +914,7 @@ private:
 
     BOOST_BEAST_DECL
     void
-    clear() noexcept;
+    clear_impl() noexcept;
 
     BOOST_BEAST_DECL
     void
@@ -751,10 +938,14 @@ private:
 
 #include <boost/beast/_experimental/json/impl/array.hpp>
 #include <boost/beast/_experimental/json/impl/object.hpp>
-#include <boost/beast/_experimental/json/impl/value.hpp>
 #ifdef BOOST_BEAST_HEADER_ONLY
 #include <boost/beast/_experimental/json/impl/array.ipp>
 #include <boost/beast/_experimental/json/impl/object.ipp>
+#endif
+
+// These must come after array and object
+#include <boost/beast/_experimental/json/impl/value.hpp>
+#ifdef BOOST_BEAST_HEADER_ONLY
 #include <boost/beast/_experimental/json/impl/value.ipp>
 #endif
 

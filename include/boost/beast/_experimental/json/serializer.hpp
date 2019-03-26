@@ -66,7 +66,7 @@ class serializer
 
         BOOST_BEAST_DECL
         std::size_t
-        next(net::mutable_buffer);
+        next(net::mutable_buffer) override;
 
     private:
         BOOST_BEAST_DECL

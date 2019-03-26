@@ -45,11 +45,11 @@ class object
 public:
     using key_type = beast::string_view;
     using mapped_type = value;
-    using value_type = std::pair<string_view, value>;
+    using value_type = std::pair<key_type, value>;
     using size_type = std::size_t;
     using difference_type = std::ptrdiff_t;
-    using reference = std::pair<string_view, value&>;
-    using const_reference = std::pair<string_view, value const&>;
+    using reference = std::pair<key_type, value&>;
+    using const_reference = std::pair<key_type, value const&>;
 
     class hasher;
     class key_equal;
@@ -273,7 +273,7 @@ public:
     insert_or_assign(
         key_type key, M&& obj);
 
-    template <class M>
+    template<class M>
     std::pair<iterator, bool>
     insert_or_assign(
         const_iterator before,

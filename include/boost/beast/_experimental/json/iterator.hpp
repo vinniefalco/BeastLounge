@@ -25,7 +25,7 @@ struct end_t
 {
 };
 
-BOOST_BEAST_INLINE_VARIABLE(end, end_t);
+BOOST_BEAST_INLINE_VARIABLE(end, end_t)
 
 /** A generator to perform a depth-first traversal of a JSON value.
 */
