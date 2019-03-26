@@ -11,8 +11,6 @@ source_group (TREE ${Boost_INCLUDE_DIRS}/boost/beast PREFIX beast FILES ${BEAST_
 source_group (TREE ${PROJECT_SOURCE_DIR}/include/boost/beast PREFIX beast FILES ${BEAST_EXTRA_FILES})
 GroupSources (server "/")
 
-add_definitions (-DBOOST_BEAST_SEPARATE_COMPILATION)
-
 file (GLOB_RECURSE SERVER_HEADERS . *.hpp)
 
 add_executable (lounge-server

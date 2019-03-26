@@ -74,9 +74,8 @@ if (MSVC)
 
 else()
     set (THREADS_PREFER_PTHREAD_FLAG ON)
-
     set( CMAKE_CXX_FLAGS
-      "${CMAKE_CXX_FLAGS} -std=c++11 -Wall -Wextra -Wpedantic -Wno-unused-parameter")
+      "${CMAKE_CXX_FLAGS} -Wall -Wextra -Wpedantic -Wno-unused-parameter")
 
     if ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang")
         set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wrange-loop-analysis")
@@ -204,6 +203,8 @@ if (OPENSSL_FOUND)
 endif()
 
 include_directories (${PROJECT_SOURCE_DIR}/include)
+
+include(CTest)
 
 add_subdirectory (server)
 add_subdirectory (test)

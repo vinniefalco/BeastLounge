@@ -7,7 +7,8 @@
 # Official repository: https://github.com/boostorg/beast
 #
 
-language: cpp
+language: generic # cpp overwrites CC and CXX
+
 addons:
   apt:
     sources: &base_sources
@@ -15,7 +16,19 @@ addons:
 
 matrix:
   include:
-    - os: linux
+    - name: "GCC default + coverage"
+      os: linux
+      dist: xenial
+      env:
+        - BEAST_LOUNGE_COVERAGE=1
+        - BEAST_LOUNGE_BUILD_TYPE=Debug
+        - CXX=g++
+        - CC=gcc
+      after_success:
+        - tools/coverage.sh
+
+    - name: "GCC-7 Debug asan,ubsan"
+      os: linux
       dist: xenial
       addons:
         apt:
@@ -23,24 +36,37 @@ matrix:
             - g++-7
           sources:
             - *base_sources
-      compiler: g++-7
-      before_install: # Travis overwrite these, if we use env
-        - export CXX=g++-7
-        - export CC=gcc-7
+      env:
+        - BEAST_LOUNGE_BUILD_TYPE=Debug
+        - BEAST_LOUNGE_SANITIZE=address,undefined
+        - UBSAN_OPTIONS=print_stacktrace=1
+        - CXX=g++-7
+        - CC=gcc-7
 
-    - os: linux
+    - name: "GCC-8 Release asan,ubsan"
+      os: linux
       dist: xenial
-      # addons:
-      #     apt:
-      #       sources:
-      #         - llvm-toolchain-precise-3.9
-      #       packages:
-      #         - clang-3.9
-      compiler: clang++
-      # before_install:
-      #   - export CXX=clang
-      #   - export CC=clang
-      #   - export CXX_FLAGS="-stdlib=libstdc++"
+      addons:
+        apt:
+          packages:
+            - g++-8
+          sources:
+            - *base_sources
+      env:
+        - BEAST_LOUNGE_BUILD_TYPE=Release
+        - BEAST_LOUNGE_SANITIZE=address,undefined
+        - UBSAN_OPTIONS=print_stacktrace=1
+        - CXX=g++-8
+        - CC=gcc-8
+
+    - name: "clang Release asan,ubsan"
+      dist: xenial
+      env:
+        - BEAST_LOUNGE_BUILD_TYPE=Release
+        - BEAST_LOUNGE_SANITIZE=address,undefined
+        - UBSAN_OPTIONS=print_stacktrace=1
+        - CXX=clang++
+        - CC=clang++
 
 install:
   - cd ..
@@ -48,8 +74,9 @@ install:
   - cd $TRAVIS_BUILD_DIR
 
 script:
-  - cmake -H. -Bbuild
-  - make -C build all test
+  - cmake -DCMAKE_TOOLCHAIN_FILE=tools/ci_toolchain.cmake -H. -Bbuild
+  - make -C build all -j2
+  - make -C build test ARGS="-V"
 
 notifications:
   email:
