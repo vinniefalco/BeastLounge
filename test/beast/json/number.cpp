@@ -81,11 +81,11 @@ public:
         number n2(0);
         n2 = n;
         BEAST_EXPECT(n == n2);
-        auto v1 = n.get_double();
-        auto const d = std::fabs(v1 - v);
         // VFALCO Unfortunately the results are not
         //        quite exact due to power of 10 conversion.
     #if 0
+        auto v1 = n.get_double();
+        auto const d = std::fabs(v1 - v);
         BEAST_EXPECT(static_cast<F>(
             n.get_double()) == v);
     #endif

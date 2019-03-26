@@ -835,8 +835,8 @@ public:
                 {"c", "hello"}});
             auto const hash =
                 obj.hash_function()("c");
-            BEAST_EXPECT(
-                obj.find("c")->second.is_string());
+            BEAST_EXPECT(obj.find(
+                "c", hash)->second.is_string());
         }
 
         // contains(key)
@@ -886,6 +886,7 @@ public:
         {
             object obj;
             object::hasher h = obj.hash_function();
+            boost::ignore_unused(h);
         }
 
         // key_eq

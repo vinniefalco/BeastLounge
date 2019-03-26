@@ -88,4 +88,4 @@ send(message m)
     for(auto const& wp : v)
         if(auto sp = wp.lock())
             sp->send(m);
-};
+}

@@ -33,6 +33,7 @@ public:
         : channel(name)
         , srv_(srv)
     {
+        boost::ignore_unused(srv_);
     }
 
     void

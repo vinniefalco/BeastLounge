@@ -471,9 +471,7 @@ public:
 class ssl_http_session_impl
     : public http_session_base<ssl_http_session_impl>
 {
-    asio::ssl::context& ctx_;
-    beast::ssl_stream<
-        stream_type> stream_;
+    beast::ssl_stream<stream_type> stream_;
 
 public:
     ssl_http_session_impl(
@@ -485,7 +483,6 @@ public:
         flat_storage storage)
         : http_session_base(
             srv, lst, ep, std::move(storage))
-        , ctx_(ctx)
         , stream_(std::move(stream), ctx)
     {
     }

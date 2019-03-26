@@ -425,7 +425,7 @@ operator=(object const& other)
 {
     cleanup_replace c(*this);
     reserve(other.size());
-    for(auto const& v : other)
+    for(auto v : other)
         emplace_impl(end(), v.first,
             v.second);
     c.ok = true;

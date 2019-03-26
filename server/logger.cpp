@@ -73,7 +73,7 @@ class logger_impl : public logger
         }
 
         int
-        threshold() const noexcept
+        threshold() const noexcept override
         {
             return thresh_;
         }

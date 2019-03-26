@@ -209,8 +209,8 @@ public:
             timer_.get_executor(),
             SIGINT,
             SIGTERM)
-        , dispatcher_(make_dispatcher(*this))
         , shutdown_time_(never())
+        , dispatcher_(make_dispatcher(*this))
     {
         timer_.expires_at(never());
 

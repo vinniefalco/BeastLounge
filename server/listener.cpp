@@ -200,8 +200,8 @@ public:
         server& srv,
         listener_config cfg)
         : srv_(srv)
-        , cfg_(std::move(cfg))
         , log_(srv_.log().get_section("listener"))
+        , cfg_(std::move(cfg))
         , ctx_(asio::ssl::context::tlsv12)
         , acceptor_(srv_.make_executor())
     {
