@@ -7,7 +7,8 @@
 # Official repository: https://github.com/boostorg/beast
 #
 
-language: cpp
+language: generic # cpp overwrites CC and CXX
+
 addons:
   apt:
     sources: &base_sources
@@ -17,10 +18,11 @@ matrix:
   include:
     - os: linux
       dist: xenial
-      compiler: g++
       env:
         - BEAST_LOUNGE_COVERAGE=1
         - BEAST_LOUNGE_BUILD_TYPE=Debug
+        - CXX=g++
+        - CC=gcc
       after_success:
         - tools/coverage.sh
 
@@ -32,11 +34,12 @@ matrix:
             - g++-7
           sources:
             - *base_sources
-      compiler: g++-7
       env:
         - BEAST_LOUNGE_BUILD_TYPE=Debug
         - BEAST_LOUNGE_SANITIZE=address,undefined
         - MATRIX_EVAL="CC=gcc-7 && CXX=g++-7"
+        - CXX=g++-7
+        - CC=gcc-7
 
     - os: linux
       dist: xenial
@@ -46,18 +49,20 @@ matrix:
             - g++-8
           sources:
             - *base_sources
-      compiler: g++-8
       env:
         - BEAST_LOUNGE_BUILD_TYPE=Release
         - BEAST_LOUNGE_SANITIZE=address,undefined
         - MATRIX_EVAL="CC=gcc-8 && CXX=g++-8"
+        - CXX=g++-8
+        - CC=gcc-8
 
     - os: linux
       dist: xenial
-      compiler: clang++
       env:
         - BEAST_LOUNGE_BUILD_TYPE=Release
         - BEAST_LOUNGE_SANITIZE=address,undefined
+        - CXX=clang++
+        - CC=clang++
 
 install:
   - cd ..

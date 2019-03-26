@@ -8,7 +8,6 @@
 #
 
 cmake_minimum_required (VERSION 3.9.2 FATAL_ERROR)
-project (beast-lounge VERSION 0.1.0 LANGUAGES CXX)
 if(NOT ${CMAKE_VERSION} VERSION_LESS "3.12.0")
     cmake_policy (SET CMP0074 NEW)
 endif()
@@ -40,7 +39,7 @@ endfunction()
 #
 #-------------------------------------------------------------------------------
 
-# project (beast-lounge VERSION 0.1.0 LANGUAGES CXX)
+project (beast-lounge VERSION 0.1.0 LANGUAGES CXX)
 
 set_property (GLOBAL PROPERTY USE_FOLDERS ON)
 set_property (GLOBAL PROPERTY PREDEFINED_TARGETS_FOLDER build)
