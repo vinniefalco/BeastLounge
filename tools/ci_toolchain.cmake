@@ -5,8 +5,9 @@ if (BEAST_LOUNGE_CONFIGURED)
 endif()
 
 if (DEFINED ENV{BEAST_LOUNGE_SANITIZE})
+    # Enabling sanitizers breaks `Threads::Threads`
     set(CMAKE_CXX_FLAGS_INIT
-        "${CMAKE_CXX_FLAGS_INIT} -fuse-ld=gold -fsanitize=$ENV{BEAST_LOUNGE_SANITIZE} -fno-sanitize-recover=$ENV{BEAST_LOUNGE_SANITIZE}")
+        "${CMAKE_CXX_FLAGS_INIT} -pthread -fuse-ld=gold -fsanitize=$ENV{BEAST_LOUNGE_SANITIZE} -fno-sanitize-recover=$ENV{BEAST_LOUNGE_SANITIZE}")
     message(STATUS "Enabling sanitizers: $ENV{BEAST_LOUNGE_SANITIZE}")
 endif()
 
