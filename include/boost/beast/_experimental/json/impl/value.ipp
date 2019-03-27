@@ -797,7 +797,17 @@ construct(
         break;
 
     case json::kind::number:
+        ::new(&nat_.num_) number{};
+        ::new(&nat_.sp_)
+            storage_ptr(std::move(sp));
+        break;
+
     case json::kind::boolean:
+        ::new(&nat_.bool_) bool{};
+        ::new(&nat_.sp_)
+            storage_ptr(std::move(sp));
+        break;
+
     case json::kind::null:
         ::new(&nat_.sp_)
             storage_ptr(std::move(sp));
