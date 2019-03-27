@@ -17,6 +17,7 @@
 #include <boost/asio/ip/tcp.hpp>
 #include <boost/asio/strand.hpp>
 #include <boost/asio/system_executor.hpp>
+#include <cstdlib>
 
 /*
     All the common types used by the server are
@@ -49,5 +50,8 @@ using flat_storage = beast::flat_buffer;
 
 /// The type of network endpoint
 using endpoint_type = tcp::endpoint;
+
+/// The type of a unique identifier
+using uid_t = std::uint64_t;
 
 #endif

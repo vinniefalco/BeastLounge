@@ -7,12 +7,12 @@
 // Official repository: https://github.com/vinniefalco/BeastLounge
 //
  
-#include "dispatcher.hpp"
+#include "channel.hpp"
+#include "channel_list.hpp"
 #include "listener.hpp"
 #include "logger.hpp"
 #include "server.hpp"
 #include "service.hpp"
-#include "system_channel.hpp"
 #include "utility.hpp"
 #include <boost/beast/_experimental/json/assign_string.hpp>
 #include <boost/beast/_experimental/json/assign_vector.hpp>
@@ -32,6 +32,10 @@
 //------------------------------------------------------------------------------
 
 extern
+std::unique_ptr<channel_list>
+make_channel_list(server&);
+
+extern
 void
 make_chat_service(server&);
 
@@ -40,8 +44,8 @@ void
 make_ident_service(server&);
 
 extern
-std::unique_ptr<dispatcher>
-make_dispatcher(server& srv);
+void
+make_system_channel(server&);
 
 //------------------------------------------------------------------------------
 
@@ -187,8 +191,7 @@ class server_impl
     bool running_ = false;
     bool stop_ = false;
 
-    std::unique_ptr<::dispatcher> dispatcher_;
-    ::system_channel system_channel_;
+    std::unique_ptr<::channel_list> channel_list_;
 
     static
     std::chrono::steady_clock::time_point
@@ -210,19 +213,15 @@ public:
             SIGINT,
             SIGTERM)
         , shutdown_time_(never())
-        , dispatcher_(make_dispatcher(*this))
+        , channel_list_(make_channel_list(*this))
     {
         timer_.expires_at(never());
 
-        // Register RPC commands
-        auto& d = this->dispatcher();
-        d.insert("shutdown", &server_impl::rpc_shutdown, this);
-        d.insert("stop", &server_impl::rpc_stop, this);
+        make_system_channel(*this);
     }
 
     ~server_impl()
     {
-        BOOST_ASSERT(services_.empty());
     }
 
     void
@@ -293,20 +292,6 @@ public:
     //
     //--------------------------------------------------------------------------
 
-    void
-    rpc_shutdown(
-        user&, rpc_request&)
-    {
-        shutdown(std::chrono::seconds(60));
-    }
-
-    void
-    rpc_stop(
-        user&, rpc_request&)
-    {
-        stop();
-    }
-
     bool
     is_shutting_down() override
     {
@@ -360,14 +345,14 @@ public:
             amount = std::chrono::seconds(10);
 
         // Notify users of impending shutdown
+        auto c = this->channel_list().at(1);
         json::value jv;
         jv["verb"] = "say";
-        jv["channel"] = system_channel_.cid();
-        jv["name"] = system_channel_.name();
+        jv["cid"] = c->cid();
+        jv["name"] = c->name();
         jv["message"] = "Server is shutting down in " +
             std::to_string(remain.count()) + " seconds";
-
-        system_channel_.send(jv);
+        c->send(jv);
         timer_.expires_after(amount);
         timer_.async_wait(bind_front(
             this, &server_impl::on_timer));
@@ -398,7 +383,7 @@ public:
     }
 
     void
-    stop()
+    stop() override
     {
         // Get on the strand
         if(! timer_.get_executor().running_in_this_thread())
@@ -437,16 +422,10 @@ public:
         return *log_;
     }
 
-    ::dispatcher&
-    dispatcher() override
+    ::channel_list&
+    channel_list() override
     {
-        return *dispatcher_;
-    }
-
-    ::system_channel&
-    system_channel() override
-    {
-        return system_channel_;
+        return *channel_list_;
     }
 };
 

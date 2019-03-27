@@ -20,14 +20,15 @@ add_executable (lounge-server
     Jamfile
     README.md
     channel.cpp
+    channel_list.cpp
     chat_service.cpp
-    dispatcher.cpp
     http_session.cpp
     ident_service.cpp
     listener.cpp
     logger.cpp
     main.cpp
     message.cpp
+    room.cpp
     rpc.cpp
     server.cpp
     system_channel.cpp

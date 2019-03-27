@@ -9,8 +9,8 @@
 
 local SOURCES =
     channel.cpp
+    channel_list.cpp
     chat_service.cpp
-    dispatcher.cpp
     http_session.cpp
     ident_service.cpp
     listener.cpp

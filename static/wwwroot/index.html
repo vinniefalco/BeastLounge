@@ -49,16 +49,20 @@
           ws.on_message = function(json) {
               if (json.error !== undefined && json.error !== null) {
                   messages.innerText += "Error: " + json.error.message + "(" + json.error.code + ")\n"
-              } else {
+              } else
+              {
+                  var prefix = "[" + json.cid + ". " + json.name + "] ";
+                  if (json.user)
+                      prefix += json.user + " ";
                   switch (json.verb) {
                       case "join":
-                        messages.innerText += "[" + json.channel + ". " + json.name + "] " + json.user + " joins\n";
+                        messages.innerText += prefix + "joins\n";
                         break;
                       case "leave":
-                        messages.innerText += "[" + json.channel + ". " + json.name + "] " + json.user + " leaves\n";
+                        messages.innerText += prefix + "leaves\n";
                         break;
                       case "say":
-                        messages.innerText += "[" + json.channel + ". " + json.name + "] " + json.user + ": " + json.message + "\n";
+                        messages.innerText += prefix + json.message + "\n";
                         break;
                   }
               }
@@ -71,13 +75,12 @@
           if (ws !== null) {
               if (sendMessage.value.charAt(0) !== '/') {
                   ws.send_message('say', {
-                      channel: 2,
+                      cid: 2,
                       message: sendMessage.value
                   })
               } else {
                   ws.send_message('slash', {
-                      agent: 'chat',
-                      channel: 2,
+                      cid: 2,
                       command: sendMessage.value,
                   })
               }

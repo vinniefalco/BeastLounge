@@ -39,8 +39,8 @@ function LoungeChat(uri, user_name) {
     this.on_message = function() {}
 
     ws.addEventListener('open', function(event) {
-        this.send_message("identify", { name: user_name } )
-        this.send_message("join", { channel: 1 } )
+        this.send_message("identify", { cid: 1, name: user_name } )
+        this.send_message("join", { cid: 2 } )
         this.on_open()
     }.bind(this))
 

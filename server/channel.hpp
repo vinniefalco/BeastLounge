@@ -11,29 +11,40 @@
 #define LOUNGE_CHANNEL_HPP
 
 #include "config.hpp"
+#include "uid.hpp"
+#include "utility.hpp"
 #include <boost/beast/_experimental/json/value.hpp>
 #include <boost/container/flat_set.hpp>
 #include <mutex>
 #include <vector>
 
+class channel_list;
 class message;
+class rpc_request;
 class user;
 
 //------------------------------------------------------------------------------
 
-class channel
+class channel : public enable_shared_from
 {
-    std::mutex mutex_;
+    channel_list& list_;
+    std::mutex mutable mutex_;
     boost::container::flat_set<user*> users_;
+    uid_t uid_;
     std::size_t cid_;
     std::string name_;
+
+    friend channel_list;
 
 public:
     ~channel();
 
-    /// Construct a new channel with a unique channel id
-    explicit
-    channel(beast::string_view name);
+    /// Return the channel unique-id
+    uid_t
+    uid() const noexcept
+    {
+        return uid_;
+    }
 
     /// Return the channel id
     std::size_t
@@ -49,6 +60,10 @@ public:
         return name_;
     }
 
+    /// Returns `true` if the user has joined the channel
+    bool
+    is_joined(user& u) const noexcept;
+
     /** Add a user to the channel.
 
         @returns `false` if the user was already in the channel.
@@ -62,7 +77,25 @@ public:
     void
     send(json::value const& jv);
 
+    /// Process an RPC command for this channel
+    void
+    dispatch(
+        json::value& result,
+        rpc_request& req,
+        user& u);
+
 protected:
+    /// Construct a new channel with a unique channel id
+    channel(
+        beast::string_view name,
+        channel_list& list);
+
+    /// Construct a new channel with the specified channel id
+    channel(
+        std::size_t reserved_cid,
+        beast::string_view name,
+        channel_list& list);
+
     virtual
     void
     on_insert(user& u) = 0;
@@ -70,6 +103,14 @@ protected:
     virtual
     void
     on_erase(user& u) = 0;
+
+    /// Called on an RPC command
+    virtual
+    void
+    on_dispatch(
+        json::value& result,
+        rpc_request& req,
+        user& u) = 0;
 
 private:
     void

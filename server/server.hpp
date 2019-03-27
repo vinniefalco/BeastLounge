@@ -18,11 +18,10 @@
 #include <memory>
 #include <utility>
 
-class dispatcher;
+class channel_list;
 class logger;
 class rpc_handler;
 class service;
-class system_channel;
 class user;
 
 //------------------------------------------------------------------------------
@@ -63,8 +62,7 @@ public:
     virtual beast::string_view  doc_root() const = 0;
 
     virtual logger&             log() = 0;
-    virtual ::dispatcher&       dispatcher() = 0;
-    virtual ::system_channel&   system_channel() = 0;
+    virtual ::channel_list&     channel_list() = 0;
 
     //--------------------------------------------------------------------------
 
@@ -83,6 +81,10 @@ public:
     virtual
     void
     shutdown(std::chrono::seconds cooldown) = 0;
+
+    virtual
+    void
+    stop() = 0;
 };
 
 //------------------------------------------------------------------------------

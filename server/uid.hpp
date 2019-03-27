@@ -7,11 +7,13 @@
 // Official repository: https://github.com/vinniefalco/BeastLounge
 //
 
-#ifndef LOUNGE_SYSTEM_CHANNEL_HPP
-#define LOUNGE_SYSTEM_CHANNEL_HPP
+#ifndef LOUNGE_UID_HPP
+#define LOUNGE_UID_HPP
 
 #include "config.hpp"
+#include <cstdint>
 
-class channel_list;
+/// The type of unique identifiers
+using uid_t = std::uint64_t;
 
 #endif

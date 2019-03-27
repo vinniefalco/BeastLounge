@@ -89,7 +89,7 @@ make_error_code(rpc_error e)
 //------------------------------------------------------------------------------
 
 json::value
-rpc_exception::
+rpc_except::
 to_json(
     boost::optional<json::value> const& id) const
 {
@@ -275,7 +275,7 @@ json::value
 make_rpc_error(
     rpc_error ev,
     beast::string_view msg,
-    rpc_request const& req)
+    rpc_request& req)
 {
     json::value jv;
     jv["jsonrpc"] = "2.0";
@@ -291,7 +291,8 @@ json::object&
 checked_object(json::value& jv)
 {
     if(! jv.is_object())
-        throw rpc_exception{};
+        throw rpc_except{
+            "expected object"};
     return jv.as_object();
 }
 
@@ -299,7 +300,8 @@ json::array&
 checked_array(json::value& jv)
 {
     if(! jv.is_array())
-        throw rpc_exception{};
+        throw rpc_except{
+            "expected array"};
     return jv.as_array();
 }
 
@@ -307,7 +309,8 @@ json::string&
 checked_string(json::value& jv)
 {
     if(! jv.is_string())
-        throw rpc_exception{};
+        throw rpc_except{
+            "expected string"};
     return jv.as_string();
 }
 
@@ -315,7 +318,8 @@ json::number&
 checked_number(json::value& jv)
 {
     if(! jv.is_number())
-        throw rpc_exception{};
+        throw rpc_except{
+            "expected number"};
     return jv.as_number();
 }
 
@@ -323,7 +327,8 @@ bool&
 checked_bool(json::value& jv)
 {
     if(! jv.is_bool())
-        throw rpc_exception{};
+        throw rpc_except{
+            "expected bool"};
     return jv.as_bool();
 }
 
@@ -331,7 +336,8 @@ void
 checked_null(json::value& jv)
 {
     if(! jv.is_null())
-        throw rpc_exception{};
+        throw rpc_except{
+            "expected null"};
 }
 
 json::value&
@@ -343,7 +349,8 @@ checked_value(
         checked_object(jv);
     auto it = obj.find(key);
     if(it == obj.end())
-        throw rpc_exception{};
+        throw rpc_except{
+            "key '" + key.to_string() + "' not found"};
     return it->second;
 }
 

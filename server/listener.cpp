@@ -9,6 +9,7 @@
 
 #include "listener.hpp"
 #include "logger.hpp"
+#include "server.hpp"
 #include "server_certificate.hpp"
 #include "service.hpp"
 #include "utility.hpp"

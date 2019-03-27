@@ -7,7 +7,6 @@
 // Official repository: https://github.com/vinniefalco/BeastLounge
 //
 
-#include "dispatcher.hpp"
 #include "message.hpp"
 #include "rpc.hpp"
 #include "server.hpp"
@@ -42,9 +41,6 @@ public:
     void
     on_start() override
     {
-        // Register RPC commands
-        auto& d = srv_.dispatcher();
-        d.insert("identify", &ident_service::rpc_set_identity, this);
     }
 
     void
@@ -61,10 +57,10 @@ public:
         auto& name = checked_string(req.params, "name");
 
         if(name.size() > 20)
-            throw rpc_exception(
+            throw rpc_except(
                 "Invalid \"name\": too long");
         if(! u.name.empty())
-            throw rpc_exception(
+            throw rpc_except(
                 "Identity is already set");
 
         // VFALCO NOT THREAD SAFE!
@@ -77,7 +73,7 @@ public:
             res["id"] = std::move(*req.id);
         u.send(make_message(res));
 
-        srv_.system_channel().insert(u);
+        //srv_.system_channel().insert(u);
     }
 
 };

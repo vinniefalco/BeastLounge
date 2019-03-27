@@ -11,6 +11,7 @@
 #define LOUNGE_RPC_HPP
 
 #include "config.hpp"
+#include <boost/beast/core/string.hpp>
 #include <boost/beast/_experimental/json/value.hpp>
 #include <boost/optional.hpp>
 #include <stdexcept>
@@ -73,35 +74,35 @@ make_error_code(rpc_error e);
 
 //------------------------------------------------------------------------------
 
-class rpc_exception
+class rpc_except
     : public std::exception
 {
     int code_;
     std::string msg_;
 
 public:
-    rpc_exception()
-        : rpc_exception(
+    rpc_except()
+        : rpc_except(
             rpc_error::internal_error)
     {
     }
 
-    rpc_exception(
+    rpc_except(
         rpc_error ev)
-        : rpc_exception(ev, 
+        : rpc_except(ev, 
             beast::error_code(ev).message())
     {
     }
 
-    rpc_exception(
+    rpc_except(
         beast::string_view msg)
-        : rpc_exception(
+        : rpc_except(
             rpc_error::invalid_params,
             msg)
     {
     }
 
-    rpc_exception(
+    rpc_except(
         rpc_error ev,
         beast::string_view msg)
         : code_(static_cast<int>(ev))
@@ -109,7 +110,7 @@ public:
     {
     }
 
-    rpc_exception(
+    rpc_except(
         beast::error_code const& ec)
         : code_(static_cast<int>(ec.value()))
         , msg_(ec.message())
@@ -126,8 +127,9 @@ public:
 
 /** Represents a JSON-RPC request
 */
-struct rpc_request
+class rpc_request
 {
+public:
     /// Version of the request (1 or 2)
     int version = 2;
 
@@ -182,7 +184,7 @@ json::value
 make_rpc_error(
     rpc_error ev,
     beast::string_view msg,
-    rpc_request const& req);
+    rpc_request& req);
 
 extern
 json::object&

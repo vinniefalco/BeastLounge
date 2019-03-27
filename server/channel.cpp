@@ -8,18 +8,31 @@
 //
 
 #include "channel.hpp"
+#include "channel_list.hpp"
 #include "message.hpp"
 #include "user.hpp"
 #include <atomic>
 
 channel::
-channel(beast::string_view name)
-    : cid_(
-        []
-        {
-            static std::atomic<std::size_t> cid{0};
-            return ++cid;
-        }())
+channel(
+    beast::string_view name,
+    channel_list& list)
+    : list_(list)
+    , cid_(list.next_cid())
+    , uid_(list.next_uid())
+    , name_(name)
+{
+    //list.insert(shared_from_this());
+}
+
+channel::
+channel(
+    std::size_t reserved_cid,
+    beast::string_view name,
+    channel_list& list)
+    : list_(list)
+    , uid_(list.next_uid())
+    , cid_(reserved_cid)
     , name_(name)
 {
 }
@@ -31,18 +44,40 @@ channel::
     // to first remove all the users, so they
     // get the notification.
     BOOST_ASSERT(users_.empty());
+
+    list_.erase(*this);
+}
+
+bool
+channel::
+is_joined(user& u) const noexcept
+{
+    std::lock_guard<std::mutex> lock(mutex_);
+    return users_.find(&u) != users_.end();
 }
 
 bool
 channel::
 insert(user& u)
 {
-    if(![&]
+    {
+        bool inserted;
         {
             std::lock_guard<std::mutex> lock(mutex_);
-            return users_.insert(&u).second;
-        }())
-        return false;
+            inserted = users_.insert(&u).second;
+        }
+        if(! inserted)
+            return false;
+    }
+    {
+        // broadcast: join
+        json::value jv;
+        jv["cid"] = cid();
+        jv["verb"] = "join";
+        jv["name"] = name();
+        jv["user"] = u.name;
+        send(jv);
+    }
     u.on_insert(*this);
     on_insert(u);
     return true;
@@ -52,12 +87,25 @@ void
 channel::
 erase(user& u)
 {
+    std::size_t n;
     {
         std::lock_guard<std::mutex> lock(mutex_);
-        users_.erase(&u);
+        n = users_.erase(&u);
     }
-    u.on_erase(*this);
-    on_erase(u);
+    if(n > 0)
+    {
+        {
+            // broadcast: leave
+            json::value jv;
+            jv["cid"] = cid();
+            jv["verb"] = "leave";
+            jv["name"] = name();
+            jv["user"] = u.name;
+            send(jv);
+        }
+        u.on_erase(*this);
+        on_erase(u);
+    }
 }
 
 void
@@ -65,6 +113,16 @@ channel::
 send(json::value const& jv)
 {
     send(make_message(jv));
+}
+
+void
+channel::
+dispatch(
+    json::value& result,
+    rpc_request& req,
+    user& u)
+{
+    on_dispatch(result, req, u);
 }
 
 void

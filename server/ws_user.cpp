@@ -7,7 +7,7 @@
 // Official repository: https://github.com/vinniefalco/BeastLounge
 //
 
-#include "dispatcher.hpp"
+#include "channel_list.hpp"
 #include "listener.hpp"
 #include "logger.hpp"
 #include "message.hpp"
@@ -123,8 +123,8 @@ public:
     void
     on_message()
     {
-        srv_.dispatcher().dispatch(
-            *this, msg_.data());
+        srv_.channel_list().dispatch(
+            msg_.data(), *this);
     }
 
     // Report a failure
