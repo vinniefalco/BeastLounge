@@ -874,10 +874,14 @@ loop:
             ++p;
             n_exp_neg_ = false;
         }
-        if(*p == '-')
+        else if(*p == '-')
         {
             ++p;
             n_exp_neg_ = true;
+        }
+        else
+        {
+            n_exp_neg_ = false;
         }
         stack_.front() = state::number_exp_digits1;
         goto loop;
