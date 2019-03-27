@@ -13,6 +13,7 @@
 #include <boost/beast/_experimental/json/value.hpp>
 #include <boost/beast/_experimental/json/detail/varint.hpp>
 #include <boost/core/exchange.hpp>
+#include <boost/core/ignore_unused.hpp>
 #include <algorithm>
 #include <type_traits>
 
@@ -78,6 +79,7 @@ struct object::element
             key.size());
         p[sizeof(element) +
             n + key.size()] = '\0';
+        boost::ignore_unused(e);
         BOOST_ASSERT(
             *e->v_.get_storage() == *sp);
         return reinterpret_cast<element*>(p);
