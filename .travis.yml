@@ -39,6 +39,7 @@ matrix:
       env:
         - BEAST_LOUNGE_BUILD_TYPE=Debug
         - BEAST_LOUNGE_SANITIZE=address,undefined
+        - UBSAN_OPTIONS=print_stacktrace=1
         - CXX=g++-7
         - CC=gcc-7
 
@@ -54,6 +55,7 @@ matrix:
       env:
         - BEAST_LOUNGE_BUILD_TYPE=Release
         - BEAST_LOUNGE_SANITIZE=address,undefined
+        - UBSAN_OPTIONS=print_stacktrace=1
         - CXX=g++-8
         - CC=gcc-8
 
@@ -62,6 +64,7 @@ matrix:
       env:
         - BEAST_LOUNGE_BUILD_TYPE=Release
         - BEAST_LOUNGE_SANITIZE=address,undefined
+        - UBSAN_OPTIONS=print_stacktrace=1
         - CXX=clang++
         - CC=clang++
 
