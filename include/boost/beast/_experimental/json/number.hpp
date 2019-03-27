@@ -22,8 +22,13 @@ namespace json {
 
 /** The representation of parsed numbers.
 */
-struct number
+class number
 {
+    unsigned long long mant_ = 0;
+    short exp_ = 0;
+    bool neg_ = false;
+
+public:
     static std::size_t constexpr
         max_string_chars =
             1 +     // '-'
@@ -174,35 +179,24 @@ private:
     void
     normalize() noexcept;
 
-    template<class I>
+    BOOST_BEAST_DECL
     void
-    assign(I v
-        ,typename std::enable_if<
-            std::is_signed<I>::value &&
-            std::is_integral<I>::value
-                >::type* = 0) noexcept;
+    assign_signed(
+        long long i) noexcept;
 
-    template<class U>
+    BOOST_BEAST_DECL
     void
-    assign(U v
-        ,typename std::enable_if<
-            std::is_unsigned<U>::value
-                >::type* = 0) noexcept;
+    assign_unsigned(
+        unsigned long long i) noexcept;
 
-    template<class F>
+    BOOST_BEAST_DECL
     void
-    assign(F v
-        ,typename std::enable_if<
-            std::is_floating_point<
-                F>::value>::type* = 0) noexcept;
+    assign_ieee(
+        long double f) noexcept;
 
     friend
     std::ostream&
     operator<<(std::ostream& os, number const& n);
-
-    mantissa_type mant_;
-    exponent_type exp_;
-    bool neg_;
 };
 
 BOOST_BEAST_DECL
@@ -225,7 +219,6 @@ operator<<(std::ostream& os, number const& n);
 } // beast
 } // boost
 
-#include <boost/beast/_experimental/json/impl/number.hpp>
 #ifdef BOOST_BEAST_HEADER_ONLY
 #include <boost/beast/_experimental/json/impl/number.ipp>
 #endif

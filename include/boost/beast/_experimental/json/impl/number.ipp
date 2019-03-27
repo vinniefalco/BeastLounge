@@ -116,69 +116,69 @@ number(
 //------------------------------------------------------------------------------
 
 number::
-number(short v) noexcept
+number(short i) noexcept
 {
-    assign(v);
+    assign_signed(i);
 }
 
 number::
-number(int v) noexcept
+number(int i) noexcept
 {
-    assign(v);
+    assign_signed(i);
 }
 
 number::
-number(long v) noexcept
+number(long i) noexcept
 {
-    assign(v);
+    assign_signed(i);
 }
 
 number::
-number(long long v) noexcept
+number(long long i) noexcept
 {
-    assign(v);
+    assign_signed(i);
 }
 
 number::
-number(unsigned short v) noexcept
+number(unsigned short i) noexcept
 {
-    assign(v);
+    assign_unsigned(i);
 }
 
 number::
-number(unsigned int v) noexcept
+number(unsigned int i) noexcept
 {
-    assign(v);
+    assign_unsigned(i);
 }
 
 number::
-number(unsigned long v) noexcept
+number(unsigned long i) noexcept
 {
-    assign(v);
+    assign_unsigned(i);
 }
 
 number::
-number(unsigned long long v) noexcept
+number(unsigned long long i) noexcept
 {
-    assign(v);
+    assign_unsigned(i);
 }
 
 number::
-number(float v) noexcept
+number(float f) noexcept
 {
-    assign(v);
+    assign_ieee(f);
 }
 
 number::
-number(double v) noexcept
+number(double f) noexcept
 {
-    assign(v);
+    assign_ieee(f);
 }
 
 number::
-number(long double v) noexcept
+number(long double f) noexcept
 {
-    assign(v);
+    assign_ieee(f);
 }
 
 //------------------------------------------------------------------------------
@@ -344,59 +344,36 @@ normalize() noexcept
     }
 }
 
-template<class I>
 void
 number::
-assign(I v
-    ,typename std::enable_if<
-        std::is_signed<I>::value &&
-        std::is_integral<I>::value
-            >::type*) noexcept
+assign_signed(long long i) noexcept
 {
-    BOOST_STATIC_ASSERT(
-        sizeof(I) <= sizeof(mantissa_type));
-    if(v >= 0)
+    if(i >= 0)
     {
         neg_ = false;
-        mant_ = v;
-    }
-    else if(v != (std::numeric_limits<I>::min)())
-    {
-        neg_ = true;
-        mant_ = static_cast<
-            mantissa_type>(std::abs(v));
+        mant_ = i;
     }
     else
     {
         neg_ = true;
-        mant_ = (std::numeric_limits<I>::max)();
-        mant_ += 1;
+        mant_ = ~ static_cast<
+            mantissa_type>(i) + 1;
     }
     exp_ = 0;
 }
 
-template<class U>
 void
 number::
-assign(U v
-    ,typename std::enable_if<
-        std::is_unsigned<U>::value
-            >::type*) noexcept
+assign_unsigned(unsigned long long i) noexcept
 {
-    BOOST_STATIC_ASSERT(
-        sizeof(U) <= sizeof(mantissa_type));
-    mant_ = v;
+    mant_ = i;
     exp_ = 0;
     neg_ = false;
 }
 
-template<class F>
 void
 number::
-assign(F v
-    ,typename std::enable_if<
-        std::is_floating_point<
-        F>::value>::type*) noexcept
+assign_ieee(long double f) noexcept
 {
 /*
     Ryu's algorithm is Boost licensed and performs
@@ -404,9 +381,9 @@ assign(F v
 
     https://github.com/ulfjack/ryu/blob/41910f966fdc2307a279ef645de976e0fc431b48/ryu/d2s.c#L211
 */
-    if(v < 0)
+    if(f < 0)
     {
-        v = std::abs(v);
+        f = std::abs(f);
         neg_ = true;
     }
     else
@@ -418,9 +395,8 @@ assign(F v
             std::log10((std::numeric_limits<
                 mantissa_type>::max)()))) - 2;
     exp_ = static_cast<exponent_type>(
-        std::floor(std::log10(v)));
-    auto mant = static_cast<long double>(v) /
-        std::pow(10, exp_);
+        std::floor(std::log10(f)));
+    auto mant = f / std::pow(10, exp_);
     mant_ = static_cast<mantissa_type>(
         mant * std::pow(10, bias));
     exp_ -= bias;

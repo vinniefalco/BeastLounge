@@ -136,7 +136,6 @@ public:
 } // beast
 } // boost
 
-#include <boost/beast/_experimental/json/impl/serializer.hpp>
 #ifdef BOOST_BEAST_HEADER_ONLY
 #include <boost/beast/_experimental/json/impl/serializer.ipp>
 #endif

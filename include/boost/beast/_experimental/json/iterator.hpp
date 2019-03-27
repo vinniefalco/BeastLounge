@@ -142,7 +142,6 @@ public:
 } // beast
 } // boost
 
-#include <boost/beast/_experimental/json/impl/iterator.hpp>
 #if BOOST_BEAST_HEADER_ONLY
 #include <boost/beast/_experimental/json/impl/iterator.ipp>
 #endif
