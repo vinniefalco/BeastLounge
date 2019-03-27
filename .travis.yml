@@ -16,7 +16,8 @@ addons:
 
 matrix:
   include:
-    - os: linux
+    - name: "GCC default + coverage"
+      os: linux
       dist: xenial
       env:
         - BEAST_LOUNGE_COVERAGE=1
@@ -26,7 +27,8 @@ matrix:
       after_success:
         - tools/coverage.sh
 
-    - os: linux
+    - name: "GCC-7 Debug asan,ubsan"
+      os: linux
       dist: xenial
       addons:
         apt:
@@ -37,11 +39,11 @@ matrix:
       env:
         - BEAST_LOUNGE_BUILD_TYPE=Debug
         - BEAST_LOUNGE_SANITIZE=address,undefined
-        - MATRIX_EVAL="CC=gcc-7 && CXX=g++-7"
         - CXX=g++-7
         - CC=gcc-7
 
-    - os: linux
+    - name: "GCC-8 Release asan,ubsan"
+      os: linux
       dist: xenial
       addons:
         apt:
@@ -52,11 +54,10 @@ matrix:
       env:
         - BEAST_LOUNGE_BUILD_TYPE=Release
         - BEAST_LOUNGE_SANITIZE=address,undefined
-        - MATRIX_EVAL="CC=gcc-8 && CXX=g++-8"
         - CXX=g++-8
         - CC=gcc-8
 
-    - os: linux
+    - name: "clang Release asan,ubsan"
       dist: xenial
       env:
         - BEAST_LOUNGE_BUILD_TYPE=Release
