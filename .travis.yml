@@ -19,13 +19,17 @@ matrix:
     - name: "GCC default + coverage"
       os: linux
       dist: xenial
+      addons:
+        apt:
+          packages:
+            - lcov
       env:
         - BEAST_LOUNGE_COVERAGE=1
         - BEAST_LOUNGE_BUILD_TYPE=Debug
         - CXX=g++
         - CC=gcc
       after_success:
-        - tools/coverage.sh
+        - tools/coverage.sh && curl -s https://codecov.io/bash -o codecov && bash ./codecov -X gcov -f build/coverage.info -t $CODECOV_TOKEN
 
     - name: "GCC-7 Debug asan,ubsan"
       os: linux
