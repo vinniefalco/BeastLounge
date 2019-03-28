@@ -655,7 +655,7 @@ public:
         return nat_.num_.get_uint64();
     }
 
-    long double
+    double
     get_double() const noexcept
     {
         BOOST_ASSERT(is_double());

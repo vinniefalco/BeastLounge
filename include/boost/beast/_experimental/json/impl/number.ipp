@@ -16,6 +16,7 @@
 #include <cmath>
 #include <cstdint>
 #include <ostream>
+#include <cstdio>
 #include <string>
 #include <vector>
 
@@ -105,12 +106,55 @@ number::
 number(
     mantissa_type mant,
     exponent_type exp,
-    bool negative) noexcept
-    : mant_(mant)
-    , exp_(exp)
-    , neg_(negative)
+    bool sign) noexcept
 {
-    //normalize();
+    auto const as_double =
+        [&]
+        {
+            double d =
+                static_cast<double>(mant) *
+                std::pow(10, exp);
+            if(sign)
+                d *= -1;
+            return d;
+        };
+
+    if(exp == 0)
+    {
+        if(! sign)
+        {
+            assign_unsigned(mant);
+        }
+        else if(mant <= static_cast<unsigned long long>(
+            (std::numeric_limits<long long>::max)()) + 1)
+        {
+            assign_signed(static_cast<long long>(mant));
+        }
+        else
+        {
+            assign_double(as_double());
+        }
+    }
+    else
+    {
+        auto const d = as_double();
+        if(! sign)
+        {
+            auto v = static_cast<unsigned long long>(d);
+            if(v == d)
+                assign_unsigned(v);
+            else
+                assign_double(d);
+        }
+        else
+        {
+            auto v = static_cast<long long>(d);
+            if(v == d)
+                assign_signed(v);
+            else
+                assign_double(d);
+        }
+    }
 }
 
 //------------------------------------------------------------------------------
@@ -166,19 +210,13 @@ number(unsigned long long i) noexcept
 number::
 number(float f) noexcept
 {
-    assign_ieee(f);
+    assign_double(f);
 }
 
 number::
 number(double f) noexcept
 {
-    assign_ieee(f);
-}
-
-number::
-number(long double f) noexcept
-{
-    assign_ieee(f);
+    assign_double(f);
 }
 
 //------------------------------------------------------------------------------
@@ -187,220 +225,157 @@ bool
 number::
 is_int64() const noexcept
 {
-    if(exp_ != 0)
-        return false;
-    if(neg_)
-        return mant_ <= static_cast<
-            mantissa_type>(
-                (std::numeric_limits<
-                    std::int64_t>::max)()) + 1;
-    return mant_ <= static_cast<
-        mantissa_type>(
-            (std::numeric_limits<
-                std::int64_t>::max)());
+    switch(k_)
+    {
+    case type_int64:
+        return true;
+
+    case type_uint64:
+        return int64_ >= 0;
+
+    case type_double:
+        return static_cast<long long>(
+            double_) == double_;
+    }
+    return false;
 }
 
 bool
 number::
 is_uint64() const noexcept
 {
-    if(exp_ != 0)
-        return false;
-    return true;
+    switch(k_)
+    {
+    case type_int64:
+        return int64_ >= 0;
+
+    case type_uint64:
+        return true;
+
+    case type_double:
+        return static_cast<
+            unsigned long long>(
+                double_) == double_;
+    }
+    return false;
 }
 
 std::int_least64_t
 number::
 get_int64() const noexcept
 {
-    if(neg_)
-        return -static_cast<
-            std::int_least64_t>(mant_);
-    return static_cast<
-        std::int_least64_t>(mant_);
+    switch(k_)
+    {
+    case type_int64:
+        return int64_;
+
+    case type_uint64:
+        return static_cast<
+            long long>(uint64_);
+
+    case type_double:
+        return static_cast<
+            long long>(double_);
+    }
+    return 0;
 }
 
 std::uint_least64_t
 number::
 get_uint64() const noexcept
 {
-    return mant_;
+    switch(k_)
+    {
+    case type_int64:
+        return static_cast<
+            unsigned long long>(int64_);
+
+    case type_uint64:
+        return uint64_;
+
+    case type_double:
+        return static_cast<
+            unsigned long long>(double_);
+    }
+    return 0;
 }
 
-long double
+double
 number::
 get_double() const noexcept
 {
-    static exponent_type const bias =
-        static_cast<exponent_type>(std::floor(
-            std::log10((std::numeric_limits<
-                mantissa_type>::max)()))) - 2;
-    long double v =
-        static_cast<long double>(mant_);
-    if(exp_ < -bias)
+    switch(k_)
     {
-        v = (v * std::pow(10, -bias)) *
-            std::pow(10, exp_ + bias);
-    }
-    else
-    {
-        v = v * std::pow(10, exp_);
-    }
-    if(neg_)
-        return -v;
-    return v;
-}
+    case type_int64:
+        return static_cast<double>(int64_);
 
-bool
-operator==(
-    number const& lhs,
-    number const& rhs) noexcept
-{
-    return
-        lhs.mantissa() == rhs.mantissa() &&
-        lhs.exponent() == rhs.exponent() &&
-        lhs.is_negative() == rhs.is_negative();
-}
+    case type_uint64:
+        return static_cast<double>(uint64_);
 
-bool
-operator!=(
-    number const& lhs,
-    number const& rhs) noexcept
-{
-    return
-        lhs.mantissa() != rhs.mantissa() ||
-        lhs.exponent() != rhs.exponent() ||
-        lhs.is_negative() != rhs.is_negative();
+    case type_double:
+        return double_;
+    }
+    return 0;
 }
 
 string_view
 number::
-print(char* dest) const noexcept
+print(
+    char* buf,
+    std::size_t buf_size) const noexcept
 {
-    if(mant_ == 0)
+    int n;
+    switch(k_)
     {
-        BOOST_ASSERT(exp_ == 0);
-        BOOST_ASSERT(! neg_);
-        *dest = '0';
-        return { dest, 1 };
+    case type_int64:
+        n = snprintf(buf, buf_size,
+            "%lld", int64_);
+        break;
+
+    case type_uint64:
+        n = snprintf(buf, buf_size,
+            "%llu", uint64_);
+        break;
+
+    case type_double:
+        n = snprintf(buf, buf_size,
+            "%e", double_);
+        break;
+
+    default:
+    case type_ieee:
+        n = snprintf(buf, buf_size,
+            "_unimpl");
+        break;
     }
-    auto const start = dest;
-    auto const tab = pow10::get();
-    auto dig =
-        std::upper_bound(
-            tab.begin(),
-            tab.end(),
-            mant_) -
-        tab.begin();
-    if(neg_)
-        *dest++ = '-';
-    auto rp = dest + dig;
-    dest = rp;
-    auto mant = mant_;
-    while(mant > 0)
-    {
-        *--rp = '0' + mant % 10;
-        mant /= 10;
-    }
-    auto exp = static_cast<int>(exp_);
-    if(exp != 0)
-    {
-        *dest++ = 'e';
-        if(exp < 0)
-        {
-            *dest++ = '-';
-            exp = std::abs(exp);
-        }
-    }
-    dig =
-        std::upper_bound(
-            tab.begin(),
-            tab.end(),
-            exp) -
-        tab.begin();
-    rp = dest + dig;
-    dest = rp;
-    while(exp > 0)
-    {
-        *--rp = '0' + exp % 10;
-        exp /= 10;
-    }
-    return { start, static_cast<
-        std::size_t>(dest - start) };
+    return { buf, static_cast<
+        std::size_t>(n) };
 }
 
 //------------------------------------------------------------------------------
 
 void
 number::
-normalize() noexcept
-{
-    if(mant_ == 0)
-        return;
-    while(mant_ % 10 == 0)
-    {
-        mant_ /= 10;
-        ++exp_;
-    }
-}
-
-void
-number::
 assign_signed(long long i) noexcept
 {
-    if(i >= 0)
-    {
-        neg_ = false;
-        mant_ = i;
-    }
-    else
-    {
-        neg_ = true;
-        mant_ = ~ static_cast<
-            mantissa_type>(i) + 1;
-    }
-    exp_ = 0;
+    k_ = type_int64;
+    int64_ = i;
 }
 
 void
 number::
 assign_unsigned(unsigned long long i) noexcept
 {
-    mant_ = i;
-    exp_ = 0;
-    neg_ = false;
+    k_ = type_uint64;
+    uint64_ = i;
 }
 
 void
 number::
-assign_ieee(long double f) noexcept
+assign_double(double f) noexcept
 {
-/*
-    Ryu's algorithm is Boost licensed and performs
-    this operation with more speed and more precision:
-
-    https://github.com/ulfjack/ryu/blob/41910f966fdc2307a279ef645de976e0fc431b48/ryu/d2s.c#L211
-*/
-    if(f < 0)
-    {
-        f = std::abs(f);
-        neg_ = true;
-    }
-    else
-    {
-        neg_ = false;
-    }
-    static exponent_type const bias =
-        static_cast<exponent_type>(std::floor(
-            std::log10((std::numeric_limits<
-                mantissa_type>::max)()))) - 2;
-    exp_ = static_cast<exponent_type>(
-        std::floor(std::log10(f)));
-    auto mant = f / std::pow(10, exp_);
-    mant_ = static_cast<mantissa_type>(
-        mant * std::pow(10, bias));
-    exp_ -= bias;
-    normalize();
+    k_ = type_double;
+    double_ = f;
 }
 
 //------------------------------------------------------------------------------
@@ -409,8 +384,46 @@ std::ostream&
 operator<<(std::ostream& os, number const& n)
 {
     char buf[number::max_string_chars];
-    os << n.print(buf);
+    os << n.print(buf, sizeof(buf));
     return os;
+}
+
+bool
+operator==(
+    number const& lhs,
+    number const& rhs) noexcept
+{
+    switch(lhs.k_)
+    {
+    case number::type_int64:
+        return
+            rhs.is_int64() &&
+            lhs.get_int64() ==
+                rhs.get_int64();
+
+    case number::type_uint64:
+        return
+            rhs.is_uint64() &&
+            lhs.get_uint64() ==
+                rhs.get_uint64();
+
+    case number::type_double:
+        return
+            lhs.get_double() ==
+            rhs.get_double();
+
+    default:
+        break;
+    }
+    return false;
+}
+
+bool
+operator!=(
+    number const& lhs,
+    number const& rhs) noexcept
+{
+    return !(lhs == rhs);
 }
 
 } // json

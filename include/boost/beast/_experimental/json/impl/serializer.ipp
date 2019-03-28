@@ -154,7 +154,8 @@ next(net::mutable_buffer b)
                     state_ = state::string;
                     break;
                 case kind::number:
-                    str_ = e.value.as_number().print(buf_);
+                    str_ = e.value.as_number().print(
+                        buf_, sizeof(buf_));
                     if(! e.last)
                     {
                         buf_[str_.size()] = ',';

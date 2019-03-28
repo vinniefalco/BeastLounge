@@ -24,9 +24,32 @@ namespace json {
 */
 class number
 {
-    unsigned long long mant_ = 0;
-    short exp_ = 0;
-    bool neg_ = false;
+    struct base10_ieee
+    {
+        unsigned
+        long long   mant;
+        short       exp;
+        bool        sign;
+    };
+
+    enum kind
+    {
+        type_int64,
+        type_uint64,
+        type_double,
+        type_ieee
+    };
+
+    union
+    {
+        unsigned
+        long long   uint64_;
+        long long   int64_;
+        double      double_;
+        base10_ieee ieee_;
+    };
+
+    kind k_;
 
 public:
     static std::size_t constexpr
@@ -54,7 +77,7 @@ public:
     number(
         mantissa_type mant,
         exponent_type exp,
-        bool negative) noexcept;
+        bool sign) noexcept;
 
     /// Construct a number from a signed integer
     BOOST_BEAST_DECL
@@ -96,37 +119,15 @@ public:
     BOOST_BEAST_DECL
     number(double v) noexcept;
 
-    /// Construct a number from a floating point value
-    BOOST_BEAST_DECL
-    number(long double v) noexcept;
-
-    /// Return the mantissa of the number
-    mantissa_type
-    mantissa() const noexcept
-    {
-        return mant_;
-    }
-
-    /// Return the exponent of the number
-    exponent_type
-    exponent() const noexcept
-    {
-        return exp_;
-    }
-
     /// Return true if the number is negative
+    BOOST_BEAST_DECL
     bool
-    is_negative() const noexcept
-    {
-        return neg_;
-    }
+    is_negative() const noexcept;
 
     /// Return true if the number is integral
+    BOOST_BEAST_DECL
     bool
-    is_integral() const noexcept
-    {
-        return exp_ == 0;
-    }
+    is_integral() const noexcept;
 
     /// Return true if the number can be represented with a signed 64-bit integer
     BOOST_BEAST_DECL
@@ -157,7 +158,7 @@ public:
     /** Return the number as floating point
     */
     BOOST_BEAST_DECL
-    long double
+    double
     get_double() const noexcept;
 
     /** Convert the number to a string.
@@ -170,14 +171,12 @@ public:
     */
     BOOST_BEAST_DECL
     string_view
-    print(char* dest) const noexcept;
+    print(
+        char* buf,
+        std::size_t buf_size) const noexcept;
 
 private:
     struct pow10;
-
-    BOOST_BEAST_DECL
-    void
-    normalize() noexcept;
 
     BOOST_BEAST_DECL
     void
@@ -191,12 +190,24 @@ private:
 
     BOOST_BEAST_DECL
     void
-    assign_ieee(
-        long double f) noexcept;
+    assign_double(double f) noexcept;
 
     friend
     std::ostream&
     operator<<(std::ostream& os, number const& n);
+
+    friend
+    bool
+    operator==(
+        number const& lhs,
+        number const& rhs) noexcept;
+
+    friend
+    bool
+    operator!=(
+        number const& lhs,
+        number const& rhs) noexcept;
+
 };
 
 BOOST_BEAST_DECL

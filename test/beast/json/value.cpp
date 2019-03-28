@@ -570,7 +570,6 @@ public:
             value((unsigned long long)0);
             value(float{0});
             value(double{0});
-            value((long double)0);
             value(true);
             value(false);
             value v4(null);
@@ -592,7 +591,6 @@ public:
             jv = (unsigned long long)0;
             jv = float{};
             jv = double{};
-            jv = (long double)0;
             jv = true;
             jv = false;
             jv = null;

@@ -137,11 +137,6 @@ public:
             number n((double)2.5);
             BEAST_EXPECT(n.get_double() == 2.5);
         }
-        {
-            number n((long double)3.5);
-            BEAST_EXPECT(n.get_double() == 3.5);
-        }
-
     }
 
     void
@@ -172,7 +167,7 @@ public:
             BEAST_EXPECT(n.get_double() == 1.5);
             n = (double)2.5;
             BEAST_EXPECT(n.get_double() == 2.5);
-            n = (long double)3.5;
+            n = (double)3.5l;
             BEAST_EXPECT(n.get_double() == 3.5);
         }
     }
@@ -198,9 +193,6 @@ public:
 
         n = 1.;
         BEAST_EXPECT(n == 1.);
-
-        n = 1.l;
-        BEAST_EXPECT(n == 1.l);
     }
 
     void
@@ -250,13 +242,9 @@ public:
         check((std::numeric_limits<double>::min)());
         check((std::numeric_limits<double>::max)());
         check((std::numeric_limits<double>::min)()/2);
-        check((std::numeric_limits<long double>::min)());
-        check((std::numeric_limits<long double>::max)());
-        check((std::numeric_limits<long double>::min)()/2);
 
         // not exact
         approx((std::numeric_limits<double>::max)()/2);
-        approx((std::numeric_limits<long double>::max)()/2);
     }
 
     template<class V>
@@ -264,7 +252,7 @@ public:
     check_output(V v)
     {
         char buf[number::max_string_chars];
-        auto const s = number(v).print(buf);
+        auto const s = number(v).print(buf, sizeof(buf));
         BEAST_EXPECTS(
             s == std::to_string(v).c_str(),
             std::string(s.data(), s.size()));
@@ -321,16 +309,11 @@ public:
     void
     run() override
     {
-    #ifdef BOOST_MSVC
         testConstruction();
         testAssignment();
         testComparison();
         testValues();
         testOstream();
-    #else
-        // VFALCO These tests don't pass yet outside of msvc
-        pass();
-    #endif
     }
 };
 
