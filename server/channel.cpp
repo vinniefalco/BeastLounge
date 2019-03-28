@@ -18,11 +18,10 @@ channel(
     beast::string_view name,
     channel_list& list)
     : list_(list)
-    , cid_(list.next_cid())
     , uid_(list.next_uid())
+    , cid_(list.next_cid())
     , name_(name)
 {
-    //list.insert(shared_from_this());
 }
 
 channel::
