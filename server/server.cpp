@@ -32,16 +32,12 @@
 //------------------------------------------------------------------------------
 
 extern
+void
+make_blackjack_service(server&);
+
+extern
 std::unique_ptr<channel_list>
 make_channel_list(server&);
-
-extern
-void
-make_chat_service(server&);
-
-extern
-void
-make_ident_service(server&);
 
 extern
 void
@@ -494,8 +490,7 @@ make_server(
     }
 
     // Add services
-    make_chat_service(*srv);
-    make_ident_service(*srv);
+    make_blackjack_service(*srv);
 
     // Create listeners
     {

@@ -14,6 +14,7 @@
 #include <boost/beast/core/basic_stream.hpp>
 #include <boost/beast/core/error.hpp>
 #include <boost/beast/core/flat_buffer.hpp>
+#include <boost/asio/basic_waitable_timer.hpp>
 #include <boost/asio/ip/tcp.hpp>
 #include <boost/asio/strand.hpp>
 #include <boost/asio/system_executor.hpp>
@@ -44,6 +45,13 @@ using stream_type =
 #else
 using stream_type = socket_type;
 #endif
+
+/// The type of timers
+using timer_type =
+    net::basic_waitable_timer<
+        std::chrono::steady_clock,
+        net::wait_traits<std::chrono::steady_clock>,
+        executor_type>;
 
 /// The type of flat storage to use
 using flat_storage = beast::flat_buffer;

@@ -11,7 +11,6 @@
 #include "channel.hpp"
 #include "channel_list.hpp"
 #include "server.hpp"
-#include "system_channel.hpp"
 #include "user.hpp"
 #include <boost/make_shared.hpp>
 

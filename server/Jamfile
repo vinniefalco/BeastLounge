@@ -19,7 +19,7 @@ local SOURCES =
     message.cpp
     rpc.cpp
     server.cpp
-    system_channel.cpp
+    system.cpp
     user.cpp
     ws_user.cpp
     ;

@@ -19,11 +19,10 @@ add_executable (lounge-server
     ${SERVER_HEADERS}
     Jamfile
     README.md
+    blackjack.cpp
     channel.cpp
     channel_list.cpp
-    chat_service.cpp
     http_session.cpp
-    ident_service.cpp
     listener.cpp
     logger.cpp
     main.cpp
@@ -31,7 +30,7 @@ add_executable (lounge-server
     room.cpp
     rpc.cpp
     server.cpp
-    system_channel.cpp
+    system.cpp
     user.cpp
     ws_user.cpp
     )
