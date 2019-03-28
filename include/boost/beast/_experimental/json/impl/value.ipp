@@ -39,18 +39,24 @@ value(value&& other) noexcept
         ::new(&obj_) object(
             std::move(other.obj_));
         other.obj_.~object();
+        ::new(&other.nat_.sp_)
+            storage_ptr(obj_.get_storage());
         break;
 
     case json::kind::array:
         ::new(&arr_) array(
             std::move(other.arr_));
         other.arr_.~array();
+        ::new(&other.nat_.sp_)
+            storage_ptr(arr_.get_storage());
         break;
 
     case json::kind::string:
         ::new(&str_) string(
             std::move(other.str_));
         other.str_.~string();
+        ::new(&other.nat_.sp_) storage_ptr(
+            str_.get_allocator().get_storage());
         break;
 
     case json::kind::number:
@@ -58,7 +64,7 @@ value(value&& other) noexcept
             storage_ptr(other.nat_.sp_);
         ::new(&nat_.num_) number(
             other.nat_.num_);
-        //other.nat_.num_.~number();
+        other.nat_.num_.~number();
         break;
 
     case json::kind::boolean:
