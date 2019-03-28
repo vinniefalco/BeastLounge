@@ -79,6 +79,6 @@ git submodule update --init libs/typeof
 git submodule update --init libs/unordered
 
 ./bootstrap.sh
-sudo ./b2 install --with-system
+sudo ./b2 install --with-system --with-thread
 
 echo Submodule update complete

@@ -93,7 +93,11 @@ add_definitions (-D_ITERATOR_DEBUG_LEVEL=0)
 #
 #-------------------------------------------------------------------------------
 
-find_package (Boost REQUIRED COMPONENTS system)
+find_package (
+  Boost REQUIRED COMPONENTS
+    system
+    thread
+    )
 include_directories (${Boost_INCLUDE_DIRS})
 link_directories (${Boost_LIBRARY_DIRS})
 

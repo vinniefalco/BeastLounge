@@ -35,15 +35,17 @@ add_executable (lounge-server
     ws_user.cpp
     )
 
-target_link_libraries (lounge-server
-    PRIVATE
+target_link_libraries (
+    lounge-server PRIVATE
         lib-beast
         lib-asio
         lib-asio-ssl
-        OpenSSL::SSL OpenSSL::Crypto
+        Boost::system
+        Boost::thread
+        OpenSSL::SSL
+        OpenSSL::Crypto
+        Threads::Threads
     )
-
-target_link_libraries (lounge-server PRIVATE Threads::Threads ${Boost_SYSTEM_LIBRARY})
 
 set_target_properties (lounge-server PROPERTIES
   VS_DEBUGGER_WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR})
