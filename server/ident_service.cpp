@@ -11,7 +11,6 @@
 #include "rpc.hpp"
 #include "server.hpp"
 #include "service.hpp"
-#include "system_channel.hpp"
 #include "user.hpp"
 #include <boost/make_unique.hpp>
 
@@ -47,35 +46,6 @@ public:
     on_stop() override
     {
     }
-
-    //--------------------------------------------------------------------------
-
-    void
-    rpc_set_identity(
-        user& u, rpc_request& req)
-    {
-        auto& name = checked_string(req.params, "name");
-
-        if(name.size() > 20)
-            throw rpc_except(
-                "Invalid \"name\": too long");
-        if(! u.name.empty())
-            throw rpc_except(
-                "Identity is already set");
-
-        // VFALCO NOT THREAD SAFE!
-        u.name.assign(name.data(), name.size());
-
-        json::value res;
-        res["jsonrpc"] = "2.0";
-        res["result"] = 0;
-        if(req.id.has_value())
-            res["id"] = std::move(*req.id);
-        u.send(make_message(res));
-
-        //srv_.system_channel().insert(u);
-    }
-
 };
 
 } // (anon)
