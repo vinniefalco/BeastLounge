@@ -59,7 +59,4 @@ using flat_storage = beast::flat_buffer;
 /// The type of network endpoint
 using endpoint_type = tcp::endpoint;
 
-/// The type of a unique identifier
-using uid_t = std::uint64_t;
-
 #endif

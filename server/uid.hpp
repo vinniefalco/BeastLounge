@@ -14,6 +14,6 @@
 #include <cstdint>
 
 /// The type of unique identifiers
-using uid_t = std::uint64_t;
+using uid_type = std::uint64_t;
 
 #endif

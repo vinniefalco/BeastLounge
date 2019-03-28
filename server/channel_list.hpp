@@ -32,7 +32,7 @@ public:
     ~channel_list() = default;
 
     virtual
-    uid_t
+    uid_type
     next_uid() noexcept = 0;
 
     virtual

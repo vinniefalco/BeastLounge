@@ -30,7 +30,7 @@ class channel : public enable_shared_from
     channel_list& list_;
     std::mutex mutable mutex_;
     boost::container::flat_set<user*> users_;
-    uid_t uid_;
+    uid_type uid_;
     std::size_t cid_;
     std::string name_;
 
@@ -40,7 +40,7 @@ public:
     ~channel();
 
     /// Return the channel unique-id
-    uid_t
+    uid_type
     uid() const noexcept
     {
         return uid_;

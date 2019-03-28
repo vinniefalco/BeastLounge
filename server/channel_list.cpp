@@ -50,7 +50,7 @@ class channel_list_impl
     mutex mutable m_;
     std::vector<element> v_;
     boost::container::flat_set<channel*> users_;
-    std::atomic<uid_t> next_uid_;
+    std::atomic<uid_type> next_uid_;
     std::atomic<std::size_t> next_cid_;
 
 public:
@@ -165,7 +165,7 @@ public:
         }
     }
 
-    uid_t
+    uid_type
     next_uid() noexcept override
     {
         return ++next_uid_;
