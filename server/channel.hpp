@@ -37,6 +37,7 @@ class channel : public enable_shared_from
     friend channel_list;
 
 public:
+    virtual
     ~channel();
 
     /// Return the channel unique-id

@@ -106,6 +106,7 @@ public:
         , timer_(srv.make_executor())
         , g_(1)
     {
+        boost::ignore_unused(srv_);
     }
 
 protected:
