@@ -74,7 +74,7 @@ matrix:
 
 install:
   - cd ..
-  - $TRAVIS_BUILD_DIR/tools/get-boost.sh $TRAVIS_BRANCH $TRAVIS_BUILD_DIR
+  - sudo $TRAVIS_BUILD_DIR/tools/get-boost.sh $TRAVIS_BRANCH
   - cd $TRAVIS_BUILD_DIR
 
 script:

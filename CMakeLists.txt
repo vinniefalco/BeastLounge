@@ -211,4 +211,7 @@ include_directories (${PROJECT_SOURCE_DIR}/include)
 include(CTest)
 
 add_subdirectory (server)
-add_subdirectory (test)
+add_subdirectory (static)
+if (BUILD_TESTING)
+    add_subdirectory (test)
+endif()

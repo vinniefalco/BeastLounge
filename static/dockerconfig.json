@@ -1,0 +1,18 @@
+{
+    "listeners": [
+        {
+            "name" : "ipv6",
+            "address" : "::",
+            "port_num" : PORT_NUMBER
+        }
+    ],
+
+    "server": {
+      "threads" : 5,
+      "doc-root" : "var/beast-lounge/www"
+    },
+
+    "log" : {
+      "path" : "var/beast-lounge/log.txt"
+    }
+}
