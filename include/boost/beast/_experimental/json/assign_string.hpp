@@ -22,19 +22,16 @@ namespace json {
 
 template<class Allocator>
 void
-assign(
+from_json(
     std::basic_string<
         char,
         std::char_traits<char>,
         Allocator>& t,
-    value const& v,
-    error_code& ec)
+    value const& v)
 {
     if(! v.is_string())
-    {
-        ec = error::expected_string;
-        return;
-    }
+        throw system_error(
+            error::expected_string);
     auto& s= v.as_string();
     t.assign(s.data(), s.size());
 }

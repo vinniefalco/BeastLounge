@@ -25,10 +25,15 @@ public:
     {
         value jv = "test";
         std::string s;
-        error_code ec;
-        jv.assign(s, ec);
-        BEAST_EXPECTS(! ec, ec.message());
-        BEAST_EXPECT(s == "test");
+        try
+        {
+            jv.store(s);
+            BEAST_EXPECT(s == "test");
+        }
+        catch(std::exception const&)
+        {
+            BEAST_FAIL();
+        }
     }
 
     void run() override

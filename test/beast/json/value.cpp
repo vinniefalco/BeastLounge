@@ -18,6 +18,43 @@ namespace boost {
 namespace beast {
 namespace json {
 
+namespace value_test_ns {
+
+struct T1
+{
+    void
+    to_json(value&) const
+    {
+    }
+};
+
+struct T2
+{
+};
+
+void
+to_json(T2 const&, value&)
+{
+}
+
+struct T3
+{
+};
+
+} // value_test_ns
+
+template<>
+struct value_exchange<value_test_ns::T3>
+{
+    static
+    void
+    to_json(value_test_ns::T3, value&)
+    {
+    }
+};
+
+//------------------------------------------------------------------------------
+
 class value_test : public unit_test::suite
 {
 public:
@@ -628,6 +665,26 @@ public:
         }
     }
 
+    void
+    testCustomization()
+    {
+        using namespace value_test_ns;
+
+        // to_json
+        {
+            T1 t;
+            value jv(t);
+        }
+        {
+            T2 t;
+            value jv(t);
+        }
+        {
+            T3 t;
+            value jv(t);
+        }
+    }
+
     BOOST_STATIC_ASSERT(
         detail::is_range<std::vector<int>>::value);
 
@@ -655,8 +712,10 @@ public:
         testSpecial();
         testConstruct();
         testModifiers();
+        testExchange();
         testAccessors();
         testStructured();
+        testCustomization();
     }
 };
 

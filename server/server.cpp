@@ -54,18 +54,15 @@ struct value_exchange<net::ip::address>
 {
     static
     void
-    assign(
+    from_json(
         net::ip::address& t,
-        json::value const& jv,
-        error_code& ec)
+        json::value const& jv)
     {
         if(! jv.is_string())
-        {
-            ec = json::error::expected_string;
-            return;
-        }
+            throw beast::system_error(
+                json::error::expected_string);
         t = net::ip::make_address(
-            jv.as_string().c_str(), ec);
+            jv.as_string().c_str());
     }
 };
 
@@ -74,42 +71,28 @@ struct value_exchange<net::ip::address>
 } // boost
 
 void
-assign(
+from_json(
     logger_config& cfg,
-    json::value const& jv,
-    beast::error_code& ec)
+    json::value const& jv)
 {
     auto& jo = jv["log"];
     if(! jo.is_object())
-    {
-        ec = json::error::expected_object;
-        return;
-    }
-    jo["path"].assign(cfg.path, ec);
-    if(ec)
-        return;
+        throw beast::system_error(
+            json::error::expected_object);
+    jo["path"].store(cfg.path);
 }
 
 void
-assign(
+from_json(
     listener_config& cfg,
-    json::value const& jv,
-    beast::error_code& ec)
+    json::value const& jv)
 {
     if(! jv.is_object())
-    {
-        ec = json::error::expected_object;
-        return;
-    }
-    jv["name"].assign(cfg.name, ec);
-    if(ec)
-        return;
-    jv["address"].assign(cfg.address, ec);
-    if(ec)
-        return;
-    jv["port_num"].assign(cfg.port_num, ec);
-    if(ec)
-        return;
+        throw beast::system_error(
+            json::error::expected_object);
+    jv["name"].store(cfg.name);
+    jv["address"].store(cfg.address);
+    jv["port_num"].store(cfg.port_num);
 }
 
 //------------------------------------------------------------------------------
@@ -122,23 +105,16 @@ struct server_config
     std::string doc_root;
 
     void
-    assign(
-        json::value const& jv,
-        beast::error_code& ec)
+    from_json(
+        json::value const& jv)
     {
         if(! jv.is_object())
-        {
-            ec = json::error::expected_object;
-            return;
-        }
-        jv["threads"].assign(num_threads, ec);
-        if(ec)
-            return;
+            throw beast::system_error(
+                json::error::expected_object);
+        jv["threads"].store(num_threads);
         if(num_threads < 1)
             num_threads = 1;
-        jv["doc-root"].assign(doc_root, ec);
-        if(ec)
-            return;
+        jv["doc-root"].store(doc_root);
     }
 };
 
@@ -452,15 +428,18 @@ make_server(
     // Read the log configuration
     {
         logger_config cfg;
-        jv.assign(cfg, ec);
-        if(ec)
+        try
+        {
+            jv.store(cfg);
+            if(! log->open(std::move(cfg)))
+                return nullptr;
+        }
+        catch(beast::system_error const& e)
         {
             log->cerr() <<
-                "logger_config: " << ec.message() << "\n";
+                "logger_config: " << e.code().message() << "\n";
             return nullptr;
         }
-        if(! log->open(std::move(cfg)))
-            return nullptr;
     }
 
     // Read the server configuration
@@ -475,18 +454,22 @@ make_server(
             return nullptr;
         }
         server_config cfg;
-        jo.assign(cfg, ec);
-        if(ec)
+        try
+        {
+            jo.store(cfg);
+
+            // Create the server
+            srv = boost::make_unique<server_impl>(
+                std::move(cfg),
+                std::move(log));
+        }
+        catch(beast::system_error const& e)
         {
             log->cerr() <<
-                "server_config: " << ec.message() << "\n";
+                "server_config: " << e.code().message() << "\n";
             return nullptr;
         }
 
-        // Create the server
-        srv = boost::make_unique<server_impl>(
-            std::move(cfg),
-            std::move(log));
     }
 
     // Add services
@@ -503,15 +486,18 @@ make_server(
         for(auto& e : ja.as_array())
         {
             listener_config cfg;
-            e.assign(cfg, ec);
-            if(ec)
+            try
             {
-                srv->log().cerr() <<
-                    "listener_config: " << ec.message() << "\n";
+                e.store(cfg);
+                if(! run_listener(*srv, std::move(cfg)))
+                    return nullptr;
+            }
+            catch(beast::system_error const& e)
+            {
+                log->cerr() <<
+                    "listener_config: " << e.code().message() << "\n";
                 return nullptr;
             }
-            if(! run_listener(*srv, std::move(cfg)))
-                return nullptr;
         }
     }
 

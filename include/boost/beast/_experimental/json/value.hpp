@@ -12,14 +12,13 @@
 
 #include <boost/beast/core/detail/config.hpp>
 #include <boost/beast/_experimental/json/array.hpp>
-#include <boost/beast/_experimental/json/error.hpp>
 #include <boost/beast/_experimental/json/kind.hpp>
 #include <boost/beast/_experimental/json/number.hpp>
 #include <boost/beast/_experimental/json/object.hpp>
 #include <boost/beast/_experimental/json/storage.hpp>
 #include <boost/beast/_experimental/json/string.hpp>
-#include <boost/beast/_experimental/json/detail/has_assign_value.hpp>
 #include <boost/beast/_experimental/json/detail/is_specialized.hpp>
+#include <boost/beast/_experimental/json/detail/value.hpp>
 #include <boost/type_traits/make_void.hpp>
 #include <cstdlib>
 #include <initializer_list>
@@ -43,49 +42,48 @@ struct value_exchange final
 {
     static
     void
-    assign(value& v, T const& t)
+    to_json(T const& t, value& v)
     {
-        detail::call_assign(v, t);
+        detail::call_to_json(t, v);
     }
 
-    //[[nodiscard]]
     static
     void
-    assign(T& t, value const& v, error_code& ec)
+    from_json(T& t, value const& v)
     {
-        detail::call_assign(t, v, ec);
+        detail::call_from_json(t, v);
     }
 };
 
 /** Trait to determine if a type can be assigned to a json value.
 */
 template<class T>
-using can_value_to =
+using has_from_json =
 #ifdef BOOST_BEAST_DOXYGEN
     __see_below__;
 #else
     std::integral_constant<bool,
         detail::is_specialized<value_exchange<
             detail::remove_cr<T>>>::value ||
-        detail::has_adl_value_to<
+        detail::has_adl_from_json<
             detail::remove_cr<T>>::value ||
-        detail::has_mf_value_to<
+        detail::has_mf_from_json<
             detail::remove_cr<T>>::value>;
 #endif
 
-/** Trait to determine if a json value can be assigned to a type.
+/** Returns `true` if a JSON value can be constructed from `T`
 */
 template<class T>
-using can_value_from =
+using has_to_json =
 #ifdef BOOST_BEAST_DOXYGEN
     __see_below__;
 #else
     std::integral_constant<bool,
         detail::is_specialized<value_exchange<
             detail::remove_cr<T>>>::value ||
-        detail::has_adl_value_from<
+        detail::has_adl_to_json<
             detail::remove_cr<T>>::value ||
-        detail::has_mf_value_from<
+        detail::has_mf_to_json<
             detail::remove_cr<T>>::value>;
 #endif
 
@@ -384,6 +382,13 @@ public:
         return as_bool();
     }
 
+    /// Set the value to a null
+    void
+    emplace_null() noexcept
+    {
+        reset(json::kind::null);
+    }
+
     //--------------------------------------------------------------------------
     //
     // Exchange
@@ -395,7 +400,7 @@ public:
         class T
     #ifndef BOOST_BEAST_DOXYGEN
         ,class = typename std::enable_if<
-            can_value_from<T>::value>::type
+            has_to_json<T>::value>::type
     #endif
     >
     value(T const& t)
@@ -408,7 +413,7 @@ public:
         class T
     #ifndef BOOST_BEAST_DOXYGEN
         ,class = typename std::enable_if<
-            can_value_from<T>::value>::type
+            has_to_json<T>::value>::type
     #endif
     >
     value(T const& t, storage_ptr store)
@@ -416,7 +421,7 @@ public:
     {
         value_exchange<
             detail::remove_cr<T>
-                >::assign(*this, t);
+                >::to_json(t, *this);
     }
 
     /// Assign a value from another type
@@ -424,7 +429,7 @@ public:
         class T
     #ifndef BOOST_BEAST_DOXYGEN
         ,class = typename std::enable_if<
-            can_value_from<T>::value>::type
+            has_to_json<T>::value>::type
     #endif
     >
     value&
@@ -432,7 +437,7 @@ public:
     {
         value_exchange<
             detail::remove_cr<T>
-                >::assign(*this, t);
+                >::to_json(t, *this);
         return *this;
     }
 
@@ -442,41 +447,26 @@ public:
     */
     template<class T>
     void
-    assign(T& t) const
+    store(T& t) const
     {
-        error_code ec;
-        this->assign(t, ec);
-        if(ec)
-            BOOST_THROW_EXCEPTION(
-                system_error{ec});
-    }
-
-    /** Try to assign a value to another type
-
-        @param ec Set to the error, if any occurred.
-    */
-    template<class T>
-    void
-    assign(T& t, error_code& ec) const
-    {
-        // If this assert goes off, it means that there no known
-        // way to assign from a `value` to a user defined type `T`.
+        // If this assert goes off, it means that there are no known
+        // ways to convert a JSON value into a user defined type `T`.
         // There are three ways to fix this:
         //
-        // 1. Add the member function `T::assign(value const&, error_code&)`,
+        // 1. Add the member function `T::from_json(value const&)`,
         //
-        // 2. Add the free function `assign(T&, value const&, error_code&)`
+        // 2. Add the free function `from_json(T&, value const&)`
         //    in the same namespace as T, or
         //
-        // 3. Specialize `json::value_exchange` for `T`, and provide the static
-        //    member `value_exchange<T>::assign(T&, value const&, error_code&)`.
+        // 3. Specialize `json::value_exchange` for `T`, and provide
+        //    the static member `from_json(T&, value const&)`.
 
         static_assert(
-            can_value_to<T>::value,
+            has_from_json<T>::value,
             "Destination type is unknown");
-            value_exchange<
-                detail::remove_cr<T>
-                    >::assign(t, *this, ec);
+        value_exchange<
+            detail::remove_cr<T>
+                >::from_json(t, *this);
     }
 
     //--------------------------------------------------------------------------

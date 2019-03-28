@@ -27,26 +27,19 @@ template<class T, class A
 #endif
 >
 void
-assign(
+from_json(
     std::vector<T, A>& t,
-    value const& v,
-    error_code& ec)
+    value const& v)
 {
     if(! v.is_array())
-    {
-        ec = error::expected_array;
-        return;
-    }
+        throw system_error(
+            error::expected_array);
     auto& arr = v.as_array();
     t.resize(0);
     t.resize(arr.size());
     auto it = t.begin();
     for(auto const& e : arr)
-    {
-        e.assign(*it++, ec);
-        if(ec)
-            return;
-    }
+        e.store(*it++);
 }
 
 } // json

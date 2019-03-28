@@ -31,13 +31,18 @@ public:
             a.push_back(3);
         }
         std::vector<int> v;
-        error_code ec;
-        jv.assign(v, ec);
-        BEAST_EXPECTS(! ec, ec.message());
-        BEAST_EXPECT(v.size() == 3);
-        BEAST_EXPECT(v[0] == 1);
-        BEAST_EXPECT(v[1] == 2);
-        BEAST_EXPECT(v[2] == 3);
+        try
+        {
+            jv.store(v);
+            BEAST_EXPECT(v.size() == 3);
+            BEAST_EXPECT(v[0] == 1);
+            BEAST_EXPECT(v[1] == 2);
+            BEAST_EXPECT(v[2] == 3);
+        }
+        catch(std::exception const&)
+        {
+            BEAST_FAIL();
+        }
     }
 
     void run() override

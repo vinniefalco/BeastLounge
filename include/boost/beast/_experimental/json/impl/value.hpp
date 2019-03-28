@@ -10,6 +10,7 @@
 #ifndef BOOST_BEAST_JSON_IMPL_VALUE_HPP
 #define BOOST_BEAST_JSON_IMPL_VALUE_HPP
 
+#include <boost/beast/_experimental/json/error.hpp>
 #include <boost/throw_exception.hpp>
 #include <limits>
 #include <type_traits>
@@ -472,11 +473,11 @@ template<class T
     ,class = typename std::enable_if<
         detail::is_range<T>::value
         && ! std::is_same<typename T::value_type, char>::value
-        && can_value_to<typename T::value_type>::value
+        && has_from_json<typename T::value_type>::value
             >::type
 >
 void
-assign(value& v, T const& t)
+to_json(T const& t, value& v)
 {
     v.reset(json::kind::array);
     for(auto const& e : t)
@@ -486,7 +487,7 @@ assign(value& v, T const& t)
 // string
 inline
 void
-assign(value& v, string_view t)
+to_json(string_view t, value& v)
 {
     v.emplace_string().assign(
         t.data(), t.size());
@@ -495,7 +496,7 @@ assign(value& v, string_view t)
 // string
 inline
 void
-assign(value& v, char const* t)
+to_json(char const* t, value& v)
 {
     v.emplace_string() = t;
 }
@@ -508,7 +509,7 @@ template<class T
 >
 inline
 void
-assign(value& v, T t)
+to_json(T t, value& v)
 {
     v.emplace_number() = t;
 }
@@ -516,7 +517,7 @@ assign(value& v, T t)
 // bool
 inline
 void
-assign(value& v, bool b)
+to_json(bool b, value& v)
 {
     v.emplace_bool() = b;
 }
@@ -524,9 +525,9 @@ assign(value& v, bool b)
 // null
 inline
 void
-assign(value& v, std::nullptr_t)
+to_json(std::nullptr_t, value& v)
 {
-    v.reset(json::kind::null);
+    v.emplace_null();
 }
 
 //------------------------------------------------------------------------------
@@ -541,35 +542,30 @@ template<typename T
         std::is_integral<T>::value>::type
 >
 void
-assign(T& t, value const& v, error_code& ec)
+from_json(T& t, value const& v)
 {
     if(v.is_int64())
     {
         auto const rhs = v.get_int64();
         if( rhs > (std::numeric_limits<T>::max)() ||
             rhs < (std::numeric_limits<T>::min)())
-        {
-            ec = error::integer_overflow;
-            return;
-        }
+            throw system_error(
+                error::integer_overflow);
         t = static_cast<T>(rhs);
     }
     else if(v.is_uint64())
     {
         auto const rhs = v.get_uint64();
         if(rhs > (std::numeric_limits<T>::max)())
-        {
-            ec = error::integer_overflow;
-            return;
-        }
+            throw system_error(
+                error::integer_overflow);
         t = static_cast<T>(rhs);
     }
     else
     {
-        ec = error::expected_number;
-        return;
+        throw system_error(
+            error::expected_number);
     }
-    ec = {};
 }
 
 } // json
