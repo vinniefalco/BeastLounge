@@ -52,3 +52,11 @@ set_target_properties (lounge-server PROPERTIES
 
 set_property (DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR} PROPERTY
   VS_STARTUP_PROJECT lounge-server)
+
+include(GNUInstallDirs)
+
+install(
+    TARGETS
+        lounge-server
+    RUNTIME
+        DESTINATION ${CMAKE_INSTALL_BINDIR})
