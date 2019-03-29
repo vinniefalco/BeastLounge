@@ -13,6 +13,7 @@
 #include "service.hpp"
 #include "types.hpp"
 #include "user.hpp"
+#include <boost/beast/core/static_string.hpp>
 #include <boost/make_unique.hpp>
 #include <vector>
 #include <utility>
@@ -21,15 +22,16 @@ namespace {
 
 //------------------------------------------------------------------------------
 
-struct shoe
+class shoe
 {
-    std::vector<char> cards;
-    std::vector<char>::iterator pos;
+    std::vector<char> cards_;
+    std::vector<char>::iterator pos_;
 
+public:
     explicit
     shoe(int decks)
     {
-        cards.resize(decks * 52);
+        cards_.resize(decks * 52);
         shuffle();
     }
 
@@ -37,27 +39,91 @@ struct shoe
     shuffle()
     {
         for(std::size_t i = 0;
-            i < cards.size(); ++i)
+            i < cards_.size(); ++i)
         {
-            cards[i] = 1 + (i % 52);
+            cards_[i] = 1 + (i % 52);
         }
         for(std::size_t i = 0;
-            i < cards.size() - 1; ++i)
+            i < cards_.size() - 1; ++i)
         {
             auto const j = i +
-                (rand() % (cards.size() - i));
+                (rand() % (cards_.size() - i));
             std::swap(
-                cards[i], cards[j]);
+                cards_[i], cards_[j]);
         }
-        pos = cards.begin();
+        pos_ = cards_.begin();
     }
 
     char
     deal()
     {
-        if(pos == cards.end())
+        if(pos_ == cards_.end())
             shuffle();
-        return *pos++;
+        return *pos_++;
+    }
+};
+
+//------------------------------------------------------------------------------
+
+struct hand
+{
+    beast::static_string<22> cards;
+    bool busted = false;
+    bool twenty_one = false;
+    bool blackjack = false;
+
+    void
+    clear()
+    {
+        cards.clear();
+        busted = false;
+        twenty_one = false;
+        blackjack = false;
+    }
+
+    // Returns the value of a card,
+    // always returns 1 for aces
+    static
+    int
+    value(char c)
+    {
+        auto v = 1 + ((c - 1) % 13);
+        if( v > 10)
+            v = 10;
+        return v;
+    }
+
+    void
+    eval()
+    {
+        int aces = 0;
+        int total = 0;
+        for(auto c : cards)
+        {
+            if(c != 1)
+            {
+                total += c;
+            }
+            else
+            {
+                ++aces;
+                total += 11;
+            }
+        }
+        while(total > 21 && aces--)
+            total -= 10;
+
+        busted = total > 21;
+        twenty_one = total == 21;
+        blackjack =
+            twenty_one &&
+            cards.size() == 2;
+    }
+
+    bool
+    is_finished() const
+    {
+        return busted || twenty_one;
     }
 };
 
@@ -65,13 +131,64 @@ struct shoe
 
 class game
 {
+    enum what
+    {
+        under,
+        twentyone,
+        natural,
+        bust
+    };
+
     shoe shoe_;
+
+    // 0    = dealer
+    // 1..5 = player
+    std::vector<hand> v_;
 
 public:
     explicit
     game(int decks)
         : shoe_(decks)
     {
+        BOOST_ASSERT(
+            decks >= 1 && decks <= 8);
+
+        v_.resize(6);
+
+        // dealer always seated
+        //v_[0].seated = true;
+    }
+
+    static
+    beast::string_view
+    card_string(char c)
+    {
+        static char const cards[] =
+            "AC2C3C4C5C6C7C8C9CTCJCQCKC"
+            "AH2H3H4H5H6H7H8H9HTHJHQHKH"
+            "AS2S3S4S5S6S7S8S9STSJSQSKS"
+            "AD2D3D4D5D6D7D8D9DTDJDQDKD";
+        BOOST_ASSERT(c >= 1 && c <= 52);
+        return { cards + 2 * (c - 1), 2 };
+    }
+
+    void
+    clear()
+    {
+        for(auto& e : v_)
+            e.clear();
+    }
+
+    void
+    start()
+    {
+    }
+
+    void
+    deal_one(hand& h)
+    {
+        auto const c = shoe_.deal();
+
     }
 };
 
