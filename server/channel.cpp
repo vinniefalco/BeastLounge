@@ -10,6 +10,7 @@
 #include "channel.hpp"
 #include "channel_list.hpp"
 #include "message.hpp"
+#include "rpc.hpp"
 #include "user.hpp"
 #include <atomic>
 
@@ -82,10 +83,15 @@ insert(user& u)
     return true;
 }
 
-void
+bool
 channel::
 erase(user& u)
 {
+    {
+        std::lock_guard<std::mutex> lock(mutex_);
+        if(users_.erase(&u) == 0)
+            return false;
+    }
     {
         // broadcast: leave
         json::value jv;
@@ -95,12 +101,9 @@ erase(user& u)
         jv["user"] = u.name;
         send(jv);
     }
-    {
-        std::lock_guard<std::mutex> lock(mutex_);
-        users_.erase(&u);
-    }
     u.on_erase(*this);
     on_erase(u);
+    return true;
 }
 
 void
@@ -117,7 +120,56 @@ dispatch(
     rpc_request& req,
     user& u)
 {
-    on_dispatch(result, req, u);
+    if(req.method == "join")
+    {
+        do_join(result, req, u);
+    }
+    else if(req.method == "leave")
+    {
+        do_leave(result, req, u);
+    }
+    else
+    {
+        on_dispatch(result, req, u);
+    }
+}
+
+void
+channel::
+checked_user(user& u)
+{
+    if(u.name.empty())
+        throw rpc_except(
+            "No identity set");
+}
+
+void
+channel::
+do_join(
+    json::value& result,
+    rpc_request& req,
+    user& u)
+{
+    boost::ignore_unused(result, req);
+
+    checked_user(u);
+
+    if(! insert(u))
+        throw rpc_except(
+            "Already in channel");
+}
+
+void
+channel::
+do_leave(
+    json::value& result,
+    rpc_request& req,
+    user& u)
+{
+    boost::ignore_unused(result, req);
+    if(! erase(u))
+        throw rpc_except(
+            "Not in channel");
 }
 
 void

@@ -19,8 +19,8 @@
 #include <boost/beast/_experimental/json/parser.hpp>
 #include <boost/asio/coroutine.hpp>
 #include <boost/asio/ip/tcp.hpp>
+#include <boost/asio/dispatch.hpp>
 #include <boost/asio/post.hpp>
-#include <boost/asio/yield.hpp>
 #include <iostream>
 #include <vector>
 
@@ -94,6 +94,7 @@ public:
         beast::error_code ec = {},
         std::size_t bytes_transferred = 0)
     {
+    #include <boost/asio/yield.hpp>
         boost::ignore_unused(bytes_transferred);
         reenter(*this)
         {
@@ -118,6 +119,7 @@ public:
                 msg_.clear();
             }
         }
+    #include <boost/asio/unyield.hpp>
     }
 
     void
@@ -174,22 +176,19 @@ public:
     void
     send(message m) override
     {
-        if(! impl()->ws().get_executor().running_in_this_thread())
-            return net::post(
-                impl()->ws().get_executor(),
-                beast::bind_front_handler(
-                    bind_front(this, &ws_session_base::do_send),
-                    std::move(m)));
-        do_send(std::move(m));
+        net::dispatch(
+            impl()->ws().get_executor(),
+            beast::bind_front_handler(
+                bind_front(this, &ws_session_base::do_send),
+                std::move(m)));
     }
 
     void
     do_send(message m)
     {
         mq_.emplace_back(std::move(m));
-        if(mq_.size() > 1)
-            return;
-        do_write();
+        if(mq_.size() == 1)
+            do_write();
     }
 
     void
@@ -217,9 +216,8 @@ public:
         if(idx != last)
             swap(mq_[idx], mq_[last]);
         mq_.resize(last);
-        if(mq_.empty())
-            return;
-        do_write();
+        if(! mq_.empty())
+            do_write();
     }
 };
 

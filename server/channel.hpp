@@ -72,7 +72,7 @@ public:
     bool
     insert(user& u);
 
-    void
+    bool
     erase(user& u);
 
     void
@@ -97,6 +97,9 @@ protected:
         beast::string_view name,
         channel_list& list);
 
+    void
+    checked_user(user& u);
+
     virtual
     void
     on_insert(user& u) = 0;
@@ -114,6 +117,18 @@ protected:
         user& u) = 0;
 
 private:
+    void
+    do_join(
+        json::value& result,
+        rpc_request& req,
+        user& u);
+
+    void
+    do_leave(
+        json::value& result,
+        rpc_request& req,
+        user& u);
+
     void
     send(message m);
 };

@@ -49,15 +49,7 @@ public:
         rpc_request& req,
         user& u) override
     {
-        if(req.method == "join")
-        {
-            do_join(result, req, u);
-        }
-        else if(req.method == "leave")
-        {
-            do_leave(result, req, u);
-        }
-        else if(req.method == "say")
+        if(req.method == "say")
         {
             do_say(result, req, u);
         }
@@ -76,40 +68,6 @@ public:
     // room_impl
     //
     //--------------------------------------------------------------------------
-
-    void
-    checked_user(user& u)
-    {
-        if(u.name.empty())
-            throw rpc_except(
-                "No identity set");
-    }
-
-    void
-    do_join(
-        json::value& result,
-        rpc_request& req,
-        user& u)
-    {
-        boost::ignore_unused(result, req);
-
-        checked_user(u);
-
-        if(! insert(u))
-            throw rpc_except(
-                "Already joined");
-    }
-
-    void
-    do_leave(
-        json::value& result,
-        rpc_request& req,
-        user& u)
-    {
-        boost::ignore_unused(result, req);
-
-        erase(u);
-    }
 
     void
     do_say(
