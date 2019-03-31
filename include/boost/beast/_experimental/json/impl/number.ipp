@@ -236,6 +236,10 @@ is_int64() const noexcept
     case type_double:
         return static_cast<long long>(
             double_) == double_;
+
+    default:
+    case type_ieee:
+        break;
     }
     return false;
 }
@@ -256,6 +260,10 @@ is_uint64() const noexcept
         return static_cast<
             unsigned long long>(
                 double_) == double_;
+
+    default:
+    case type_ieee:
+        break;
     }
     return false;
 }
@@ -276,6 +284,10 @@ get_int64() const noexcept
     case type_double:
         return static_cast<
             long long>(double_);
+
+    default:
+    case type_ieee:
+        break;
     }
     return 0;
 }
@@ -296,6 +308,10 @@ get_uint64() const noexcept
     case type_double:
         return static_cast<
             unsigned long long>(double_);
+
+    default:
+    case type_ieee:
+        break;
     }
     return 0;
 }
@@ -314,6 +330,10 @@ get_double() const noexcept
 
     case type_double:
         return double_;
+
+    default:
+    case type_ieee:
+        break;
     }
     return 0;
 }
@@ -413,6 +433,7 @@ operator==(
             rhs.get_double();
 
     default:
+    case number::type_ieee:
         break;
     }
     return false;
