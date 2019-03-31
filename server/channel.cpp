@@ -86,25 +86,21 @@ void
 channel::
 erase(user& u)
 {
-    std::size_t n;
+    {
+        // broadcast: leave
+        json::value jv;
+        jv["cid"] = cid();
+        jv["verb"] = "leave";
+        jv["name"] = name();
+        jv["user"] = u.name;
+        send(jv);
+    }
     {
         std::lock_guard<std::mutex> lock(mutex_);
-        n = users_.erase(&u);
+        users_.erase(&u);
     }
-    if(n > 0)
-    {
-        {
-            // broadcast: leave
-            json::value jv;
-            jv["cid"] = cid();
-            jv["verb"] = "leave";
-            jv["name"] = name();
-            jv["user"] = u.name;
-            send(jv);
-        }
-        u.on_erase(*this);
-        on_erase(u);
-    }
+    u.on_erase(*this);
+    on_erase(u);
 }
 
 void

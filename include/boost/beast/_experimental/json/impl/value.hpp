@@ -432,13 +432,12 @@ emplace(
 }
 
 template<class Arg>
-auto
+value&
 value::
-emplace_back(Arg&& arg) ->
-    reference
+emplace_back(Arg&& arg)
 {
     BOOST_ASSERT(is_array());
-    return arr_.emplace(
+    return *arr_.emplace(arr_.end(),
         std::forward<Arg>(arg));
 }
 
@@ -473,7 +472,7 @@ template<class T
     ,class = typename std::enable_if<
         detail::is_range<T>::value
         && ! std::is_same<typename T::value_type, char>::value
-        && has_from_json<typename T::value_type>::value
+        && has_to_json<typename T::value_type>::value
             >::type
 >
 void

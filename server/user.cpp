@@ -14,8 +14,14 @@
 user::
 ~user()
 {
-    for(auto c : channels_)
-        c->erase(*this);
+    // The loop is written this way because elements
+    // are erased from the table during the loop.
+    while(! channels_.empty())
+    {
+        auto it = channels_.end();
+        --it;
+        (*it)->erase(*this);
+    }
 }
 
 void

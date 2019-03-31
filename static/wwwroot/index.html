@@ -24,19 +24,25 @@
     <button class="echo-button" id="send">Send</button>
   </div>
 
+  <div id="blackjack">
   <h2>Blackjack</h2>
   <table>
-    <tr><td>Dealer</td>  <td><div id="dealer_hand"></div></td></tr>
-    <tr><td>[1] -Empty-</td><td><div id="player_1_hand"></div></td></tr>
-    <tr><td>[2] -Empty-</td><td><div id="player_2_hand"></div></td></tr>
-    <tr><td>[3] -Empty-</td><td><div id="player_3_hand"></div></td></tr>
-    <tr><td>[4] -Empty-</td><td><div id="player_4_hand"></div></td></tr>
-    <tr><td>[5] -Empty-</td><td><div id="player_5_hand"></div></td></tr>
+    <tr><td><div class="seat">x</div></td></tr>
+    <tr><td><div class="seat">x</div></td></tr>
+    <tr><td><div class="seat">x</div></td></tr>
+    <tr><td><div class="seat">x</div></td></tr>
+    <tr><td><div class="seat">x</div></td></tr>
+    <tr><td><div class="seat">x</div></td></tr>
   </table>
-    <button id="bj_join">Join</button>
-    <button id="bj_leave">Leave</button>
-    <button id="bj_hit">Hit</button>
-    <button id="bj_stand">Stand</button>
+  <button id="bj_join">Join</button>
+  <button id="bj_play">Play</button>
+  <button id="bj_watch">Watch</button>
+  <button id="bj_leave">Leave</button>
+  &nbsp;&nbsp;&nbsp;&nbsp;
+  <button id="bj_hit">Hit</button>
+  <button id="bj_stand">Stand</button>
+  </div>
+
   <script>
 
 
@@ -65,24 +71,26 @@ connect.onclick = function() {
         console.log(error);
     }
 
-    ws.on_message = function(json) {
-      if (json.error !== undefined && json.error !== null) {
-          messages.innerText += "Error: " + json.error.message + "(" + json.error.code + ")\n"
-      } else
-      {
-          var prefix = "[" + json.cid + ". " + json.name + "] ";
-          if (json.user)
-              prefix += json.user + " ";
-          switch (json.verb) {
-              case "join":
+    ws.on_message = function(jv) {
+        if (jv.error !== undefined && jv.error !== null) {
+            messages.innerText += "Error: " + jv.error.message + "(" + jv.error.code + ")\n"
+        } else {
+            var prefix = "[" + jv.cid + ". " + jv.name + "] ";
+            if (jv.user)
+                prefix += jv.user + " ";
+            switch (jv.verb) {
+            case "join":
                 messages.innerText += prefix + "joins\n";
                 break;
-              case "leave":
+            case "leave":
                 messages.innerText += prefix + "leaves\n";
                 break;
-              case "say":
-                messages.innerText += prefix + json.message + "\n";
+            case "say":
+                messages.innerText += prefix + jv.message + "\n";
                 break;
+            case "update":
+                messages.innerText += JSON.stringify(jv) + "\n";
+                UpdateTable(jv["game"], blackjack);
           }
       }
   }
@@ -91,21 +99,21 @@ connect.onclick = function() {
 disconnect.addEventListener('click', close_ws)
 
 send.addEventListener('click', function() {
-  if (ws !== null) {
-      if (sendMessage.value.charAt(0) !== '/') {
-          ws.send_message('say', {
-              cid: 2,
-              message: sendMessage.value
-          })
-      } else {
-          ws.send_message('slash', {
+    if (ws !== null) {
+        if (sendMessage.value.charAt(0) !== '/') {
+            ws.send_message('say', {
+                cid: 2,
+                message: sendMessage.value
+            })
+        } else {
+            ws.send_message('slash', {
               cid: 2,
               command: sendMessage.value,
           })
-      }
+        }
 
       sendMessage.value = ""
-  }
+    }
 })
 
 sendMessage.addEventListener('keyup', function(ev) {
@@ -117,26 +125,40 @@ sendMessage.addEventListener('keyup', function(ev) {
 
 //------------------------------------------------------------------------------
 
-hands = [
-    new Hand(dealer_hand),
-    new Hand(player_1_hand),
-    new Hand(player_2_hand),
-    new Hand(player_3_hand),
-    new Hand(player_4_hand),
-    new Hand(player_5_hand)
-    ];
-
 bj_join.onclick = function() {
+    if (ws == null) 
+        return;
+    ws.send_message('join', { cid: 3 });
+}
+
+bj_play.onclick = function() {
+    if (ws == null) 
+        return;
+    ws.send_message('play', { cid: 3 });
+}
+
+bj_watch.onclick = function() {
+    if (ws == null) 
+        return;
+    ws.send_message('watch', { cid: 3 });
 }
 
 bj_leave.onclick = function() {
+    if (ws == null) 
+        return;
+    ws.send_message('leave', { cid: 3 });
 }
 
 bj_hit.onclick = function () {
-    hands[0].deal(RandomCard());
+    if (ws == null) 
+        return;
+    ws.send_message('hit', { cid: 3 });
 }
 
 bj_stand.onclick = function () {
+    if (ws == null) 
+        return;
+    ws.send_message('stand', { cid: 3 });
 }
 
 

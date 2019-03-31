@@ -69,44 +69,20 @@ function CardText(card)
   return s.substring(2*(card-1), 2*card);
 }
 
-function RandomCard()
-{
-  return Math.floor(1 + Math.random() * 52);
+function UpdateSeat(jv, i, e) {
+    var s;
+    s = '[' + i + '] ';
+         if(jv["state"] == "dealer")  s += "(Dealer)";
+    else if(jv["state"] == "open")    s += "(Open)";
+    else if(jv["state"] == "waiting") s += jv["user"] + " (Waiting)";
+    else if(jv["state"] == "playing") s += jv["user"];
+    else if(jv["state"] == "leaving") s += jv["user"] + " (Leaving)";
+    e.textContent = s;
 }
- 
-//------------------------------------------------------------------------------
 
-/*
-struct dealer_hand
-{ 
-  void reset();             // start a new hand
-  void deal_hole();         // deal the hole (face down) card
-  void deal(int card);      // deal a card
-  void peek();              // peek at the hole card
-  void reveal(int card);    // reveal the hole card
-};
-*/
-
-// Construct a blackjack hand
-function Hand(dom)
-{
-    this.reset = function() {
-        dom.textContent = "";
-    };
-
-    this.deal_hole = function() {
-        dom.textContent += "##";
-    };
-  
-    this.deal = function(card) {
-        dom.textContent += " " + CardText(card);
-    };
-  
-    this.peek = function() {
-        // run dealer peek animation
-    };
-
-    this.reveal = function(card) {
-        dom.textContent = dom.innerText.replace("##", CardText(card));
-    };
+function UpdateTable(jv, e) {
+    var seats = e.getElementsByClassName("seat");
+    console.log(seats);
+    for(var i = 0; i <= 5; i++)
+        UpdateSeat(jv.seats[i], i, seats[i]);
 }

@@ -8,11 +8,13 @@
 //
 
 #include "channel.hpp"
+#include "channel_list.hpp"
 #include "rpc.hpp"
 #include "server.hpp"
 #include "service.hpp"
 #include "types.hpp"
 #include "user.hpp"
+#include <boost/beast/_experimental/json/value.hpp>
 #include <boost/beast/core/static_string.hpp>
 #include <boost/make_unique.hpp>
 #include <vector>
@@ -67,6 +69,7 @@ public:
 
 struct hand
 {
+    // cards[0]==0 for hole card
     beast::static_string<22> cards;
     bool busted = false;
     bool twenty_one = false;
@@ -125,6 +128,62 @@ struct hand
     {
         return busted || twenty_one;
     }
+
+    void
+    to_json(json::value& jv) const
+    {
+        jv.emplace_string().assign(
+            cards.data(), cards.size());
+    }
+};
+
+//------------------------------------------------------------------------------
+
+// Represents one of the five seating
+// positions of the blackjack playfield.
+//
+struct seat
+{
+    enum state_t
+    {
+        dealer,
+        waiting,
+        playing,
+        leaving,
+        open
+    };
+
+    user* u = nullptr;
+    state_t state = open;
+    std::vector<hand> hands;
+
+    void
+    to_json(json::value& jv) const
+    {
+        jv = json::object{};
+        switch(state)
+        {
+        case dealer:
+            jv["state"] = "dealer";
+            break;
+        case waiting:
+            jv["state"] = "waiting";
+            jv["user"] = u->name;
+            break;
+        case playing:
+            jv["state"] = "playing";
+            jv["user"] = u->name;
+            break;
+        case leaving:
+            jv["state"] = "leaving";
+            jv["user"] = u->name;
+            break;
+        case open:
+            jv["state"] = "open";
+            break;
+        }
+        jv.emplace("hands", hands);
+    }
 };
 
 //------------------------------------------------------------------------------
@@ -143,7 +202,10 @@ class game
 
     // 0    = dealer
     // 1..5 = player
-    std::vector<hand> v_;
+    std::vector<seat> seat_;
+
+    // which seat's turn
+    int turn_ = 0;
 
 public:
     explicit
@@ -153,70 +215,70 @@ public:
         BOOST_ASSERT(
             decks >= 1 && decks <= 8);
 
-        v_.resize(6);
+        seat_.resize(6);
 
-        // dealer always seated
-        //v_[0].seated = true;
-    }
-
-    static
-    beast::string_view
-    card_string(char c)
-    {
-        static char const cards[] =
-            "AC2C3C4C5C6C7C8C9CTCJCQCKC"
-            "AH2H3H4H5H6H7H8H9HTHJHQHKH"
-            "AS2S3S4S5S6S7S8S9STSJSQSKS"
-            "AD2D3D4D5D6D7D8D9DTDJDQDKD";
-        BOOST_ASSERT(c >= 1 && c <= 52);
-        return { cards + 2 * (c - 1), 2 };
-    }
-
-    void
-    clear()
-    {
-        for(auto& e : v_)
-            e.clear();
-    }
-
-    void
-    start()
-    {
+        seat_[0].state = seat::dealer;
     }
 
     void
     deal_one(hand& h)
     {
         auto const c = shoe_.deal();
+    }
 
+    std::size_t
+    find(user const& u) const
+    {
+        for(auto const& s : seat_)
+            if(s.u == &u)
+                return &s - &seat_.front();
+        return 0;
+    }
+
+    std::size_t
+    insert(user& u)
+    {
+        for(auto& s : seat_)
+            if(s.state == seat::open)
+            {
+                s.state = seat::waiting;
+                s.u = &u;
+                return &s - &seat_.front();
+            }
+        return 0;
+    }
+
+    void
+    to_json(json::value& jv) const
+    {
+        auto& obj = jv.emplace_object();
+        {
+            auto& arr = obj.emplace(
+                "seats", json::array{}).first->second;
+            for(std::size_t i = 0;
+                i < seat_.size(); ++i)
+                arr.emplace_back(seat_[i]);
+        }
     }
 };
 
 //------------------------------------------------------------------------------
 
-class blackjack_table : public channel
+class table : public channel
 {
-    struct seat
-    {
-        enum state_t
-        {
-            empty,
-            waiting,
-            playing
-        };
-
-        user* u = nullptr;
-        state_t state = empty;
-    };
-
+    using lock_guard =
+        std::lock_guard<std::mutex>;
+   
     server& srv_;
     timer_type timer_;
+    std::mutex mutable mutex_;
     game g_;
 
 public:
     explicit
-    blackjack_table(server& srv)
+    table(server& srv)
         :  channel(
+            3,
             "Blackjack",
             srv.channel_list())
         , srv_(srv)
@@ -228,13 +290,23 @@ public:
 
 protected:
     void
-    on_insert(user&) override
+    on_insert(user& u) override
     {
+        json::value jv;
+        jv["cid"] = cid();
+        jv["verb"] = "update";
+        jv["action"] = "init";
+        {
+            lock_guard lock(mutex_);
+            jv["game"] = g_;
+        }
+        u.send(jv);
     }
 
     void
     on_erase(user&) override
     {
+        // TODO surrender hand
     }
 
     void
@@ -243,19 +315,122 @@ protected:
         rpc_request& req,
         user& u) override
     {
-        boost::ignore_unused(result, req, u);
+        boost::ignore_unused(result, u);
+        if(req.method == "join")
+        {
+            do_join(result, req, u);
+        }
+        else if(req.method == "leave")
+        {
+            do_leave(result, req, u);
+        }
+        else if(req.method == "play")
+        {
+            do_play(result, req, u);
+        }
+        else if(req.method == "watch")
+        {
+            do_watch(result, req, u);
+        }
+        else if(req.method == "hit")
+        {
+            do_hit(result, req, u);
+        }
+        else if(req.method == "stand")
+        {
+            do_stand(result, req, u);
+        }
+        else
         {
             throw rpc_except{rpc_error::method_not_found};
         }
     }
 
     void
-    do_identify(
+    checked_user(user& u)
+    {
+        if(u.name.empty())
+            throw rpc_except(
+                "No identity set");
+    }
+
+    void
+    do_join(
         json::value& result,
         rpc_request& req,
         user& u)
     {
-        boost::ignore_unused(result, req, u);
+        boost::ignore_unused(result, req);
+
+        checked_user(u);
+
+        if(! insert(u))
+            throw rpc_except(
+                "Already joined");
+    }
+
+    void
+    do_leave(
+        json::value& result,
+        rpc_request& req,
+        user& u)
+    {
+        boost::ignore_unused(result, req);
+
+        erase(u);
+    }
+
+    void
+    do_play(
+        json::value& result,
+        rpc_request& req,
+        user& u)
+    {
+        boost::ignore_unused(result, req);
+        // TODO Optional seat choice
+
+        json::value jv;
+        jv["cid"] = cid();
+        jv["verb"] = "update";
+        jv["action"] = "play";
+        {
+            lock_guard lock(mutex_);
+            if(g_.find(u) != 0)
+                throw rpc_except(
+                    "Already playing");
+            if(g_.insert(u) == 0)
+                throw rpc_except(
+                    "No open seats");
+            jv["game"] = g_;
+        }
+        send(jv);
+    }
+
+    void
+    do_watch(
+        json::value& result,
+        rpc_request& req,
+        user& u)
+    {
+        boost::ignore_unused(result, req);
+    }
+
+    void
+    do_hit(
+        json::value& result,
+        rpc_request& req,
+        user& u)
+    {
+        boost::ignore_unused(result, req);
+    }
+
+    void
+    do_stand(
+        json::value& result,
+        rpc_request& req,
+        user& u)
+    {
+        boost::ignore_unused(result, req);
     }
 };
 
@@ -282,6 +457,7 @@ public:
     void
     on_start() override
     {
+        insert<table>(srv_.channel_list(), srv_);
     }
 
     void

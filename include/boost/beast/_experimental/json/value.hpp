@@ -883,7 +883,7 @@ public:
         const_iterator last);
 
     template<class Arg>
-    reference
+    value&
     emplace_back(Arg&& arg);
 
     BOOST_BEAST_DECL
