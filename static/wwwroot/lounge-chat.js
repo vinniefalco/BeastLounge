@@ -1,4 +1,4 @@
-"use strict"
+//"use strict"
 
 /**
  * Creates new chat by connecting via WS to uri
@@ -59,4 +59,54 @@ function LoungeChat(uri, user_name) {
             this.on_error(error)
         }
     }.bind(this))
+}
+
+//------------------------------------------------------------------------------
+
+function CardText(card)
+{
+  var s = "AC2C3C4C5C6C7C8C9CTCJCQCKCAH2H3H4H5H6H7H8H9HTHJHQHKHAS2S3S4S5S6S7S8S9STSJSQSKSAD2D3D4D5D6D7D8D9DTDJDQDKD";
+  return s.substring(2*(card-1), 2*card);
+}
+
+function RandomCard()
+{
+  return Math.floor(1 + Math.random() * 52);
+}
+ 
+//------------------------------------------------------------------------------
+
+/*
+struct dealer_hand
+{ 
+  void reset();             // start a new hand
+  void deal_hole();         // deal the hole (face down) card
+  void deal(int card);      // deal a card
+  void peek();              // peek at the hole card
+  void reveal(int card);    // reveal the hole card
+};
+*/
+
+// Construct a blackjack hand
+function Hand(dom)
+{
+    this.reset = function() {
+        dom.textContent = "";
+    };
+
+    this.deal_hole = function() {
+        dom.textContent += "##";
+    };
+  
+    this.deal = function(card) {
+        dom.textContent += " " + CardText(card);
+    };
+  
+    this.peek = function() {
+        // run dealer peek animation
+    };
+
+    this.reveal = function(card) {
+        dom.textContent = dom.innerText.replace("##", CardText(card));
+    };
 }

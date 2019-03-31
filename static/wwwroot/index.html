@@ -4,9 +4,10 @@
   <meta content="text/html;charset=utf-8" http-equiv="Content-Type">
   <meta content="utf-8" http-equiv="encoding">
   <title>Beast Lounge</title>
-  <script defer type="text/javascript" src="lounge-chat.js"></script>
+  <script type="text/javascript" src="lounge-chat.js"></script>
 </head>
 <body>
+<div>
   <h1>Beast Lounge</h1>
   <p>Source code: <a href="https://github.com/vinniefalco/BeastLounge">https://github.com/vinniefalco/BeastLounge</a></p>
 
@@ -15,86 +16,132 @@
   <button class="echo-button" id="disconnect">Disconnect</button><br>
   Your Name: <input class="draw-border" id="userName" size=47 style="margin-bottom: 5px;"><br>
 
-  <pre id="messages" style="width: 600px; height: 400px; border: solid 1px #cccccc; margin-bottom: 5px; white-space: pre-wrap; overflow-y: scroll"></pre>
+  <pre id="messages" style="height: 200px; border: solid 1px #cccccc; margin-bottom: 5px; white-space: pre-wrap; overflow-y: scroll"></pre>
 
   <div style="margin-bottom: 5px;">
     Message<br>
     <input class="draw-border" id="sendMessage" size="74" value="">
     <button class="echo-button" id="send">Send</button>
   </div>
+
+  <h2>Blackjack</h2>
+  <table>
+    <tr><td>Dealer</td>  <td><div id="dealer_hand"></div></td></tr>
+    <tr><td>[1] -Empty-</td><td><div id="player_1_hand"></div></td></tr>
+    <tr><td>[2] -Empty-</td><td><div id="player_2_hand"></div></td></tr>
+    <tr><td>[3] -Empty-</td><td><div id="player_3_hand"></div></td></tr>
+    <tr><td>[4] -Empty-</td><td><div id="player_4_hand"></div></td></tr>
+    <tr><td>[5] -Empty-</td><td><div id="player_5_hand"></div></td></tr>
+  </table>
+    <button id="bj_join">Join</button>
+    <button id="bj_leave">Leave</button>
+    <button id="bj_hit">Hit</button>
+    <button id="bj_stand">Stand</button>
   <script>
-      let ws = null
-      function close_ws() {
-          if (ws !== null) {
-              ws.disconnect()
-              ws == null
+
+
+
+let ws = null
+
+function close_ws() {
+  if (ws !== null) {
+      ws.disconnect()
+      ws == null
+  }
+}
+
+connect.onclick = function() {
+    close_ws()
+
+    ws = new LoungeChat(uri.value, userName.value);
+    ws.on_open = function() {
+        messages.innerText += "[connection opened]\n";
+    }
+    ws.on_close = function() {
+        messages.innerText += "[connection closed]\n";
+    }
+    ws.on_error = function(error) {
+        messages.innerText += "[error]\n";
+        console.log(error);
+    }
+
+    ws.on_message = function(json) {
+      if (json.error !== undefined && json.error !== null) {
+          messages.innerText += "Error: " + json.error.message + "(" + json.error.code + ")\n"
+      } else
+      {
+          var prefix = "[" + json.cid + ". " + json.name + "] ";
+          if (json.user)
+              prefix += json.user + " ";
+          switch (json.verb) {
+              case "join":
+                messages.innerText += prefix + "joins\n";
+                break;
+              case "leave":
+                messages.innerText += prefix + "leaves\n";
+                break;
+              case "say":
+                messages.innerText += prefix + json.message + "\n";
+                break;
           }
       }
+  }
+}
 
-      connect.onclick = function() {
-          close_ws()
+disconnect.addEventListener('click', close_ws)
 
-          ws = new LoungeChat(uri.value, userName.value);
-          ws.on_open = function() {
-              messages.innerText += "[connection opened]\n";
-          }
-          ws.on_close = function() {
-              messages.innerText += "[connection closed]\n";
-          }
-          ws.on_error = function(error) {
-              messages.innerText += "[error]\n";
-              console.log(error);
-          }
-
-          ws.on_message = function(json) {
-              if (json.error !== undefined && json.error !== null) {
-                  messages.innerText += "Error: " + json.error.message + "(" + json.error.code + ")\n"
-              } else
-              {
-                  var prefix = "[" + json.cid + ". " + json.name + "] ";
-                  if (json.user)
-                      prefix += json.user + " ";
-                  switch (json.verb) {
-                      case "join":
-                        messages.innerText += prefix + "joins\n";
-                        break;
-                      case "leave":
-                        messages.innerText += prefix + "leaves\n";
-                        break;
-                      case "say":
-                        messages.innerText += prefix + json.message + "\n";
-                        break;
-                  }
-              }
-          }
+send.addEventListener('click', function() {
+  if (ws !== null) {
+      if (sendMessage.value.charAt(0) !== '/') {
+          ws.send_message('say', {
+              cid: 2,
+              message: sendMessage.value
+          })
+      } else {
+          ws.send_message('slash', {
+              cid: 2,
+              command: sendMessage.value,
+          })
       }
 
-      disconnect.addEventListener('click', close_ws)
+      sendMessage.value = ""
+  }
+})
 
-      send.addEventListener('click', function() {
-          if (ws !== null) {
-              if (sendMessage.value.charAt(0) !== '/') {
-                  ws.send_message('say', {
-                      cid: 2,
-                      message: sendMessage.value
-                  })
-              } else {
-                  ws.send_message('slash', {
-                      cid: 2,
-                      command: sendMessage.value,
-                  })
-              }
+sendMessage.addEventListener('keyup', function(ev) {
+  ev.preventDefault()
+  if (event.keyCode === 13) {
+      send.click()
+  }
+})
 
-              sendMessage.value = ""
-          }
-      })
+//------------------------------------------------------------------------------
 
-      sendMessage.addEventListener('keyup', function(ev) {
-          ev.preventDefault()
-          if (event.keyCode === 13) {
-              send.click()
-          }
-      })
+hands = [
+    new Hand(dealer_hand),
+    new Hand(player_1_hand),
+    new Hand(player_2_hand),
+    new Hand(player_3_hand),
+    new Hand(player_4_hand),
+    new Hand(player_5_hand)
+    ];
+
+bj_join.onclick = function() {
+}
+
+bj_leave.onclick = function() {
+}
+
+bj_hit.onclick = function () {
+    hands[0].deal(RandomCard());
+}
+
+bj_stand.onclick = function () {
+}
+
+
+
   </script>
+</div>
 </body>
 </html>
