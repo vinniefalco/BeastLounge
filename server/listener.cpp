@@ -96,7 +96,9 @@ public:
     {
         net::post(
             stream_.get_executor(),
-            bind_front(this, &detector::do_stop));
+            beast::bind_front_handler(
+                &detector::do_stop,
+                this));
     }
 
     void

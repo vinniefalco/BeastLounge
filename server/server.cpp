@@ -221,7 +221,9 @@ public:
 
         // Capture SIGINT and SIGTERM to perform a clean shutdown
         signals_.async_wait(
-            bind_front(this, &server_impl::on_signal));
+            beast::bind_front_handler(
+                &server_impl::on_signal,
+                this));
 
     #ifndef LOUNGE_USE_SYSTEM_EXECUTOR
         std::vector<std::thread> vt;
@@ -326,8 +328,10 @@ public:
             std::to_string(remain.count()) + " seconds";
         c->send(jv);
         timer_.expires_after(amount);
-        timer_.async_wait(bind_front(
-            this, &server_impl::on_timer));
+        timer_.async_wait(
+            beast::bind_front_handler(
+                &server_impl::on_timer,
+                this));
     }
 
     void
@@ -343,7 +347,9 @@ public:
         {
             // Capture signals again
             signals_.async_wait(
-                bind_front(this, &server_impl::on_signal));
+                beast::bind_front_handler(
+                    &server_impl::on_signal,
+                    this));
 
             this->shutdown(std::chrono::seconds(30));
         }
@@ -361,7 +367,9 @@ public:
         if(! timer_.get_executor().running_in_this_thread())
             return net::post(
                 timer_.get_executor(),
-                bind_front(this, &server_impl::stop));
+                beast::bind_front_handler(
+                    &server_impl::stop,
+                    this));
 
         // Only callable once
         if(stop_)

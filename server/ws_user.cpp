@@ -150,7 +150,9 @@ public:
     {
         net::post(
             impl()->ws().get_executor(),
-            bind_front(this, &ws_session_base::do_stop));
+            beast::bind_front_handler(
+                &ws_session_base::do_stop,
+                shared_from(this)));
     }
 
     void
@@ -179,7 +181,8 @@ public:
         net::dispatch(
             impl()->ws().get_executor(),
             beast::bind_front_handler(
-                bind_front(this, &ws_session_base::do_send),
+                &ws_session_base::do_send,
+                shared_from(this),
                 std::move(m)));
     }
 
@@ -198,7 +201,8 @@ public:
         impl()->ws().async_write(
             mq_.back(),
             beast::bind_front_handler(
-                bind_front(this, &ws_session_base::on_write),
+                &ws_session_base::on_write,
+                shared_from(this),
                 mq_.size() - 1));
 
     }

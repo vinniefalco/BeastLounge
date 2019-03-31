@@ -86,20 +86,6 @@ struct shared_handler
     }
 };
 
-template<class T, class MFn>
-struct shared_mfn_handler
-{
-    MFn mfn_;
-    boost::shared_ptr<T> self;
-
-    template<class... Args>
-    void
-    operator()(Args&&... args) const
-    {
-        ((*self).*mfn_)(std::forward<Args>(args)...);
-    }
-};
-
 template<class T>
 struct handler
 {
@@ -110,20 +96,6 @@ struct handler
     operator()(Args&&... args) const
     {
         (*self)(std::forward<Args>(args)...);
-    }
-};
-
-template<class T, class MFn>
-struct mfn_handler
-{
-    MFn mfn_;
-    T* self;
-
-    template<class... Args>
-    void
-    operator()(Args&&... args) const
-    {
-        ((*self).*mfn_)(std::forward<Args>(args)...);
     }
 };
 
@@ -139,16 +111,6 @@ bind_front(T* this_)
     return {shared_from(this_)};
 }
 
-template<class T, class MFn
-    ,class = typename std::enable_if<
-        std::is_base_of<enable_shared_from, T>::value>::type
->
-detail::shared_mfn_handler<T, MFn>
-bind_front(T* this_, MFn mfn)
-{
-    return {mfn, shared_from(this_)};
-}
-
 template<class T
     ,class = typename std::enable_if<
         ! std::is_base_of<enable_shared_from, T>::value>::type
@@ -157,16 +119,6 @@ detail::handler<T>
 bind_front(T* this_)
 {
     return {this_};
-}
-
-template<class T, class MFn
-    ,class = typename std::enable_if<
-        ! std::is_base_of<enable_shared_from, T>::value>::type
->
-detail::mfn_handler<T, MFn>
-bind_front(T* this_, MFn mfn)
-{
-    return {mfn, this_};
 }
 
 //------------------------------------------------------------------------------

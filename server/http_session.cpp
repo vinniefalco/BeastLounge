@@ -273,7 +273,9 @@ public:
     {
         net::post(
             impl()->stream().get_executor(),
-            bind_front(this, &http_session_base::do_stop));
+            beast::bind_front_handler(
+                &http_session_base::do_stop,
+                shared_from(this)));
     }
 
     void
@@ -512,8 +514,9 @@ public:
         // Use post to get on to our strand.
         net::post(
             stream_.get_executor(),
-            bind_front(this,
-                &ssl_http_session_impl::do_run));
+            beast::bind_front_handler(
+                &ssl_http_session_impl::do_run,
+                shared_from(this)));
     }
 
     void
@@ -526,7 +529,9 @@ public:
         stream_.async_handshake(
             asio::ssl::stream_base::server,
             storage_.data(),
-            bind_front(this, &ssl_http_session_impl::on_handshake));
+            beast::bind_front_handler(
+                &ssl_http_session_impl::on_handshake,
+                shared_from(this)));
     }
 
     void
@@ -553,7 +558,9 @@ public:
 
         // Perform the TLS closing handshake
         stream_.async_shutdown(
-            bind_front(this, &ssl_http_session_impl::on_shutdown));
+            beast::bind_front_handler(
+                &ssl_http_session_impl::on_shutdown,
+                shared_from(this)));
     }
 
     void
