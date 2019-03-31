@@ -59,7 +59,7 @@ public:
         }
         else
         {
-            throw rpc_except{rpc_error::method_not_found};
+            throw rpc_error{rpc_code::method_not_found};
         }
     }
 
@@ -82,7 +82,7 @@ public:
             checked_string(req.params, "message");
 
         if(! is_joined(u))
-            throw rpc_except{"not in channel"};
+            throw rpc_error{"not in channel"};
 
         {
             // broadcast: say
@@ -104,7 +104,7 @@ public:
     {
         boost::ignore_unused(result, req);
         checked_user(u);
-        throw rpc_except(
+        throw rpc_error(
             "Unimplemented");
     }
 };

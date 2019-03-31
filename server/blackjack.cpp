@@ -342,7 +342,7 @@ protected:
         }
         else
         {
-            throw rpc_except{rpc_error::method_not_found};
+            throw rpc_error{rpc_code::method_not_found};
         }
     }
 
@@ -350,7 +350,7 @@ protected:
     checked_user(user& u)
     {
         if(u.name.empty())
-            throw rpc_except(
+            throw rpc_error(
                 "No identity set");
     }
 
@@ -365,7 +365,7 @@ protected:
         checked_user(u);
 
         if(! insert(u))
-            throw rpc_except(
+            throw rpc_error(
                 "Already joined");
     }
 
@@ -396,10 +396,10 @@ protected:
         {
             lock_guard lock(mutex_);
             if(g_.find(u) != 0)
-                throw rpc_except(
+                throw rpc_error(
                     "Already playing");
             if(g_.insert(u) == 0)
-                throw rpc_except(
+                throw rpc_error(
                     "No open seats");
             jv["game"] = g_;
         }

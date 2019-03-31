@@ -111,27 +111,27 @@ public:
             // Parse the buffer into JSON
             pr.write(b, ec);
             if(ec)
-                throw rpc_except(
-                    rpc_error::parse_error,
+                throw rpc_error(
+                    rpc_code::parse_error,
                     ec.message());
 
             // Validate and extract the JSON-RPC request
             req.extract(pr.release(), ec);
             if(ec)
-                throw rpc_except(
-                    rpc_error::invalid_request,
+                throw rpc_error(
+                    rpc_code::invalid_request,
                     ec.message());
 
             // Validate and extract the channel id
             auto& jv_cid = checked_number(req.params, "cid");
             if(! jv_cid.is_uint64())
-                throw rpc_except(
-                    rpc_error::invalid_params,
+                throw rpc_error(
+                    rpc_code::invalid_params,
                     "Invalid cid");
             if(jv_cid.get_uint64() >
                 (std::numeric_limits<std::size_t>::max)())
-                throw rpc_except(
-                    rpc_error::invalid_params,
+                throw rpc_error(
+                    rpc_code::invalid_params,
                     "Invalid cid");
             auto const cid = static_cast<std::size_t>(
                 jv_cid.get_uint64());
@@ -139,8 +139,8 @@ public:
             // Lookup cid
             auto c = at(cid);
             if(! c)
-                throw rpc_except(
-                    rpc_error::invalid_params,
+                throw rpc_error(
+                    rpc_code::invalid_params,
                     "Unknown cid");
 
             // Prepare the response
@@ -157,7 +157,7 @@ public:
             if(req.id)
                 u.send(make_message(res));
         }
-        catch(rpc_except const& e)
+        catch(rpc_error const& e)
         {
             // Send the error if `id` is set
             if(req.id)

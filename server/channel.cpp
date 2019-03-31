@@ -139,7 +139,7 @@ channel::
 checked_user(user& u)
 {
     if(u.name.empty())
-        throw rpc_except(
+        throw rpc_error(
             "No identity set");
 }
 
@@ -155,7 +155,7 @@ do_join(
     checked_user(u);
 
     if(! insert(u))
-        throw rpc_except(
+        throw rpc_error(
             "Already in channel");
 }
 
@@ -168,7 +168,7 @@ do_leave(
 {
     boost::ignore_unused(result, req);
     if(! erase(u))
-        throw rpc_except(
+        throw rpc_error(
             "Not in channel");
 }
 

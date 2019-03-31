@@ -16,8 +16,8 @@
 #include <boost/optional.hpp>
 #include <stdexcept>
 
-/// Error codes returned by JSON operations
-enum class rpc_error
+/// Codes used in JSON-RPC error responses
+enum class rpc_code
 {
     parse_error      = -32700,
     invalid_request  = -32600,
@@ -62,7 +62,7 @@ enum class rpc_error
 namespace boost {
 namespace system {
 template<>
-struct is_error_code_enum<rpc_error>
+struct is_error_code_enum<rpc_code>
 {
     static bool constexpr value = true;
 };
@@ -70,47 +70,47 @@ struct is_error_code_enum<rpc_error>
 } // boost
 
 beast::error_code
-make_error_code(rpc_error e);
+make_error_code(rpc_code e);
 
 //------------------------------------------------------------------------------
 
-class rpc_except
+class rpc_error
     : public std::exception
 {
     int code_;
     std::string msg_;
 
 public:
-    rpc_except()
-        : rpc_except(
-            rpc_error::internal_error)
+    rpc_error()
+        : rpc_error(
+            rpc_code::internal_error)
     {
     }
 
-    rpc_except(
-        rpc_error ev)
-        : rpc_except(ev, 
+    rpc_error(
+        rpc_code ev)
+        : rpc_error(ev, 
             beast::error_code(ev).message())
     {
     }
 
-    rpc_except(
+    rpc_error(
         beast::string_view msg)
-        : rpc_except(
-            rpc_error::invalid_params,
+        : rpc_error(
+            rpc_code::invalid_params,
             msg)
     {
     }
 
-    rpc_except(
-        rpc_error ev,
+    rpc_error(
+        rpc_code ev,
         beast::string_view msg)
         : code_(static_cast<int>(ev))
         , msg_(msg)
     {
     }
 
-    rpc_except(
+    rpc_error(
         beast::error_code const& ec)
         : code_(static_cast<int>(ec.value()))
         , msg_(ec.message())
@@ -176,13 +176,13 @@ public:
 extern
 json::value
 make_rpc_error(
-    rpc_error ev,
+    rpc_code ev,
     beast::string_view msg);
 
 extern
 json::value
 make_rpc_error(
-    rpc_error ev,
+    rpc_code ev,
     beast::string_view msg,
     rpc_request& req);
 

@@ -27,40 +27,40 @@ public:
     std::string
     message(int ev) const override
     {
-        switch(static_cast<rpc_error>(ev))
+        switch(static_cast<rpc_code>(ev))
         {
-        case rpc_error::parse_error: return
+        case rpc_code::parse_error: return
             "An error occurred on the server while parsing the JSON text.";
-        case rpc_error::invalid_request: return
+        case rpc_code::invalid_request: return
             "The JSON sent is not a valid Request object";
-        case rpc_error::method_not_found: return
+        case rpc_code::method_not_found: return
             "The method does not exist or is not available";
-        case rpc_error::invalid_params: return
+        case rpc_code::invalid_params: return
             "Invalid method parameters";
-        case rpc_error::internal_error: return
+        case rpc_code::internal_error: return
             "Internal JSON-RPC error";
 
-        case rpc_error::expected_object: return
+        case rpc_code::expected_object: return
             "Expected object in JSON-RPC request";
-        case rpc_error::expected_string_version: return
+        case rpc_code::expected_string_version: return
             "Expected string version in JSON-RPC request";
-        case rpc_error::unknown_version: return
+        case rpc_code::unknown_version: return
             "Uknown version in JSON-RPC request";
-        case rpc_error::invalid_null_id: return
+        case rpc_code::invalid_null_id: return
             "Invalid null id in JSON-RPC request";
-        case rpc_error::expected_strnum_id: return
+        case rpc_code::expected_strnum_id: return
             "Expected string or number id in JSON-RPC request";
-        case rpc_error::expected_id: return
+        case rpc_code::expected_id: return
             "Missing id in JSON-RPC request version 1";
-        case rpc_error::missing_method: return
+        case rpc_code::missing_method: return
             "Missing method in JSON-RPC request";
-        case rpc_error::expected_string_method: return
+        case rpc_code::expected_string_method: return
             "Expected string method in JSON-RPC request";
-        case rpc_error::expected_structured_params: return
+        case rpc_code::expected_structured_params: return
             "Expected structured params in JSON-RPC request version 2";
-        case rpc_error::missing_params: return
+        case rpc_code::missing_params: return
             "Missing params in JSON-RPC request version 1";
-        case rpc_error::expected_array_params: return
+        case rpc_code::expected_array_params: return
             "Expected array params in JSON-RPC request version 1";
         }
         if( ev >= -32099 &&
@@ -79,17 +79,17 @@ public:
 } // (anon)
 
 beast::error_code
-make_error_code(rpc_error e)
+make_error_code(rpc_code e)
 {
     static rpc_error_codes const cat{};
     return {static_cast<std::underlying_type<
-        rpc_error>::type>(e), cat};
+        rpc_code>::type>(e), cat};
 }
 
 //------------------------------------------------------------------------------
 
 json::value
-rpc_except::
+rpc_error::
 to_json(
     boost::optional<json::value> const& id) const
 {
@@ -133,7 +133,7 @@ extract(
     // must be object
     if(! jv.is_object())
     {
-        ec = rpc_error::expected_object;
+        ec = rpc_code::expected_object;
         return ;
     }
 
@@ -154,14 +154,14 @@ extract(
         {
             if(! it->second.is_string())
             {
-                ec = rpc_error::expected_string_version;
+                ec = rpc_code::expected_string_version;
                 return;
             }
             auto const& s =
                 it->second.as_string();
             if(s != "2.0")
             {
-                ec = rpc_error::unknown_version;
+                ec = rpc_code::unknown_version;
                 return;
             }
             version = 2;
@@ -182,14 +182,14 @@ extract(
                 // id member in a Request is discouraged.
                 if(id->is_null())
                 {
-                    ec = rpc_error::invalid_null_id;
+                    ec = rpc_code::invalid_null_id;
                     return;
                 }
 
                 if( ! id->is_number() &&
                     ! id->is_string())
                 {
-                    ec = rpc_error::expected_strnum_id;
+                    ec = rpc_code::expected_strnum_id;
                     return;
                 }
             }
@@ -199,7 +199,7 @@ extract(
             // id must be present in 1.0
             if(! id.has_value())
             {
-                ec = rpc_error::expected_id;
+                ec = rpc_code::expected_id;
                 return;
             }
         }
@@ -210,12 +210,12 @@ extract(
         auto it = obj.find("method");
         if(it == obj.end())
         {
-            ec = rpc_error::missing_method;
+            ec = rpc_code::missing_method;
             return;
         }
         if(! it->second.is_string())
         {
-            ec = rpc_error::expected_string_method;
+            ec = rpc_code::expected_string_method;
             return;
         }
         method = std::move(
@@ -232,7 +232,7 @@ extract(
                 if( ! it->second.is_object() &&
                     ! it->second.is_array())
                 {
-                    ec = rpc_error::expected_structured_params;
+                    ec = rpc_code::expected_structured_params;
                     return;
                 }
                 params = std::move(it->second);
@@ -242,12 +242,12 @@ extract(
         {
             if(it == obj.end())
             {
-                ec = rpc_error::missing_params;
+                ec = rpc_code::missing_params;
                 return;
             }
             if(! it->second.is_array())
             {
-                ec = rpc_error::expected_array_params;
+                ec = rpc_code::expected_array_params;
                 return;
             }
             params = std::move(it->second);
@@ -259,7 +259,7 @@ extract(
 
 json::value
 make_rpc_error(
-    rpc_error ev,
+    rpc_code ev,
     beast::string_view msg)
 {
     json::value jv;
@@ -273,7 +273,7 @@ make_rpc_error(
 
 json::value
 make_rpc_error(
-    rpc_error ev,
+    rpc_code ev,
     beast::string_view msg,
     rpc_request& req)
 {
@@ -291,7 +291,7 @@ json::object&
 checked_object(json::value& jv)
 {
     if(! jv.is_object())
-        throw rpc_except{
+        throw rpc_error{
             "expected object"};
     return jv.as_object();
 }
@@ -300,7 +300,7 @@ json::array&
 checked_array(json::value& jv)
 {
     if(! jv.is_array())
-        throw rpc_except{
+        throw rpc_error{
             "expected array"};
     return jv.as_array();
 }
@@ -309,7 +309,7 @@ json::string&
 checked_string(json::value& jv)
 {
     if(! jv.is_string())
-        throw rpc_except{
+        throw rpc_error{
             "expected string"};
     return jv.as_string();
 }
@@ -318,7 +318,7 @@ json::number&
 checked_number(json::value& jv)
 {
     if(! jv.is_number())
-        throw rpc_except{
+        throw rpc_error{
             "expected number"};
     return jv.as_number();
 }
@@ -327,7 +327,7 @@ bool&
 checked_bool(json::value& jv)
 {
     if(! jv.is_bool())
-        throw rpc_except{
+        throw rpc_error{
             "expected bool"};
     return jv.as_bool();
 }
@@ -336,7 +336,7 @@ void
 checked_null(json::value& jv)
 {
     if(! jv.is_null())
-        throw rpc_except{
+        throw rpc_error{
             "expected null"};
 }
 
@@ -349,7 +349,7 @@ checked_value(
         checked_object(jv);
     auto it = obj.find(key);
     if(it == obj.end())
-        throw rpc_except{
+        throw rpc_error{
             "key '" + key.to_string() + "' not found"};
     return it->second;
 }

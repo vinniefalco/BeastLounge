@@ -64,7 +64,7 @@ protected:
         }
         else
         {
-            throw rpc_except{rpc_error::method_not_found};
+            throw rpc_error{rpc_code::method_not_found};
         }
     }
 
@@ -79,10 +79,10 @@ protected:
         auto& name = checked_string(req.params, "name");
 
         if(name.size() > 20)
-            throw rpc_except(
+            throw rpc_error(
                 "Invalid \"name\": too long");
         if(! u.name.empty())
-            throw rpc_except(
+            throw rpc_error(
                 "Identity is already set");
 
         // VFALCO NOT THREAD SAFE!
