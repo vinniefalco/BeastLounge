@@ -221,7 +221,7 @@ public:
     }
 
     void
-    deal_one(hand& h)
+    deal_one(hand&)
     {
         auto const c = shoe_.deal();
     }
@@ -309,10 +309,36 @@ protected:
         // TODO surrender hand
     }
 
-    template<class MF>
     void
-    post(MF mf, rpc_call& rpc)
+    post(
+        void(table::*mf)(rpc_call&),
+        rpc_call& rpc)
     {
+        struct invoker
+        {
+            void(table::*mf)(rpc_call&);
+            // VFALCO TODO This is a problem, what manages the
+            //             lifetime of the table/channel object?
+            table& t;
+            rpc_call rpc;
+
+            void
+            operator()()
+            {
+                rpc.dispatch(
+                    [this](rpc_call& rpc_)
+                    {
+                        (t.*mf)(rpc_);
+                    });
+            }
+        };
+
+        net::post(
+            timer_.get_executor(),
+            invoker{
+                mf,
+                *this,
+                std::move(rpc)});
     }
 
     void
@@ -320,19 +346,19 @@ protected:
     {
         if(rpc.method == "play")
         {
-            do_play(rpc);
+            post(&table::do_play, rpc);
         }
         else if(rpc.method == "watch")
         {
-            do_watch(rpc);
+            post(&table::do_watch, rpc);
         }
         else if(rpc.method == "hit")
         {
-            do_hit(rpc);
+            post(&table::do_hit, rpc);
         }
         else if(rpc.method == "stand")
         {
-            do_stand(rpc);
+            post(&table::do_stand, rpc);
         }
         else
         {
