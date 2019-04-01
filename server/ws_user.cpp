@@ -119,34 +119,29 @@ public:
                 if(ec)
                     return fail(ec, "parse-json");
 
-                // Dispatch the JSON object
+                // Validate and extract the JSON-RPC request
                 rpc_call rpc(*this);
-                rpc.dispatch(
-                    beast::bind_front_handler(
-                        &ws_session_base::dispatch,
-                        this,
-                        pr.release()));
+                rpc.extract(pr.release(), ec);
+                try
+                {
+                    if(ec)
+                        rpc.fail(
+                            rpc_code::invalid_request,
+                            ec.message());
+
+                    // Dispatch to the proper channel
+                    srv_.channel_list().dispatch(rpc);
+                }
+                catch(rpc_error const& e)
+                {
+                    rpc.complete(e);
+                }
 
                 // Clear the buffer for the next message
                 msg_.clear();
             }
         }
     #include <boost/asio/unyield.hpp>
-    }
-
-    void
-    dispatch(json::value req, rpc_call& rpc)
-    {
-        // Validate and extract the JSON-RPC request
-        beast::error_code ec;
-        rpc.extract(std::move(req), ec);
-        if(ec)
-            rpc.fail(
-                rpc_code::invalid_request,
-                ec.message());
-
-        // Dispatch to the proper channel
-        srv_.channel_list().dispatch(rpc);
     }
 
     // Report a failure

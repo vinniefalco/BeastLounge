@@ -78,7 +78,7 @@ protected:
         // VFALCO NOT THREAD SAFE!
         rpc.u->name.assign(name.data(), name.size());
         insert(*rpc.u);
-        rpc.respond();
+        rpc.complete();
     }
 
     void
@@ -88,7 +88,7 @@ protected:
         boost::ignore_unused(rpc);
         srv_.shutdown(
             std::chrono::seconds(30));
-        rpc.respond();
+        rpc.complete();
     }
 
     void
@@ -97,7 +97,7 @@ protected:
         // TODO check user perms
         boost::ignore_unused(rpc);
         srv_.stop();
-        rpc.respond();
+        rpc.complete();
     }
 };
 

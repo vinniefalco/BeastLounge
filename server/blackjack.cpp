@@ -248,6 +248,39 @@ public:
         return 0;
     }
 
+    // Join the game as a player.
+    // 1..5 = assigned seat
+    // 0 = no open seat
+    // -1 = already joined
+    int
+    play(user& u)
+    {
+        if(find(u) != 0)
+            return -1;
+        for(auto& s : seat_)
+        {
+            if(s.state == seat::open)
+            {
+                s.state = seat::waiting;
+                s.u = &u;
+                return &s - &seat_.front();
+            }
+        }
+        return 0;
+    }
+
+    // Leave the game as a player.
+    // `true` = success
+    // `false` = not playing
+    bool
+    watch(user& u)
+    {
+        auto const i = find(u);
+        if(! i)
+            return false;
+        return true;
+    }
+
     void
     to_json(json::value& jv) const
     {
@@ -289,6 +322,18 @@ public:
     }
 
 protected:
+    // Post a call to the strand
+    template<class... Args>
+    void
+    post(Args&&... args)
+    {
+        net::post(
+            timer_.get_executor(),
+            beast::bind_front_handler(
+                std::forward<Args>(args)...));
+    }
+
+    // Called when a user joins the channel
     void
     on_insert(user& u) override
     {
@@ -303,6 +348,7 @@ protected:
         u.send(jv);
     }
 
+    // Called when a user leaves the channel
     void
     on_erase(user&) override
     {
@@ -310,55 +356,23 @@ protected:
     }
 
     void
-    post(
-        void(table::*mf)(rpc_call&),
-        rpc_call& rpc)
-    {
-        struct invoker
-        {
-            void(table::*mf)(rpc_call&);
-            // VFALCO TODO This is a problem, what manages the
-            //             lifetime of the table/channel object?
-            table& t;
-            rpc_call rpc;
-
-            void
-            operator()()
-            {
-                rpc.dispatch(
-                    [this](rpc_call& rpc_)
-                    {
-                        (t.*mf)(rpc_);
-                    });
-            }
-        };
-
-        net::post(
-            timer_.get_executor(),
-            invoker{
-                mf,
-                *this,
-                std::move(rpc)});
-    }
-
-    void
     on_dispatch(rpc_call& rpc) override
     {
         if(rpc.method == "play")
         {
-            post(&table::do_play, rpc);
+            post(&table::do_play, this, std::move(rpc));
         }
         else if(rpc.method == "watch")
         {
-            post(&table::do_watch, rpc);
+            post(&table::do_watch, this, std::move(rpc));
         }
         else if(rpc.method == "hit")
         {
-            post(&table::do_hit, rpc);
+            post(&table::do_hit, this, std::move(rpc));
         }
         else if(rpc.method == "stand")
         {
-            post(&table::do_stand, rpc);
+            post(&table::do_stand, this, std::move(rpc));
         }
         else
         {
@@ -367,42 +381,65 @@ protected:
     }
 
     void
-    do_play(rpc_call& rpc)
+    do_play(rpc_call&& rpc)
     {
-        // TODO Optional seat choice
-
-        json::value jv;
-        jv["cid"] = cid();
-        jv["verb"] = "update";
-        jv["action"] = "play";
+        try
         {
-            lock_guard lock(mutex_);
-            if(g_.find(*rpc.u) != 0)
+            // TODO Optional seat choice
+            auto result = g_.play(*rpc.u);
+            if(result == 0)
+                rpc.fail("No open seat");
+            else if(result == -1)
                 rpc.fail("Already playing");
-            if(g_.insert(*rpc.u) == 0)
-                rpc.fail("No open seats");
+
+            json::value jv;
+            jv["cid"] = cid();
+            jv["verb"] = "update";
+            jv["action"] = "play";
             jv["game"] = g_;
+            send(jv);
+            rpc.complete();
         }
-        send(jv);
-        rpc.respond();
+        catch(rpc_error const& e)
+        {
+            rpc.complete(e);
+        }
     }
 
     void
-    do_watch(rpc_call& rpc)
+    do_watch(rpc_call&& rpc)
     {
-        boost::ignore_unused(rpc);
+        try
+        {
+        }
+        catch(rpc_error const& e)
+        {
+            rpc.complete(e);
+        }
     }
 
     void
-    do_hit(rpc_call& rpc)
+    do_hit(rpc_call&& rpc)
     {
-        boost::ignore_unused(rpc);
+        try
+        {
+        }
+        catch(rpc_error const& e)
+        {
+            rpc.complete(e);
+        }
     }
 
     void
-    do_stand(rpc_call& rpc)
+    do_stand(rpc_call&& rpc)
     {
-        boost::ignore_unused(rpc);
+        try
+        {
+        }
+        catch(rpc_error const& e)
+        {
+            rpc.complete(e);
+        }
     }
 };
 

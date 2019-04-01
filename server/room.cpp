@@ -84,7 +84,7 @@ public:
             jv["message"] = text;
             send(jv);
         }
-        rpc.respond();
+        rpc.complete();
     }
 
     void

@@ -119,8 +119,7 @@ rpc_call(
     : u(shared_from(&u_))
     , method(json::allocator<char>(sp))
     , params(sp)
-    , result(sp)
-    , id(std::move(sp))
+    , result(std::move(sp))
 {
 }
 
@@ -130,17 +129,6 @@ extract(
     json::value&& jv,
     beast::error_code& ec)
 {
-    // clear the fields first
-    method = json::string(
-        json::allocator<char>(
-            jv.get_storage()));
-    params = json::value(
-        json::kind::null,
-        jv.get_storage());
-    id = json::value(
-        json::kind::null,
-        jv.get_storage());
-
     // must be object
     if(! jv.is_object())
     {
@@ -155,7 +143,7 @@ extract(
     {
         auto it = obj.find("id");
         if(it != obj.end())
-            id.emplace(std::move(it->second));
+            id_.emplace(std::move(it->second));
     }
 
     // now check the version
@@ -187,18 +175,18 @@ extract(
     {
         if(version == 2)
         {
-            if(id.has_value())
+            if(id_.has_value())
             {
                 // The use of Null as a value for the
                 // id member in a Request is discouraged.
-                if(id->is_null())
+                if(id_->is_null())
                 {
                     ec = rpc_code::invalid_null_id;
                     return;
                 }
 
-                if( ! id->is_number() &&
-                    ! id->is_string())
+                if( ! id_->is_number() &&
+                    ! id_->is_string())
                 {
                     ec = rpc_code::expected_strnum_id;
                     return;
@@ -208,7 +196,7 @@ extract(
         else
         {
             // id must be present in 1.0
-            if(! id.has_value())
+            if(! id_.has_value())
             {
                 ec = rpc_code::expected_id;
                 return;
@@ -268,58 +256,28 @@ extract(
 
 void
 rpc_call::
-respond()
+complete()
 {
-    if(! id.has_value())
+    if(! id_.has_value())
         return;
     json::value res(
         json::object{},
         result.get_storage());
-    res.emplace("id", *id);
+    res.emplace("id", *id_);
     res.emplace("result", std::move(result));
     u->send(res);
 }
 
 void
 rpc_call::
-send_error(rpc_error const& e)
+complete(rpc_error const& e)
 {
-    if(! id.has_value())
+    if(! id_.has_value())
         return;
-    u->send(e.to_json(id));
+    u->send(e.to_json(id_));
 }
 
 //------------------------------------------------------------------------------
-
-json::value
-make_rpc_error(
-    rpc_code ev,
-    beast::string_view msg)
-{
-    json::value jv;
-    jv["jsonrpc"] = "2.0";
-    auto& err = jv["error"].emplace_object();
-    err["code"] = static_cast<int>(ev);
-    err["message"] = msg;
-    jv["id"] = nullptr;
-    return jv;
-}
-
-json::value
-make_rpc_error(
-    rpc_code ev,
-    beast::string_view msg,
-    rpc_call& req)
-{
-    json::value jv;
-    jv["jsonrpc"] = "2.0";
-    auto& err = jv["error"].emplace_object();
-    err["code"] = static_cast<int>(ev);
-    err["message"] = msg;
-    if(req.id.has_value())
-        jv["id"] = *req.id;
-    return jv;
-}
 
 json::object&
 checked_object(json::value& jv)

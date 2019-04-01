@@ -133,6 +133,12 @@ public:
 */
 class rpc_call
 {
+    /** The request id
+
+        If set, this will be string, number, or null
+    */
+    boost::optional<json::value> id_;
+
 public:
     /// The user submitting the request
     boost::shared_ptr<user> u;
@@ -155,12 +161,6 @@ public:
         a successful operation.
     */
     json::value result;
-
-    /** The request id
-
-        If set, this will be string, number, or null
-    */
-    boost::optional<json::value> id;
 
 public:
     rpc_call(rpc_call&&) = default;
@@ -190,33 +190,21 @@ public:
         json::value&& jv,
         beast::error_code& ec);
 
-    /** Process an RPC call.
-
-        @param f The function object to invoke with the RPC
-        call. The object must be callable as `void(rpc_call&)`.
-    */
-    template<class F>
-    void
-    dispatch(F&& f)
-    {
-        try
-        {
-            f(*this);
-        }
-        catch(rpc_error const& e)
-        {
-            send_error(e);
-        }
-    }
-
-    /** Respond to a request with success.
+    /** Complete the RPC request with a success.
 
         This function sends the user originating the request
-        a successful JSON-RPC response object containing the
-        result.
+        a JSON-RPC response object containing the result.
     */
     void
-    respond();
+    complete();
+
+    /** Complete the RPC request with an error.
+
+        This function sends the user originating the request
+        a JSON-RPC response containing an error object.
+    */
+    void
+    complete(rpc_error const& e);
 
     /** Respond to a request with an error.
 
@@ -231,26 +219,9 @@ public:
         throw rpc_error(
             std::forward<Args>(args)...);
     }
-
-private:
-    void
-    send_error(rpc_error const& e);
 };
 
 //------------------------------------------------------------------------------
-
-extern
-json::value
-make_rpc_error(
-    rpc_code ev,
-    beast::string_view msg);
-
-extern
-json::value
-make_rpc_error(
-    rpc_code ev,
-    beast::string_view msg,
-    rpc_call& req);
 
 extern
 json::object&

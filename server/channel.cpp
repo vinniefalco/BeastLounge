@@ -146,7 +146,7 @@ do_join(rpc_call& rpc)
     checked_user(rpc);
     if(! insert(*rpc.u))
         rpc.fail("Already in channel");
-    rpc.respond();
+    rpc.complete();
 }
 
 void
@@ -155,7 +155,7 @@ do_leave(rpc_call& rpc)
 {
     if(! erase(*rpc.u))
         rpc.fail("Not in channel");
-    rpc.respond();
+    rpc.complete();
 }
 
 void
