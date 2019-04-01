@@ -135,7 +135,7 @@ void
 channel::
 checked_user(rpc_call& rpc)
 {
-    if(rpc.user.name.empty())
+    if(rpc.u->name.empty())
         rpc.fail("No identity set");
 }
 
@@ -144,7 +144,7 @@ channel::
 do_join(rpc_call& rpc)
 {
     checked_user(rpc);
-    if(! insert(rpc.user))
+    if(! insert(*rpc.u))
         rpc.fail("Already in channel");
     rpc.respond();
 }
@@ -153,7 +153,7 @@ void
 channel::
 do_leave(rpc_call& rpc)
 {
-    if(! erase(rpc.user))
+    if(! erase(*rpc.u))
         rpc.fail("Not in channel");
     rpc.respond();
 }

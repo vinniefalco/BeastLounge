@@ -70,7 +70,7 @@ public:
     do_say(rpc_call& rpc)
     {
         checked_user(rpc);
-        if(! is_joined(rpc.user))
+        if(! is_joined(*rpc.u))
             rpc.fail("not in channel");
         auto const& text =
             checked_string(rpc.params, "message");
@@ -80,7 +80,7 @@ public:
             jv["verb"] = "say";
             jv["cid"] = cid();
             jv["name"] = name();
-            jv["user"] = rpc.user.name;
+            jv["user"] = rpc.u->name;
             jv["message"] = text;
             send(jv);
         }

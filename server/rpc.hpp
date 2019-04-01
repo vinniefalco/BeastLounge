@@ -13,6 +13,7 @@
 #include "config.hpp"
 #include <boost/beast/core/string.hpp>
 #include <boost/beast/_experimental/json/value.hpp>
+#include <boost/smart_ptr/shared_ptr.hpp>
 #include <boost/optional.hpp>
 #include <stdexcept>
 #include <utility>
@@ -134,7 +135,7 @@ class rpc_call
 {
 public:
     /// The user submitting the request
-    ::user& user;
+    boost::shared_ptr<user> u;
 
     /// Version of the request (1 or 2)
     int version = 2;

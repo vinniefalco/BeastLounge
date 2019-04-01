@@ -377,9 +377,9 @@ protected:
         jv["action"] = "play";
         {
             lock_guard lock(mutex_);
-            if(g_.find(rpc.user) != 0)
+            if(g_.find(*rpc.u) != 0)
                 rpc.fail("Already playing");
-            if(g_.insert(rpc.user) == 0)
+            if(g_.insert(*rpc.u) == 0)
                 rpc.fail("No open seats");
             jv["game"] = g_;
         }

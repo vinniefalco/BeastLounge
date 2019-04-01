@@ -114,9 +114,9 @@ rpc_call(::user& u)
 
 rpc_call::
 rpc_call(
-    ::user& u,
+    ::user& u_,
     json::storage_ptr sp)
-    : user(u)
+    : u(shared_from(&u_))
     , method(json::allocator<char>(sp))
     , params(sp)
     , result(sp)
@@ -277,7 +277,7 @@ respond()
         result.get_storage());
     res.emplace("id", *id);
     res.emplace("result", std::move(result));
-    user.send(res);
+    u->send(res);
 }
 
 void
@@ -286,7 +286,7 @@ send_error(rpc_error const& e)
 {
     if(! id.has_value())
         return;
-    user.send(e.to_json(id));
+    u->send(e.to_json(id));
 }
 
 //------------------------------------------------------------------------------

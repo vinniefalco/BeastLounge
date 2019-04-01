@@ -73,11 +73,11 @@ protected:
             checked_string(rpc.params, "name");
         if(name.size() > 20)
             rpc.fail("Invalid \"name\": too long");
-        if(! rpc.user.name.empty())
+        if(! rpc.u->name.empty())
             rpc.fail("Identity is already set");
         // VFALCO NOT THREAD SAFE!
-        rpc.user.name.assign(name.data(), name.size());
-        insert(rpc.user);
+        rpc.u->name.assign(name.data(), name.size());
+        insert(*rpc.u);
         rpc.respond();
     }
 

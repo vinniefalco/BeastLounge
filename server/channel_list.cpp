@@ -49,6 +49,7 @@ class channel_list_impl
     server& srv_;
     mutex mutable m_;
     std::vector<element> v_;
+    // VFALCO look into https://github.com/greg7mdp/parallel-hashmap
     boost::container::flat_set<channel*> users_;
     std::atomic<uid_type> next_uid_;
     std::atomic<std::size_t> next_cid_;
