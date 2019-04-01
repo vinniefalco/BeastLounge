@@ -309,84 +309,40 @@ protected:
         // TODO surrender hand
     }
 
+    template<class MF>
     void
-    on_dispatch(
-        json::value& result,
-        rpc_request& req,
-        user& u) override
+    post(MF mf, rpc_call& rpc)
     {
-        boost::ignore_unused(result, u);
-        if(req.method == "join")
+    }
+
+    void
+    on_dispatch(rpc_call& rpc) override
+    {
+        if(rpc.method == "play")
         {
-            do_join(result, req, u);
+            do_play(rpc);
         }
-        else if(req.method == "leave")
+        else if(rpc.method == "watch")
         {
-            do_leave(result, req, u);
+            do_watch(rpc);
         }
-        else if(req.method == "play")
+        else if(rpc.method == "hit")
         {
-            do_play(result, req, u);
+            do_hit(rpc);
         }
-        else if(req.method == "watch")
+        else if(rpc.method == "stand")
         {
-            do_watch(result, req, u);
-        }
-        else if(req.method == "hit")
-        {
-            do_hit(result, req, u);
-        }
-        else if(req.method == "stand")
-        {
-            do_stand(result, req, u);
+            do_stand(rpc);
         }
         else
         {
-            throw rpc_error{rpc_code::method_not_found};
+            rpc.fail(rpc_code::method_not_found);
         }
     }
 
     void
-    checked_user(user& u)
+    do_play(rpc_call& rpc)
     {
-        if(u.name.empty())
-            throw rpc_error(
-                "No identity set");
-    }
-
-    void
-    do_join(
-        json::value& result,
-        rpc_request& req,
-        user& u)
-    {
-        boost::ignore_unused(result, req);
-
-        checked_user(u);
-
-        if(! insert(u))
-            throw rpc_error(
-                "Already joined");
-    }
-
-    void
-    do_leave(
-        json::value& result,
-        rpc_request& req,
-        user& u)
-    {
-        boost::ignore_unused(result, req);
-
-        erase(u);
-    }
-
-    void
-    do_play(
-        json::value& result,
-        rpc_request& req,
-        user& u)
-    {
-        boost::ignore_unused(result, req);
         // TODO Optional seat choice
 
         json::value jv;
@@ -395,42 +351,32 @@ protected:
         jv["action"] = "play";
         {
             lock_guard lock(mutex_);
-            if(g_.find(u) != 0)
-                throw rpc_error(
-                    "Already playing");
-            if(g_.insert(u) == 0)
-                throw rpc_error(
-                    "No open seats");
+            if(g_.find(rpc.user) != 0)
+                rpc.fail("Already playing");
+            if(g_.insert(rpc.user) == 0)
+                rpc.fail("No open seats");
             jv["game"] = g_;
         }
         send(jv);
+        rpc.respond();
     }
 
     void
-    do_watch(
-        json::value& result,
-        rpc_request& req,
-        user& u)
+    do_watch(rpc_call& rpc)
     {
-        boost::ignore_unused(result, req);
+        boost::ignore_unused(rpc);
     }
 
     void
-    do_hit(
-        json::value& result,
-        rpc_request& req,
-        user& u)
+    do_hit(rpc_call& rpc)
     {
-        boost::ignore_unused(result, req);
+        boost::ignore_unused(rpc);
     }
 
     void
-    do_stand(
-        json::value& result,
-        rpc_request& req,
-        user& u)
+    do_stand(rpc_call& rpc)
     {
-        boost::ignore_unused(result, req);
+        boost::ignore_unused(rpc);
     }
 };
 

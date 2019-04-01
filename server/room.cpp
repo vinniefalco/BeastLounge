@@ -44,22 +44,19 @@ public:
     }
 
     void
-    on_dispatch(
-        json::value& result,
-        rpc_request& req,
-        user& u) override
+    on_dispatch(rpc_call& rpc) override
     {
-        if(req.method == "say")
+        if(rpc.method == "say")
         {
-            do_say(result, req, u);
+            do_say(rpc);
         }
-        else if(req.method == "slash")
+        else if(rpc.method == "slash")
         {
-            do_say(result, req, u);
+            do_say(rpc);
         }
         else
         {
-            throw rpc_error{rpc_code::method_not_found};
+            rpc.fail(rpc_code::method_not_found);
         }
     }
 
@@ -70,42 +67,31 @@ public:
     //--------------------------------------------------------------------------
 
     void
-    do_say(
-        json::value& result,
-        rpc_request& req,
-        user& u)
+    do_say(rpc_call& rpc)
     {
-        boost::ignore_unused(result);
-
-        checked_user(u);
+        checked_user(rpc);
+        if(! is_joined(rpc.user))
+            rpc.fail("not in channel");
         auto const& text =
-            checked_string(req.params, "message");
-
-        if(! is_joined(u))
-            throw rpc_error{"not in channel"};
-
+            checked_string(rpc.params, "message");
         {
             // broadcast: say
             json::value jv;
             jv["verb"] = "say";
             jv["cid"] = cid();
             jv["name"] = name();
-            jv["user"] = u.name;
+            jv["user"] = rpc.user.name;
             jv["message"] = text;
             send(jv);
         }
+        rpc.respond();
     }
 
     void
-    do_slash(
-        json::value& result,
-        rpc_request& req,
-        user& u)
+    do_slash(rpc_call& rpc)
     {
-        boost::ignore_unused(result, req);
-        checked_user(u);
-        throw rpc_error(
-            "Unimplemented");
+        checked_user(rpc);
+        rpc.fail("Unimplemented");
     }
 };
 

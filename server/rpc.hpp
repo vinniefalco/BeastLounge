@@ -15,6 +15,9 @@
 #include <boost/beast/_experimental/json/value.hpp>
 #include <boost/optional.hpp>
 #include <stdexcept>
+#include <utility>
+
+class user;
 
 /// Codes used in JSON-RPC error responses
 enum class rpc_code
@@ -127,9 +130,12 @@ public:
 
 /** Represents a JSON-RPC request
 */
-class rpc_request
+class rpc_call
 {
 public:
+    /// The user submitting the request
+    ::user& user;
+
     /// Version of the request (1 or 2)
     int version = 2;
 
@@ -142,26 +148,39 @@ public:
     */
     json::value params;
 
+    /** The response result
+
+        This value will be sent as the result of
+        a successful operation.
+    */
+    json::value result;
+
     /** The request id
 
         If set, this will be string, number, or null
     */
     boost::optional<json::value> id;
 
+public:
+    rpc_call(rpc_call&&) = default;
+    rpc_call& operator=(rpc_call&&) = delete;
+
     /** Construct an empty request using the default storage.
 
         The method, params, and id will be null,
         and version will be 2.
     */
-    rpc_request() = default;
+    explicit
+    rpc_call(::user& u);
 
     /** Construct an empty request using the specified storage.
 
         The method, params, and id will be null,
         and version will be 2.
     */
-    explicit
-    rpc_request(json::storage_ptr sp);
+    rpc_call(
+        ::user& u,
+        json::storage_ptr sp);
 
     /** Extract a JSON-RPC request or return an error.
     */
@@ -169,6 +188,52 @@ public:
     extract(
         json::value&& jv,
         beast::error_code& ec);
+
+    /** Process an RPC call.
+
+        @param f The function object to invoke with the RPC
+        call. The object must be callable as `void(rpc_call&)`.
+    */
+    template<class F>
+    void
+    dispatch(F&& f)
+    {
+        try
+        {
+            f(*this);
+        }
+        catch(rpc_error const& e)
+        {
+            send_error(e);
+        }
+    }
+
+    /** Respond to a request with success.
+
+        This function sends the user originating the request
+        a successful JSON-RPC response object containing the
+        result.
+    */
+    void
+    respond();
+
+    /** Respond to a request with an error.
+
+        This function will throw an `rpc_error`
+        constructed from the argument list.
+    */
+    template<class... Args>
+    [[noreturn]]
+    void
+    fail(Args&&... args)
+    {
+        throw rpc_error(
+            std::forward<Args>(args)...);
+    }
+
+private:
+    void
+    send_error(rpc_error const& e);
 };
 
 //------------------------------------------------------------------------------
@@ -184,7 +249,7 @@ json::value
 make_rpc_error(
     rpc_code ev,
     beast::string_view msg,
-    rpc_request& req);
+    rpc_call& req);
 
 extern
 json::object&

@@ -19,8 +19,7 @@
 #include <utility>
 
 class channel;
-class rpc_request;
-class rpc_response;
+class rpc_call;
 class user;
 
 //------------------------------------------------------------------------------
@@ -47,9 +46,7 @@ public:
     /// Process a serialized message from a user
     virtual
     void
-    dispatch(
-        net::const_buffer b,
-        user& u) = 0;
+    dispatch(rpc_call& rpc) = 0;
 
     template<class T, class...  Args>
     friend

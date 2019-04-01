@@ -8,6 +8,7 @@
 //
 
 #include "rpc.hpp"
+#include "user.hpp"
 #include <boost/beast/core/error.hpp>
 #include <type_traits>
 
@@ -105,16 +106,26 @@ to_json(
 
 //------------------------------------------------------------------------------
 
-rpc_request::
-rpc_request(json::storage_ptr sp)
-    : method(json::allocator<char>(sp))
+rpc_call::
+rpc_call(::user& u)
+    : rpc_call(u, json::default_storage())
+{
+}
+
+rpc_call::
+rpc_call(
+    ::user& u,
+    json::storage_ptr sp)
+    : user(u)
+    , method(json::allocator<char>(sp))
     , params(sp)
+    , result(sp)
     , id(std::move(sp))
 {
 }
 
 void
-rpc_request::
+rpc_call::
 extract(
     json::value&& jv,
     beast::error_code& ec)
@@ -255,6 +266,29 @@ extract(
     }
 }
 
+void
+rpc_call::
+respond()
+{
+    if(! id.has_value())
+        return;
+    json::value res(
+        json::object{},
+        result.get_storage());
+    res.emplace("id", *id);
+    res.emplace("result", std::move(result));
+    user.send(res);
+}
+
+void
+rpc_call::
+send_error(rpc_error const& e)
+{
+    if(! id.has_value())
+        return;
+    user.send(e.to_json(id));
+}
+
 //------------------------------------------------------------------------------
 
 json::value
@@ -275,7 +309,7 @@ json::value
 make_rpc_error(
     rpc_code ev,
     beast::string_view msg,
-    rpc_request& req)
+    rpc_call& req)
 {
     json::value jv;
     jv["jsonrpc"] = "2.0";

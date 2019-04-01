@@ -20,13 +20,16 @@
 
 class channel_list;
 class message;
-class rpc_request;
+class rpc_call;
 class user;
 
 //------------------------------------------------------------------------------
 
 class channel : public enable_shared_from
 {
+    using lock_type =
+        std::lock_guard<std::mutex>;
+
     channel_list& list_;
     std::mutex mutable mutex_;
     boost::container::flat_set<user*> users_;
@@ -80,10 +83,7 @@ public:
 
     /// Process an RPC command for this channel
     void
-    dispatch(
-        json::value& result,
-        rpc_request& req,
-        user& u);
+    dispatch(rpc_call& rpc);
 
 protected:
     /// Construct a new channel with a unique channel id
@@ -98,7 +98,7 @@ protected:
         channel_list& list);
 
     void
-    checked_user(user& u);
+    checked_user(rpc_call& rpc);
 
     virtual
     void
@@ -111,26 +111,12 @@ protected:
     /// Called on an RPC command
     virtual
     void
-    on_dispatch(
-        json::value& result,
-        rpc_request& req,
-        user& u) = 0;
+    on_dispatch(rpc_call& rpc) = 0;
 
 private:
-    void
-    do_join(
-        json::value& result,
-        rpc_request& req,
-        user& u);
-
-    void
-    do_leave(
-        json::value& result,
-        rpc_request& req,
-        user& u);
-
-    void
-    send(message m);
+    void do_join(rpc_call& rpc);
+    void do_leave(rpc_call& rpc);
+    void send(message m);
 };
 
 #endif

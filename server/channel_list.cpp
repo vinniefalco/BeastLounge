@@ -98,71 +98,32 @@ public:
     }
 
     void
-    dispatch(
-        net::const_buffer b,
-        user& u) override
+    dispatch(rpc_call& rpc) override
     {
-        rpc_request req;
-        try
-        {
-            json::parser pr;
-            beast::error_code ec;
+        // Validate and extract the channel id
+        auto& jv_cid = checked_number(
+            rpc.params, "cid");
+        if(! jv_cid.is_uint64())
+            rpc.fail(
+                rpc_code::invalid_params,
+                "Invalid cid");
+        if(jv_cid.get_uint64() >
+            (std::numeric_limits<std::size_t>::max)())
+            rpc.fail(
+                rpc_code::invalid_params,
+                "Invalid cid");
+        auto const cid = static_cast<std::size_t>(
+            jv_cid.get_uint64());
 
-            // Parse the buffer into JSON
-            pr.write(b, ec);
-            if(ec)
-                throw rpc_error(
-                    rpc_code::parse_error,
-                    ec.message());
+        // Lookup cid
+        auto c = at(cid);
+        if(! c)
+            rpc.fail(
+                rpc_code::invalid_params,
+                "Unknown cid");
 
-            // Validate and extract the JSON-RPC request
-            req.extract(pr.release(), ec);
-            if(ec)
-                throw rpc_error(
-                    rpc_code::invalid_request,
-                    ec.message());
-
-            // Validate and extract the channel id
-            auto& jv_cid = checked_number(req.params, "cid");
-            if(! jv_cid.is_uint64())
-                throw rpc_error(
-                    rpc_code::invalid_params,
-                    "Invalid cid");
-            if(jv_cid.get_uint64() >
-                (std::numeric_limits<std::size_t>::max)())
-                throw rpc_error(
-                    rpc_code::invalid_params,
-                    "Invalid cid");
-            auto const cid = static_cast<std::size_t>(
-                jv_cid.get_uint64());
-
-            // Lookup cid
-            auto c = at(cid);
-            if(! c)
-                throw rpc_error(
-                    rpc_code::invalid_params,
-                    "Unknown cid");
-
-            // Prepare the response
-            json::value res = json::object{};
-            if(req.id)
-                res.emplace("id", *req.id);
-            auto& result =
-                res.emplace("result", nullptr).first->second;
-
-            // Dispatch the request
-            c->dispatch(result, req, u);
-
-            // Send the response if `id` is set
-            if(req.id)
-                u.send(make_message(res));
-        }
-        catch(rpc_error const& e)
-        {
-            // Send the error if `id` is set
-            if(req.id)
-                u.send(make_message(e.to_json(req.id)));
-        }
+        // Dispatch the request
+        c->dispatch(rpc);
     }
 
     uid_type

@@ -52,7 +52,7 @@ bool
 channel::
 is_joined(user& u) const noexcept
 {
-    std::lock_guard<std::mutex> lock(mutex_);
+    lock_type lock(mutex_);
     return users_.find(&u) != users_.end();
 }
 
@@ -63,7 +63,7 @@ insert(user& u)
     {
         bool inserted;
         {
-            std::lock_guard<std::mutex> lock(mutex_);
+            lock_type lock(mutex_);
             inserted = users_.insert(&u).second;
         }
         if(! inserted)
@@ -88,7 +88,7 @@ channel::
 erase(user& u)
 {
     {
-        std::lock_guard<std::mutex> lock(mutex_);
+        lock_type lock(mutex_);
         if(users_.erase(&u) == 0)
             return false;
     }
@@ -115,61 +115,47 @@ send(json::value const& jv)
 
 void
 channel::
-dispatch(
-    json::value& result,
-    rpc_request& req,
-    user& u)
+dispatch(rpc_call& rpc)
 {
-    if(req.method == "join")
+    if(rpc.method == "join")
     {
-        do_join(result, req, u);
+        do_join(rpc);
     }
-    else if(req.method == "leave")
+    else if(rpc.method == "leave")
     {
-        do_leave(result, req, u);
+        do_leave(rpc);
     }
     else
     {
-        on_dispatch(result, req, u);
+        on_dispatch(rpc);
     }
 }
 
 void
 channel::
-checked_user(user& u)
+checked_user(rpc_call& rpc)
 {
-    if(u.name.empty())
-        throw rpc_error(
-            "No identity set");
+    if(rpc.user.name.empty())
+        rpc.fail("No identity set");
 }
 
 void
 channel::
-do_join(
-    json::value& result,
-    rpc_request& req,
-    user& u)
+do_join(rpc_call& rpc)
 {
-    boost::ignore_unused(result, req);
-
-    checked_user(u);
-
-    if(! insert(u))
-        throw rpc_error(
-            "Already in channel");
+    checked_user(rpc);
+    if(! insert(rpc.user))
+        rpc.fail("Already in channel");
+    rpc.respond();
 }
 
 void
 channel::
-do_leave(
-    json::value& result,
-    rpc_request& req,
-    user& u)
+do_leave(rpc_call& rpc)
 {
-    boost::ignore_unused(result, req);
-    if(! erase(u))
-        throw rpc_error(
-            "Not in channel");
+    if(! erase(rpc.user))
+        rpc.fail("Not in channel");
+    rpc.respond();
 }
 
 void
@@ -181,7 +167,7 @@ send(message m)
     // actual sending without holding the mutex:
     std::vector<boost::weak_ptr<user>> v;
     {
-        std::lock_guard<std::mutex> lock(mutex_);
+        lock_type lock(mutex_);
         v.reserve(users_.size());
         for(auto p : users_)
             v.emplace_back(weak_from(p));

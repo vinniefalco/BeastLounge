@@ -11,6 +11,7 @@
 #include "listener.hpp"
 #include "logger.hpp"
 #include "message.hpp"
+#include "rpc.hpp"
 #include "server.hpp"
 #include "user.hpp"
 #include <boost/beast/websocket/stream.hpp>
@@ -112,8 +113,19 @@ public:
                 if(ec)
                     return fail(ec, "async_read");
 
-                // Handle the message
-                on_message();
+                // Parse the buffer into JSON
+                json::parser pr;
+                pr.write(msg_.data(), ec);
+                if(ec)
+                    return fail(ec, "parse-json");
+
+                // Dispatch the JSON object
+                rpc_call rpc(*this);
+                rpc.dispatch(
+                    beast::bind_front_handler(
+                        &ws_session_base::dispatch,
+                        this,
+                        pr.release()));
 
                 // Clear the buffer for the next message
                 msg_.clear();
@@ -123,10 +135,18 @@ public:
     }
 
     void
-    on_message()
+    dispatch(json::value req, rpc_call& rpc)
     {
-        srv_.channel_list().dispatch(
-            msg_.data(), *this);
+        // Validate and extract the JSON-RPC request
+        beast::error_code ec;
+        rpc.extract(std::move(req), ec);
+        if(ec)
+            rpc.fail(
+                rpc_code::invalid_request,
+                ec.message());
+
+        // Dispatch to the proper channel
+        srv_.channel_list().dispatch(rpc);
     }
 
     // Report a failure
@@ -189,6 +209,9 @@ public:
     void
     do_send(message m)
     {
+        if(! beast::get_lowest_layer(
+            impl()->ws()).socket().is_open())
+            return;
         mq_.emplace_back(std::move(m));
         if(mq_.size() == 1)
             do_write();

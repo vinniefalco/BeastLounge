@@ -46,70 +46,58 @@ protected:
 
     void
     on_dispatch(
-        json::value& result,
-        rpc_request& req,
-        user& u) override
+        rpc_call& rpc) override
     {
-        if(req.method == "identify")
+        if(rpc.method == "identify")
         {
-            do_identify(result, req, u);
+            do_identify(rpc);
         }
-        else if(req.method == "shutdown")
+        else if(rpc.method == "shutdown")
         {
-            do_shutdown(result, req, u);
+            do_shutdown(rpc);
         }
-        else if(req.method == "stop")
+        else if(rpc.method == "stop")
         {
-            do_stop(result, req, u);
+            do_stop(rpc);
         }
         else
         {
-            throw rpc_error{rpc_code::method_not_found};
+            rpc.fail(rpc_code::method_not_found);
         }
     }
 
     void
-    do_identify(
-        json::value& result,
-        rpc_request& req,
-        user& u)
+    do_identify(rpc_call& rpc)
     {
-        boost::ignore_unused(result);
-
-        auto& name = checked_string(req.params, "name");
-
+        auto const& name =
+            checked_string(rpc.params, "name");
         if(name.size() > 20)
-            throw rpc_error(
-                "Invalid \"name\": too long");
-        if(! u.name.empty())
-            throw rpc_error(
-                "Identity is already set");
-
+            rpc.fail("Invalid \"name\": too long");
+        if(! rpc.user.name.empty())
+            rpc.fail("Identity is already set");
         // VFALCO NOT THREAD SAFE!
-        u.name.assign(name.data(), name.size());
-
-        insert(u);
+        rpc.user.name.assign(name.data(), name.size());
+        insert(rpc.user);
+        rpc.respond();
     }
 
     void
-    do_shutdown(
-        json::value& result,
-        rpc_request& req,
-        user& u)
+    do_shutdown(rpc_call& rpc)
     {
-        boost::ignore_unused(result, req, u);
+        // TODO check user perms
+        boost::ignore_unused(rpc);
         srv_.shutdown(
             std::chrono::seconds(30));
+        rpc.respond();
     }
 
     void
-    do_stop(
-        json::value& result,
-        rpc_request& req,
-        user& u)
+    do_stop(rpc_call& rpc)
     {
-        boost::ignore_unused(result, req, u);
+        // TODO check user perms
+        boost::ignore_unused(rpc);
         srv_.stop();
+        rpc.respond();
     }
 };
 
