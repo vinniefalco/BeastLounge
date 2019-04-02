@@ -6,7 +6,7 @@
 //
 // Official repository: https://github.com/vinniefalco/BeastLounge
 //
- 
+
 #include "channel.hpp"
 #include "channel_list.hpp"
 #include "listener.hpp"
@@ -107,6 +107,8 @@ struct server_config
 {
     unsigned num_threads = 1;
     std::string doc_root;
+    std::chrono::seconds handshake_timeout{30};
+    std::chrono::seconds idle_timeout{300};
 
     void
     from_json(
@@ -119,6 +121,21 @@ struct server_config
         if(num_threads < 1)
             num_threads = 1;
         jv["doc-root"].store(doc_root);
+
+        auto v = jv.find("handshake_timeout_seconds");
+        if (v != jv.end())
+        {
+            std::uint32_t timeout;
+            v->second.store(timeout);
+            handshake_timeout = std::chrono::seconds{timeout};
+        }
+        v = jv.find("idle_timeout_seconds");
+        if (v != jv.end())
+        {
+            std::uint32_t timeout;
+            v->second.store(timeout);
+            idle_timeout = std::chrono::seconds{timeout};
+        }
     }
 };
 
@@ -410,6 +427,12 @@ public:
     channel_list() override
     {
         return *channel_list_;
+    }
+
+    timeout_config
+    timeouts() const override
+    {
+        return {cfg_.handshake_timeout, cfg_.idle_timeout};
     }
 };
 

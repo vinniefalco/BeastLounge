@@ -76,10 +76,13 @@ public:
     void
     run(websocket::request_type req)
     {
+        websocket::stream_base::timeout timeout{};
+        auto cfg = srv_.timeouts();
+        timeout.handshake_timeout = cfg.handshake_timeout;
+        timeout.idle_timeout = cfg.idle_timeout;
+        timeout.keep_alive_pings = true;
         // Apply settings to stream
-        impl()->ws().set_option(
-            websocket::stream_base::timeout::suggested(
-                beast::role_type::server));
+        impl()->ws().set_option(timeout);
 
         // Limit the maximum incoming message size
         impl()->ws().read_message_max(64 * 1024);
