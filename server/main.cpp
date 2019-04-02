@@ -24,6 +24,10 @@
 # endif
 #endif
 
+extern
+boost::shared_ptr<logger>
+make_logger();
+
 int
 main(int argc, char* argv[])
 {
@@ -57,7 +61,7 @@ main(int argc, char* argv[])
     beast::error_code ec;
     auto srv = make_server(
         config_path,
-        std::move(log));
+        log);
     if(! srv)
         return EXIT_FAILURE;
 

@@ -132,10 +132,4 @@ public:
 /// Log at fatal level
 #define LOG_FTL(sect, ...) LOG_AT_LEVEL(sect, 0, __VA_ARGS__)
 
-/** Create the logger object
-*/
-extern
-std::unique_ptr<logger>
-make_logger();
-
 #endif

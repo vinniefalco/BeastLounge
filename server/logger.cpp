@@ -11,7 +11,8 @@
 #include <boost/beast/_experimental/unit_test/dstream.hpp>
 #include <boost/beast/core/file.hpp>
 #include <boost/container/set.hpp>
-#include <boost/make_unique.hpp>
+#include <boost/smart_ptr/make_shared.hpp>
+#include <boost/smart_ptr/shared_ptr.hpp>
 #include <iostream>
 #include <mutex>
 #include <set>
@@ -144,10 +145,8 @@ public:
 
 //------------------------------------------------------------------------------
 
-/** Create the logger object
-*/
-std::unique_ptr<logger>
+boost::shared_ptr<logger>
 make_logger()
 {
-    return boost::make_unique<logger_impl>();
+    return boost::make_shared<logger_impl>();
 }

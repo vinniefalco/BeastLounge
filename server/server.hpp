@@ -13,6 +13,7 @@
 #include "config.hpp"
 #include "types.hpp"
 #include <boost/beast/core/string.hpp>
+#include <boost/smart_ptr/shared_ptr.hpp>
 #include <chrono>
 #include <functional>
 #include <memory>
@@ -98,6 +99,6 @@ extern
 std::unique_ptr<server>
 make_server(
     char const* config_path,
-    std::unique_ptr<logger> log);
+    boost::shared_ptr<logger> const& log);
 
 #endif
