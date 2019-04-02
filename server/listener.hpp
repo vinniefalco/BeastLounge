@@ -38,7 +38,7 @@ struct listener_config
         no_tls,
         allow_tls,
         require_tls
-    } kind;
+    } kind = no_tls;
 };
 
 //------------------------------------------------------------------------------
