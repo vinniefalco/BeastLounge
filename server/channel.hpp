@@ -15,6 +15,9 @@
 #include "utility.hpp"
 #include <boost/beast/_experimental/json/value.hpp>
 #include <boost/container/flat_set.hpp>
+#include <boost/thread/lock_guard.hpp>
+#include <boost/thread/shared_lock_guard.hpp>
+#include <boost/thread/shared_mutex.hpp>
 #include <mutex>
 #include <vector>
 
@@ -27,11 +30,12 @@ class user;
 
 class channel : public enable_shared_from
 {
-    using lock_type =
-        std::lock_guard<std::mutex>;
+    using mutex = boost::shared_mutex;
+    using lock_guard = boost::lock_guard<mutex>;
+    using shared_lock_guard = boost::shared_lock_guard<mutex>;
 
     channel_list& list_;
-    std::mutex mutable mutex_;
+    boost::shared_mutex mutable mutex_;
     boost::container::flat_set<user*> users_;
     uid_type uid_;
     std::size_t cid_;
@@ -75,6 +79,10 @@ public:
     bool
     insert(user& u);
 
+    /** Remove the user from the channel.
+
+        @param u Weak ownership of the user to remove.
+    */
     bool
     erase(user& u);
 
@@ -100,10 +108,18 @@ protected:
     void
     checked_user(rpc_call& rpc);
 
+    /** Called when a user is inserted to the channel's list.
+
+        @param u A strong reference to the user.
+    */
     virtual
     void
     on_insert(user& u) = 0;
 
+    /** Called when a user is erased from the channel's list.
+
+        @param u A weak reference to the user.
+    */
     virtual
     void
     on_erase(user& u) = 0;

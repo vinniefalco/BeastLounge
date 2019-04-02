@@ -52,7 +52,7 @@ bool
 channel::
 is_joined(user& u) const noexcept
 {
-    lock_type lock(mutex_);
+    shared_lock_guard lock(mutex_);
     return users_.find(&u) != users_.end();
 }
 
@@ -61,11 +61,11 @@ channel::
 insert(user& u)
 {
     {
-        bool inserted;
+        auto const inserted = [&]
         {
-            lock_type lock(mutex_);
-            inserted = users_.insert(&u).second;
-        }
+            lock_guard lock(mutex_);
+            return users_.insert(&u).second;
+        }();
         if(! inserted)
             return false;
     }
@@ -87,11 +87,14 @@ bool
 channel::
 erase(user& u)
 {
+    // First remove the user from the list
     {
-        lock_type lock(mutex_);
+        lock_guard lock(mutex_);
         if(users_.erase(&u) == 0)
             return false;
     }
+
+    // Notify channel participants
     {
         // broadcast: leave
         json::value jv;
@@ -100,6 +103,12 @@ erase(user& u)
         jv["name"] = name();
         jv["user"] = u.name;
         send(jv);
+
+        // Also notify the user, if
+        // they are still connected.
+
+        if(auto sp = lock_weak_from(&u))
+            sp->send(jv);
     }
     u.on_erase(*this);
     on_erase(u);
@@ -163,11 +172,11 @@ channel::
 send(message m)
 {
     // Make a local list of all the weak pointers
-    // representing the sessions, so we can do the
+    // representing the users, so we can do the
     // actual sending without holding the mutex:
     std::vector<boost::weak_ptr<user>> v;
     {
-        lock_type lock(mutex_);
+        shared_lock_guard lock(mutex_);
         v.reserve(users_.size());
         for(auto p : users_)
             v.emplace_back(weak_from(p));

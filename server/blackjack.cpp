@@ -17,6 +17,7 @@
 #include <boost/beast/_experimental/json/value.hpp>
 #include <boost/beast/core/static_string.hpp>
 #include <boost/make_unique.hpp>
+#include <functional>
 #include <vector>
 #include <utility>
 
@@ -123,6 +124,12 @@ struct hand
             cards.size() == 2;
     }
 
+    void
+    hit(shoe& s)
+    {
+        cards.push_back(s.deal());
+    }
+
     bool
     is_finished() const
     {
@@ -132,8 +139,9 @@ struct hand
     void
     to_json(json::value& jv) const
     {
-        jv.emplace_string().assign(
-            cards.data(), cards.size());
+        auto& arr = jv.emplace_array();
+        arr.insert(arr.end(),
+            cards.begin(), cards.end());
     }
 };
 
@@ -157,10 +165,16 @@ struct seat
     state_t state = open;
     std::vector<hand> hands;
 
+    seat()
+    {
+        hands.resize(1);
+    }
+
     void
     to_json(json::value& jv) const
     {
         jv = json::object{};
+        jv.emplace("hands", hands);
         switch(state)
         {
         case dealer:
@@ -182,7 +196,6 @@ struct seat
             jv["state"] = "open";
             break;
         }
-        jv.emplace("hands", hands);
     }
 };
 
@@ -205,7 +218,7 @@ class game
     std::vector<seat> seat_;
 
     // which seat's turn
-    int turn_ = 0;
+    int turn_ = 1;
 
 public:
     explicit
@@ -213,24 +226,17 @@ public:
         : shoe_(decks)
     {
         BOOST_ASSERT(
-            decks >= 1 && decks <= 8);
-
+            decks >= 1 && decks <= 6);
         seat_.resize(6);
-
         seat_[0].state = seat::dealer;
-    }
-
-    void
-    deal_one(hand&)
-    {
-        auto const c = shoe_.deal();
     }
 
     std::size_t
     find(user const& u) const
     {
         for(auto const& s : seat_)
-            if(s.u == &u)
+            if( s.state != seat::open &&
+                s.u == &u)
                 return &s - &seat_.front();
         return 0;
     }
@@ -270,15 +276,52 @@ public:
     }
 
     // Leave the game as a player.
-    // `true` = success
-    // `false` = not playing
-    bool
+    //  1 = now leaving, was playing
+    //  2 = now open, was waiting
+    // -1 = not playing
+    // -2 = already leaving
+    int
     watch(user& u)
     {
         auto const i = find(u);
         if(! i)
-            return false;
-        return true;
+            return -1;
+        switch(seat_[i].state)
+        {
+        case seat::waiting:
+            seat_[i].state = seat::open;
+            return 2;
+
+        case seat::playing:
+            seat_[i].state = seat::leaving;
+            return 1;
+
+        case seat::leaving:
+            return -2;
+
+        default:
+            break;
+        }
+        return -3;
+    }
+
+    // Surrender the hand and leave
+    //  1 = success
+    // -1 = not playing
+    int
+    surrender(user& u)
+    {
+        auto const i = find(u);
+        if(! i)
+            return -1;
+        seat_[i].state = seat::open;
+        return 1;
+    }
+
+    void
+    hit()
+    {
+        seat_[1].hands[0].hit(shoe_);
     }
 
     void
@@ -321,7 +364,7 @@ public:
         boost::ignore_unused(srv_);
     }
 
-protected:
+private:
     // Post a call to the strand
     template<class... Args>
     void
@@ -333,26 +376,28 @@ protected:
                 std::forward<Args>(args)...));
     }
 
-    // Called when a user joins the channel
+    //--------------------------------------------------------------------------
+    //
+    // channel
+    //
+    //--------------------------------------------------------------------------
+
     void
     on_insert(user& u) override
     {
-        json::value jv;
-        jv["cid"] = cid();
-        jv["verb"] = "update";
-        jv["action"] = "init";
-        {
-            lock_guard lock(mutex_);
-            jv["game"] = g_;
-        }
-        u.send(jv);
+        post(
+            &table::do_insert,
+            this,
+            shared_from(&u));
     }
 
-    // Called when a user leaves the channel
     void
-    on_erase(user&) override
+    on_erase(user& u) override
     {
-        // TODO surrender hand
+        post(
+            &table::do_erase,
+            this,
+            std::reference_wrapper<user>(u));
     }
 
     void
@@ -380,6 +425,42 @@ protected:
         }
     }
 
+    //--------------------------------------------------------------------------
+    //
+    // table
+    //
+    //--------------------------------------------------------------------------
+
+    void
+    update(beast::string_view action)
+    {
+        json::value jv;
+        jv["cid"] = cid();
+        jv["verb"] = "update";
+        jv["action"] = action;
+        jv["game"] = g_;
+        send(jv);
+    }
+
+    void
+    do_insert(boost::shared_ptr<user> sp)
+    {
+        json::value jv;
+        jv["cid"] = cid();
+        jv["verb"] = "update";
+        jv["action"] = "init";
+        jv["game"] = g_;
+        sp->send(jv);
+    }
+
+    void
+    do_erase(user& u)
+    {
+        auto const result = g_.surrender(u);
+        if(result == 1)
+            update("surrender");
+    }
+
     void
     do_play(rpc_call&& rpc)
     {
@@ -389,15 +470,9 @@ protected:
             auto result = g_.play(*rpc.u);
             if(result == 0)
                 rpc.fail("No open seat");
-            else if(result == -1)
+            if(result == -1)
                 rpc.fail("Already playing");
-
-            json::value jv;
-            jv["cid"] = cid();
-            jv["verb"] = "update";
-            jv["action"] = "play";
-            jv["game"] = g_;
-            send(jv);
+            update("play");
             rpc.complete();
         }
         catch(rpc_error const& e)
@@ -411,6 +486,13 @@ protected:
     {
         try
         {
+            auto result = g_.watch(*rpc.u);
+            if(result == -1)
+                rpc.fail("Not playing");
+            if(result == -2)
+                rpc.fail("Already leaving");
+            update("watch");
+            rpc.complete();
         }
         catch(rpc_error const& e)
         {
@@ -423,6 +505,9 @@ protected:
     {
         try
         {
+            g_.hit();
+            update("hit");
+            rpc.complete();
         }
         catch(rpc_error const& e)
         {

@@ -77,6 +77,10 @@ function UpdateSeat(jv, i, e) {
     else if(jv["state"] == "waiting") s += jv["user"] + " (Waiting)";
     else if(jv["state"] == "playing") s += jv["user"];
     else if(jv["state"] == "leaving") s += jv["user"] + " (Leaving)";
+    var h = jv["hands"][0];
+    for(i = 0; i < h.length; i++) {
+        s += ' ' + CardText(h[i]);
+    }
     e.textContent = s;
 }
 

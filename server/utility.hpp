@@ -69,6 +69,14 @@ weak_from(T* p)
 #endif
 }
 
+
+template<class T>
+boost::shared_ptr<T>
+lock_weak_from(T* p)
+{
+    return weak_from(p).lock();
+}
+
 //------------------------------------------------------------------------------
 
 namespace detail {
