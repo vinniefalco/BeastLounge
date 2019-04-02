@@ -46,12 +46,14 @@ class basic_parser
     bool n_exp_neg_;
     bool is_key_;
 
+    BOOST_BEAST_DECL
     static
     bool
     append_digit(
         number::mantissa_type* value,
         char digit);
 
+    BOOST_BEAST_DECL
     static
     bool
     append_digit(

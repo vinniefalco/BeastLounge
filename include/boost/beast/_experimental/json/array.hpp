@@ -420,6 +420,7 @@ private:
         value* first,
         value* last);
 
+    BOOST_BEAST_DECL
     void
     move(
         value* to,
