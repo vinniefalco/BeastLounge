@@ -27,6 +27,7 @@
   <div id="blackjack">
   <h2>Blackjack</h2>
   <table>
+    <tr><td><div class="message"></div></td></tr>
     <tr><td><div class="seat">x</div></td></tr>
     <tr><td><div class="seat">x</div></td></tr>
     <tr><td><div class="seat">x</div></td></tr>
@@ -35,9 +36,13 @@
     <tr><td><div class="seat">x</div></td></tr>
   </table>
   <button id="bj_join">Join</button>
+  <button id="bj_leave">Leave</button>
+  &nbsp;&nbsp;&nbsp;&nbsp;
   <button id="bj_play">Play</button>
   <button id="bj_watch">Watch</button>
-  <button id="bj_leave">Leave</button>
+  &nbsp;&nbsp;&nbsp;&nbsp;
+  <button id="bj_bet">Bet</button>
+  <button id="bj_start">Start</button>
   &nbsp;&nbsp;&nbsp;&nbsp;
   <button id="bj_hit">Hit</button>
   <button id="bj_stand">Stand</button>
@@ -131,6 +136,12 @@ bj_join.onclick = function() {
     ws.send_message('join', { cid: 3 });
 }
 
+bj_leave.onclick = function() {
+    if (ws == null) 
+        return;
+    ws.send_message('leave', { cid: 3 });
+}
+
 bj_play.onclick = function() {
     if (ws == null) 
         return;
@@ -143,10 +154,16 @@ bj_watch.onclick = function() {
     ws.send_message('watch', { cid: 3 });
 }
 
-bj_leave.onclick = function() {
+bj_bet.onclick = function() {
     if (ws == null) 
         return;
-    ws.send_message('leave', { cid: 3 });
+    ws.send_message('bet', { cid: 3 });
+}
+
+bj_start.onclick = function() {
+    if (ws == null) 
+        return;
+    ws.send_message('start', { cid: 3 });
 }
 
 bj_hit.onclick = function () {

@@ -273,7 +273,7 @@ public:
 
         // Close the acceptor
         beast::error_code ec;
-        acceptor_.close();
+        acceptor_.close(ec);
 
         // Stop all the sessions
         std::vector<

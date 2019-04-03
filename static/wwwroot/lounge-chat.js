@@ -69,24 +69,25 @@ function CardText(card)
   return s.substring(2*(card-1), 2*card);
 }
 
-function UpdateSeat(jv, i, e) {
+function UpdateSeat(seat, i, e) {
     var s;
     s = '[' + i + '] ';
-         if(jv["state"] == "dealer")  s += "(Dealer)";
-    else if(jv["state"] == "open")    s += "(Open)";
-    else if(jv["state"] == "waiting") s += jv["user"] + " (Waiting)";
-    else if(jv["state"] == "playing") s += jv["user"];
-    else if(jv["state"] == "leaving") s += jv["user"] + " (Leaving)";
-    var h = jv["hands"][0];
+         if(seat["state"] == "dealer")  s += "(Dealer)";
+    else if(seat["state"] == "open")    s += "(Open)";
+    else if(seat["state"] == "waiting") s += seat["user"] + " (Waiting)";
+    else if(seat["state"] == "playing") s += seat["user"];
+    else if(seat["state"] == "leaving") s += seat["user"] + " (Leaving)";
+    if(seat["wager"] != undefined) s += " Bet $" + seat["wager"];
+    var h = seat["hands"][0];
     for(i = 0; i < h.length; i++) {
         s += ' ' + CardText(h[i]);
     }
     e.textContent = s;
 }
 
-function UpdateTable(jv, e) {
+function UpdateTable(game, e) {
+    e.getElementsByClassName("message")[0].textContent = game.message;
     var seats = e.getElementsByClassName("seat");
-    console.log(seats);
     for(var i = 0; i <= 5; i++)
-        UpdateSeat(jv.seats[i], i, seats[i]);
+        UpdateSeat(game.seats[i], i, seats[i]);
 }

@@ -23,6 +23,7 @@
 #include <boost/assert.hpp>
 #include <boost/make_unique.hpp>
 #include <boost/throw_exception.hpp>
+#include <atomic>
 #include <condition_variable>
 #include <iostream>
 #include <mutex>
@@ -165,7 +166,7 @@ class server_impl
     std::mutex mutex_;
     time_point shutdown_time_;
     bool running_ = false;
-    bool stop_ = false;
+    std::atomic<bool> stop_;
 
     std::unique_ptr<::channel_list> channel_list_;
 
@@ -189,6 +190,7 @@ public:
             SIGINT,
             SIGTERM)
         , shutdown_time_(never())
+        , stop_(false)
         , channel_list_(make_channel_list(*this))
     {
         timer_.expires_at(never());
@@ -241,7 +243,7 @@ public:
         // Block the main thread until stop() is called
         {
             std::unique_lock<std::mutex> lock(mutex_);
-            cv_.wait(lock, [this]{ return stop_; });
+            cv_.wait(lock, [this]{ return stop_.load(); });
         }
 
         // Notify all agents to stop
@@ -273,7 +275,7 @@ public:
     bool
     is_shutting_down() override
     {
-        return false;
+        return stop_.load();
     }
 
     void
@@ -294,11 +296,6 @@ public:
 
         shutdown_time_ = clock_type::now() + cooldown;
         on_timer();
-    }
-
-    void
-    notify_shutdown()
-    {
     }
 
     void

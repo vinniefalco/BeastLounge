@@ -49,11 +49,6 @@ public:
     insert(
         std::unique_ptr<service> sp) = 0;
 
-    /// Returns `true` if the server is shutting down gracefully
-    virtual
-    bool
-    is_shutting_down() = 0;
-
     //--------------------------------------------------------------------------
     //
     // Services
@@ -76,6 +71,11 @@ public:
     virtual
     void
     run() = 0;
+
+    /// Returns `true` if the server is shutting down gracefully
+    virtual
+    bool
+    is_shutting_down() = 0;
 
     /** Shut down the server gracefully
     */
