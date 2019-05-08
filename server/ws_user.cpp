@@ -167,7 +167,7 @@ public:
             impl()->ws().get_executor(),
             beast::bind_front_handler(
                 &ws_session_base::do_stop,
-                shared_from(this)));
+                boost::shared_from(this)));
     }
 
     void
@@ -197,7 +197,7 @@ public:
             impl()->ws().get_executor(),
             beast::bind_front_handler(
                 &ws_session_base::do_send,
-                shared_from(this),
+                boost::shared_from(this),
                 std::move(m)));
     }
 
@@ -220,7 +220,7 @@ public:
             mq_.back(),
             beast::bind_front_handler(
                 &ws_session_base::on_write,
-                shared_from(this),
+                boost::shared_from(this),
                 mq_.size() - 1));
 
     }

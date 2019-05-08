@@ -18,7 +18,7 @@
     Every session must be owned by one listener
 */
 class session
-    : public enable_shared_from
+    : public boost::enable_shared_from
 {
 public:
     virtual ~session() = default;

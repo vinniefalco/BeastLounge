@@ -275,7 +275,7 @@ public:
             impl()->stream().get_executor(),
             beast::bind_front_handler(
                 &http_session_base::do_stop,
-                shared_from(this)));
+                boost::shared_from(this)));
     }
 
     void
@@ -516,7 +516,7 @@ public:
             stream_.get_executor(),
             beast::bind_front_handler(
                 &ssl_http_session_impl::do_run,
-                shared_from(this)));
+                boost::shared_from(this)));
     }
 
     void
@@ -531,7 +531,7 @@ public:
             storage_.data(),
             beast::bind_front_handler(
                 &ssl_http_session_impl::on_handshake,
-                shared_from(this)));
+                boost::shared_from(this)));
     }
 
     void
@@ -560,7 +560,7 @@ public:
         stream_.async_shutdown(
             beast::bind_front_handler(
                 &ssl_http_session_impl::on_shutdown,
-                shared_from(this)));
+                boost::shared_from(this)));
     }
 
     void

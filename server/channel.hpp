@@ -28,7 +28,7 @@ class user;
 
 //------------------------------------------------------------------------------
 
-class channel : public enable_shared_from
+class channel : public boost::enable_shared_from
 {
     using mutex = boost::shared_mutex;
     using lock_guard = boost::lock_guard<mutex>;

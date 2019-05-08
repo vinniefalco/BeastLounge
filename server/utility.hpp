@@ -11,7 +11,7 @@
 #define LOUNGE_UTILITY_HPP
 
 #include "config.hpp"
-#include <boost/smart_ptr/enable_shared_from_this.hpp>
+#include <boost/smart_ptr/enable_shared_from.hpp>
 #include <boost/smart_ptr/shared_ptr.hpp>
 #include <chrono>
 #include <type_traits>
@@ -39,42 +39,6 @@ ceil(std::chrono::duration<Rep, Period> const& d)
     if (t < d)
         return t + To{1};
     return t;
-}
-//------------------------------------------------------------------------------
-
-struct enable_shared_from
-    : boost::enable_shared_from_this<enable_shared_from>
-{
-};
-
-template<class T>
-boost::shared_ptr<T>
-shared_from(T* p)
-{
-    return boost::shared_ptr<T>(
-        p->shared_from_this(), p);
-}
-
-template<class T>
-boost::weak_ptr<T>
-weak_from(T* p)
-{
-#if 0
-    return boost::weak_ptr<T>(
-        p->weak_from_this(), p);
-#else
-    return boost::weak_ptr<T>(
-        boost::static_pointer_cast<T>(
-            p->weak_from_this().lock()));
-#endif
-}
-
-
-template<class T>
-boost::shared_ptr<T>
-lock_weak_from(T* p)
-{
-    return weak_from(p).lock();
 }
 
 //------------------------------------------------------------------------------
@@ -110,32 +74,23 @@ struct handler
 } // detail
 
 template<class T
-    ,class = typename std::enable_if<
-        std::is_base_of<enable_shared_from, T>::value>::type
+    ,class = typename std::enable_if<std::is_base_of<
+        boost::enable_shared_from, T>::value>::type
 >
 detail::shared_handler<T>
 bind_front(T* this_)
 {
-    return {shared_from(this_)};
+    return {boost::shared_from(this_)};
 }
 
 template<class T
-    ,class = typename std::enable_if<
-        ! std::is_base_of<enable_shared_from, T>::value>::type
+    ,class = typename std::enable_if<! std::is_base_of<
+        boost::enable_shared_from, T>::value>::type
 >
 detail::handler<T>
 bind_front(T* this_)
 {
     return {this_};
-}
-
-//------------------------------------------------------------------------------
-
-template<class T, class U>
-boost::weak_ptr<T>
-weak_ptr_cast(boost::weak_ptr<U> const& wp) noexcept
-{
-    return boost::static_pointer_cast<T>(wp.lock());
 }
 
 #endif

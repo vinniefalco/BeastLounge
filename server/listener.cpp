@@ -282,7 +282,7 @@ public:
             std::lock_guard<std::mutex> lock(mutex_);
             v.reserve(sessions_.size());
             for(auto p : sessions_)
-                v.emplace_back(weak_from(p));
+                v.emplace_back(boost::weak_from(p));
             sessions_.clear();
             sessions_.shrink_to_fit();
         }

@@ -552,7 +552,7 @@ private:
         post(
             &table::do_insert,
             this,
-            shared_from(&u));
+            boost::shared_from(&u));
     }
 
     void

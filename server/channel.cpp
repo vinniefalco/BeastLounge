@@ -107,7 +107,7 @@ erase(user& u)
         // Also notify the user, if
         // they are still connected.
 
-        if(auto sp = lock_weak_from(&u))
+        if(auto sp = boost::weak_from(&u).lock())
             sp->send(jv);
     }
     u.on_erase(*this);
@@ -179,7 +179,7 @@ send(message m)
         shared_lock_guard lock(mutex_);
         v.reserve(users_.size());
         for(auto p : users_)
-            v.emplace_back(weak_from(p));
+            v.emplace_back(boost::weak_from(p));
     }
 
     // For each user in our local list, try to
