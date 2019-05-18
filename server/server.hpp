@@ -25,6 +25,14 @@ class rpc_handler;
 class service;
 class user;
 
+struct timeout_config
+{
+    /// websocket handshake timeout, default: 30s
+    std::chrono::seconds handshake_timeout;
+    /// websocket handshake timeout, default: 300s
+    std::chrono::seconds idle_timeout;
+};
+
 //------------------------------------------------------------------------------
 
 /** An instance of the lounge server.
@@ -86,6 +94,10 @@ public:
     virtual
     void
     stop() = 0;
+
+    virtual
+    timeout_config
+    timeouts() const = 0;
 };
 
 //------------------------------------------------------------------------------

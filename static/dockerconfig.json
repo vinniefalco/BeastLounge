@@ -8,8 +8,10 @@
     ],
 
     "server": {
-      "threads" : 5,
-      "doc-root" : "var/beast-lounge/www"
+      "threads" : 1,
+      "doc-root" : "var/beast-lounge/www",
+      "handshake_timeout_seconds" : 50,
+      "idle_timeout_seconds" : 60
     },
 
     "log" : {
