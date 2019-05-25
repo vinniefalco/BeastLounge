@@ -33,10 +33,6 @@
 //------------------------------------------------------------------------------
 
 extern
-boost::shared_ptr<logger>
-make_logger();
-
-extern
 void
 make_blackjack_service(server&);
 
@@ -155,7 +151,7 @@ class server_impl
     using time_point = clock_type::time_point;
 
     server_config cfg_;
-    boost::shared_ptr<logger> log_;
+    std::unique_ptr<logger> log_;
     std::vector<std::unique_ptr<service>> services_;
     net::basic_waitable_timer<
         clock_type,
@@ -181,9 +177,9 @@ public:
     explicit
     server_impl(
         server_config cfg,
-        boost::shared_ptr<logger> const& log)
+        std::unique_ptr<logger> log)
         : cfg_(std::move(cfg))
-        , log_(log)
+        , log_(std::move(log))
         , timer_(this->make_executor())
         , signals_(
             timer_.get_executor(),
@@ -417,7 +413,7 @@ public:
 std::unique_ptr<server>
 make_server(
     char const* config_path,
-    boost::shared_ptr<logger> const& log)
+    std::unique_ptr<logger> log)
 {
     beast::error_code ec;
     // Read the JSON configuration file
@@ -470,7 +466,7 @@ make_server(
             // Create the server
             srv = boost::make_unique<server_impl>(
                 std::move(cfg),
-                log);
+                std::move(log));
         }
         catch(beast::system_error const& e)
         {

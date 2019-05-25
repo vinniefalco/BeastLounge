@@ -99,6 +99,6 @@ extern
 std::unique_ptr<server>
 make_server(
     char const* config_path,
-    boost::shared_ptr<logger> const& log);
+    std::unique_ptr<logger> log);
 
 #endif
