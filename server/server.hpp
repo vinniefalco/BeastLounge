@@ -88,17 +88,4 @@ public:
     stop() = 0;
 };
 
-//------------------------------------------------------------------------------
-
-/** Create a server.
-
-    The configuration file is loaded,
-    and all child objects are created.
-*/
-extern
-std::unique_ptr<server>
-make_server(
-    char const* config_path,
-    std::unique_ptr<logger> log);
-
 #endif

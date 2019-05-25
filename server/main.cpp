@@ -24,9 +24,24 @@
 # endif
 #endif
 
+//------------------------------------------------------------------------------
+
 extern
 std::unique_ptr<logger>
 make_logger();
+
+/** Create a server.
+
+    The configuration file is loaded,
+    and all child objects are created.
+*/
+extern
+std::unique_ptr<server>
+make_server(
+    char const* config_path,
+    std::unique_ptr<logger> log);
+
+//------------------------------------------------------------------------------
 
 int
 main(int argc, char* argv[])
@@ -42,11 +57,7 @@ main(int argc, char* argv[])
     // Create the logger
     auto log = make_logger();
     if(! log)
-    {
-        log->cerr() <<
-            "make_logger: failed\n";
         return EXIT_FAILURE;
-    }
 
     // Check command line arguments.
     if(argc != 2)
