@@ -499,7 +499,7 @@ make_server(
             }
             catch(beast::system_error const& e)
             {
-                log->cerr() <<
+                srv->log().cerr() <<
                     "listener_config: " << e.code().message() << "\n";
                 return nullptr;
             }

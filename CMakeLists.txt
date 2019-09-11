@@ -94,7 +94,7 @@ add_definitions (-D_ITERATOR_DEBUG_LEVEL=0)
 #-------------------------------------------------------------------------------
 
 find_package (
-  Boost REQUIRED COMPONENTS
+  Boost 1.71 REQUIRED COMPONENTS
     system
     thread
     )
