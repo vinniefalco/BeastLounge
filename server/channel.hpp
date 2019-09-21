@@ -13,7 +13,8 @@
 #include "config.hpp"
 #include "uid.hpp"
 #include "utility.hpp"
-#include <boost/beast/_experimental/json/value.hpp>
+#include <boost/beast/core/string.hpp>
+#include <boost/json/value.hpp>
 #include <boost/container/flat_set.hpp>
 #include <boost/thread/lock_guard.hpp>
 #include <boost/thread/shared_lock_guard.hpp>

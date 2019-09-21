@@ -9,7 +9,7 @@
 
 #include "message.hpp"
 #include <boost/beast/core/flat_static_buffer.hpp>
-#include <boost/beast/_experimental/json/serializer.hpp>
+#include <boost/json/serializer.hpp>
 
 //------------------------------------------------------------------------------
 

@@ -15,7 +15,6 @@ exe fat-tests :
     $(SOURCES)
     /lounge//lib-asio
     /lounge//lib-beast
-    /lounge//lib-beast-extra
     /lounge//lib-test
     ;
 
@@ -24,7 +23,6 @@ explicit fat-tests ;
 run $(SOURCES)
     /lounge//lib-asio
     /lounge//lib-beast
-    /lounge//lib-beast-extra
     /lounge//lib-test
     : : :
     <include>../../server

@@ -20,11 +20,12 @@ class tcp;
 }
 }
 
-namespace beast {
-namespace http {}
 namespace json {
 class value;
 }
+
+namespace beast {
+namespace http {}
 namespace websocket {}
 namespace ssl {}
 } // beast
@@ -34,7 +35,7 @@ namespace ssl {}
 namespace net   = boost::asio;
 namespace asio  = boost::asio;
 namespace beast = boost::beast;
-namespace json  = boost::beast::json;
+namespace json  = boost::json;
 namespace http  = boost::beast::http;
 namespace websocket = boost::beast::websocket;
 

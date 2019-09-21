@@ -14,7 +14,7 @@
 #include "service.hpp"
 #include "types.hpp"
 #include "user.hpp"
-#include <boost/beast/_experimental/json/value.hpp>
+#include <boost/json/value.hpp>
 #include <boost/beast/core/static_string.hpp>
 #include <boost/make_unique.hpp>
 #include <functional>

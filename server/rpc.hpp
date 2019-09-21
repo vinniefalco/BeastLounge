@@ -11,8 +11,9 @@
 #define LOUNGE_RPC_HPP
 
 #include "config.hpp"
+#include <boost/beast/core/error.hpp>
 #include <boost/beast/core/string.hpp>
-#include <boost/beast/_experimental/json/value.hpp>
+#include <boost/json/value.hpp>
 #include <boost/smart_ptr/shared_ptr.hpp>
 #include <boost/optional.hpp>
 #include <stdexcept>

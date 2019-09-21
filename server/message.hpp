@@ -12,7 +12,7 @@
 
 #include "config.hpp"
 #include <boost/beast/core/buffer_traits.hpp>
-#include <boost/beast/_experimental/json/value.hpp>
+#include <boost/json/value.hpp>
 #include <boost/assert.hpp>
 #include <boost/core/exchange.hpp>
 #include <atomic>

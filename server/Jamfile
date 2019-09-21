@@ -8,15 +8,15 @@
 #
 
 local SOURCES =
+    blackjack.cpp
     channel.cpp
     channel_list.cpp
-    chat_service.cpp
     http_session.cpp
-    ident_service.cpp
     listener.cpp
     logger.cpp
     main.cpp
     message.cpp
+    room.cpp
     rpc.cpp
     server.cpp
     system.cpp
@@ -29,5 +29,4 @@ exe lounge-server :
     /lounge//lib-asio
     /lounge//lib-asio-ssl
     /lounge//lib-beast
-    /lounge//lib-beast-extra
     ;

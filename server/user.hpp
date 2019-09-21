@@ -13,7 +13,7 @@
 #include "config.hpp"
 #include "session.hpp"
 #include "utility.hpp"
-#include <boost/beast/_experimental/json/value.hpp>
+#include <boost/json/value.hpp>
 #include <boost/container/flat_set.hpp>
 #include <mutex>
 #include <string>

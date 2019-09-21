@@ -119,6 +119,11 @@ file (GLOB_RECURSE BEAST_EXTRA_FILES
   ${PROJECT_SOURCE_DIR}/include/boost/beast/*.*
   )
 
+file (GLOB_RECURSE JSON_FILES
+  ${PROJECT_SOURCE_DIR}/json/include/boost/json/*.hpp
+  ${PROJECT_SOURCE_DIR}/json/include/boost/json/*.ipp
+  )
+
 #-------------------------------------------------------------------------------
 #
 # OpenSSL
@@ -175,18 +180,6 @@ target_link_libraries(lib-beast PUBLIC Threads::Threads lib-asio)
 
 set_property (TARGET lib-beast PROPERTY FOLDER "static-libs")
 
-
-#-------------------------------------------------------------------------------
-
-add_library (
-    lib-beast-extra STATIC
-    test/lib_beast_extra.cpp
-)
-
-target_link_libraries (lib-beast-extra PUBLIC Threads::Threads lib-beast)
-
-set_property (TARGET lib-beast-extra PROPERTY FOLDER "static-libs")
-
 #-------------------------------------------------------------------------------
 
 add_library (
@@ -207,6 +200,7 @@ if (OPENSSL_FOUND)
 endif()
 
 include_directories (${PROJECT_SOURCE_DIR}/include)
+include_directories (${PROJECT_SOURCE_DIR}/json/include)
 
 include(CTest)
 

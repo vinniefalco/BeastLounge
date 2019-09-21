@@ -24,6 +24,5 @@ add_test(beast-core-tests beast-core-tests)
 target_link_libraries (beast-core-tests
     lib-asio
     lib-beast
-    lib-beast-extra
     lib-test
 )

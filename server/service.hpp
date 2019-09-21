@@ -11,7 +11,7 @@
 #define LOUNGE_SERVICE_HPP
 
 #include "config.hpp"
-#include <boost/beast/_experimental/json/value.hpp>
+#include <boost/json/value.hpp>
 
 /** Base for polymorphic services
 

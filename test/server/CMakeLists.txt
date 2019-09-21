@@ -26,6 +26,5 @@ add_executable (server-tests
 target_link_libraries (server-tests
     lib-asio
     lib-beast
-    lib-beast-extra
     lib-test
 )

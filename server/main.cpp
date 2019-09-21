@@ -11,7 +11,6 @@
 #include "server.hpp"
 #include <boost/config.hpp>
 #include <boost/beast/src.hpp>
-#include <boost/beast/src_extra.hpp>
 #include <iostream>
 
 #ifdef BOOST_MSVC

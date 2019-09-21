@@ -14,7 +14,7 @@
 #include "server.hpp"
 #include "service.hpp"
 #include "user.hpp"
-#include <boost/beast/_experimental/json/parser.hpp>
+#include <boost/json/parser.hpp>
 #include <boost/container/flat_set.hpp>
 #include <boost/thread/lock_guard.hpp>
 #include <boost/thread/shared_lock_guard.hpp>

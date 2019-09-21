@@ -9,6 +9,7 @@
 
 source_group (TREE ${Boost_INCLUDE_DIRS}/boost/beast PREFIX beast FILES ${BEAST_FILES})
 source_group (TREE ${PROJECT_SOURCE_DIR}/include/boost/beast PREFIX beast FILES ${BEAST_EXTRA_FILES})
+source_group (TREE ${PROJECT_SOURCE_DIR}/json/include/boost/json PREFIX json FILES ${JSON_FILES})
 GroupSources (server "/")
 
 file (GLOB_RECURSE SERVER_HEADERS . *.hpp)
@@ -16,6 +17,7 @@ file (GLOB_RECURSE SERVER_HEADERS . *.hpp)
 add_executable (lounge-server
     ${BEAST_FILES}
     ${BEAST_EXTRA_FILES}
+    ${JSON_FILES}
     ${SERVER_HEADERS}
     Jamfile
     README.md

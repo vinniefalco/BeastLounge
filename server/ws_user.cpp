@@ -17,7 +17,7 @@
 #include <boost/beast/websocket/stream.hpp>
 #include <boost/beast/core/stream_traits.hpp>
 #include <boost/beast/ssl/ssl_stream.hpp>
-#include <boost/beast/_experimental/json/parser.hpp>
+#include <boost/json/parser.hpp>
 #include <boost/asio/coroutine.hpp>
 #include <boost/asio/ip/tcp.hpp>
 #include <boost/asio/dispatch.hpp>

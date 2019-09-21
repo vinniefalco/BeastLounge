@@ -14,10 +14,10 @@
 #include "server.hpp"
 #include "service.hpp"
 #include "utility.hpp"
-#include <boost/beast/_experimental/json/assign_string.hpp>
-#include <boost/beast/_experimental/json/assign_vector.hpp>
-#include <boost/beast/_experimental/json/parse_file.hpp>
-#include <boost/beast/_experimental/json/parser.hpp>
+#include <boost/json/assign_string.hpp>
+#include <boost/json/assign_vector.hpp>
+#include <boost/json/parse_file.hpp>
+#include <boost/json/parser.hpp>
 #include <boost/asio/basic_waitable_timer.hpp>
 #include <boost/asio/basic_signal_set.hpp>
 #include <boost/assert.hpp>
@@ -47,7 +47,6 @@ make_system_channel(server&);
 //------------------------------------------------------------------------------
 
 namespace boost {
-namespace beast {
 namespace json {
 
 template<>
@@ -68,7 +67,6 @@ struct value_exchange<net::ip::address>
 };
 
 } // json
-} // beast
 } // boost
 
 void

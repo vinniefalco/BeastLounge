@@ -88,15 +88,6 @@ lib lib-beast
         $(defines)
     ;
 
-lib lib-beast-extra
-    : test/lib_beast_extra.cpp
-    : requirements
-        <link>static
-        $(defines)
-    : usage-requirements
-        $(defines)
-    ;
-
 lib lib-test
     : test/lib_test.cpp
     : requirements
