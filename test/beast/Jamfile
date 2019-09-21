@@ -9,5 +9,4 @@
 
 alias run-tests :
     core//run-tests
-    json//run-tests
     ;
