@@ -60,7 +60,7 @@ struct value_exchange<net::ip::address>
     {
         if(! jv.is_string())
             throw beast::system_error(
-                json::error::expected_string);
+                json::error::not_string);
         t = net::ip::make_address(
             jv.as_string().c_str());
     }
@@ -74,11 +74,8 @@ from_json(
     logger_config& cfg,
     json::value const& jv)
 {
-    auto& jo = jv["log"];
-    if(! jo.is_object())
-        throw beast::system_error(
-            json::error::expected_object);
-    jo["path"].store(cfg.path);
+    auto& jo = jv.as_object().at("log");
+    jo.at("path").store(cfg.path);
 }
 
 void
@@ -86,12 +83,10 @@ from_json(
     listener_config& cfg,
     json::value const& jv)
 {
-    if(! jv.is_object())
-        throw beast::system_error(
-            json::error::expected_object);
-    jv["name"].store(cfg.name);
-    jv["address"].store(cfg.address);
-    jv["port_num"].store(cfg.port_num);
+    auto& jo = jv.as_object();
+    jo.at("name").store(cfg.name);
+    jo.at("address").store(cfg.address);
+    jo.at("port_num").store(cfg.port_num);
 }
 
 //------------------------------------------------------------------------------
@@ -107,13 +102,11 @@ struct server_config
     from_json(
         json::value const& jv)
     {
-        if(! jv.is_object())
-            throw beast::system_error(
-                json::error::expected_object);
-        jv["threads"].store(num_threads);
+        auto& jo = jv.as_object();
+        jo.at("threads").store(num_threads);
         if(num_threads < 1)
             num_threads = 1;
-        jv["doc-root"].store(doc_root);
+        jo.at("doc-root").store(doc_root);
     }
 };
 
@@ -451,7 +444,7 @@ make_server(
         auto& jo = jv["server"];
         if(! jo.is_object())
         {
-            ec = json::error::expected_object;
+            ec = json::error::not_object;
             log->cerr() <<
                 "server_config: " << ec.message() << "\n";
             return nullptr;
@@ -483,7 +476,7 @@ make_server(
         auto& ja = jv["listeners"];
         if(! ja.is_array())
         {
-            ec = json::error::expected_array;
+            ec = json::error::not_array;
             return nullptr;
         }
         for(auto& e : ja.as_array())

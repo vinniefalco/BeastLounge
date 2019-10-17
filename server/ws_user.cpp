@@ -115,7 +115,8 @@ public:
 
                 // Parse the buffer into JSON
                 json::parser pr;
-                pr.write(msg_.data(), ec);
+                auto const cb = msg_.data();
+                pr.write(cb.data(), cb.size(), ec);
                 if(ec)
                     return fail(ec, "parse-json");
 

@@ -29,4 +29,5 @@ exe lounge-server :
     /lounge//lib-asio
     /lounge//lib-asio-ssl
     /lounge//lib-beast
+    <define>BOOST_JSON_HEADER_ONLY=1
     ;

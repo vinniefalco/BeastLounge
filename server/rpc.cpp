@@ -117,7 +117,7 @@ rpc_call(
     ::user& u_,
     json::storage_ptr sp)
     : u(boost::shared_from(&u_))
-    , method(json::allocator<char>(sp))
+    , method(sp)
     , params(sp)
     , result(std::move(sp))
 {
