@@ -16,7 +16,6 @@
 #include "utility.hpp"
 #include <boost/json/assign_string.hpp>
 #include <boost/json/assign_vector.hpp>
-#include <boost/json/parse_file.hpp>
 #include <boost/json/parser.hpp>
 #include <boost/asio/basic_waitable_timer.hpp>
 #include <boost/asio/basic_signal_set.hpp>
@@ -25,6 +24,7 @@
 #include <boost/throw_exception.hpp>
 #include <atomic>
 #include <condition_variable>
+#include <cstdio>
 #include <iostream>
 #include <mutex>
 #include <thread>
@@ -109,6 +109,57 @@ struct server_config
         jo.at("doc-root").store(doc_root);
     }
 };
+
+//------------------------------------------------------------------------------
+
+void
+parse_file(
+    char const* path,
+    json::basic_parser& parser,
+    beast::error_code& ec)
+{
+    auto const& gc =
+        boost::system::generic_category();
+    
+    struct cleanup
+    {
+        FILE* f;
+        ~cleanup()
+        {
+            ::fclose(f);
+        }
+    };
+
+    auto f = ::fopen(path, "rb");
+    if(! f)
+    {
+        ec = beast::error_code(errno, gc);
+        return;
+    }
+    cleanup c{f};
+    std::size_t result;
+    result = ::fseek(f, 0, SEEK_END);
+    if(result != 0)
+    {
+        ec = beast::error_code(errno, gc);
+        return;
+    }
+    auto const size = ::ftell(f);
+    if(size == -1L)
+    {
+        ec = beast::error_code(errno, gc);
+        return;
+    }
+    char* buf = new char[size];
+    result = ::fread(buf, 1, size, f);
+    if(result != 0)
+    {
+        ec = beast::error_code(errno, gc);
+        return;
+    }
+    parser.write(buf, size, ec);
+    delete[] buf;
+}
 
 //------------------------------------------------------------------------------
 
@@ -411,7 +462,7 @@ make_server(
     json::value jv;
     {
         json::parser p;
-        json::parse_file(config_path, p, ec);
+        parse_file(config_path, p, ec);
         if(ec)
         {
             log->cerr() <<
