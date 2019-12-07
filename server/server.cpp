@@ -14,9 +14,8 @@
 #include "server.hpp"
 #include "service.hpp"
 #include "utility.hpp"
-#include <boost/json/assign_string.hpp>
-#include <boost/json/assign_vector.hpp>
 #include <boost/json/parser.hpp>
+#include <boost/json/string.hpp>
 #include <boost/asio/basic_waitable_timer.hpp>
 #include <boost/asio/basic_signal_set.hpp>
 #include <boost/assert.hpp>
@@ -74,8 +73,8 @@ from_json(
     logger_config& cfg,
     json::value const& jv)
 {
-    auto& jo = jv.as_object().at("log");
-    jo.at("path").store(cfg.path);
+    cfg.path = jv.as_object().at("log")
+        .as_object().at("path").as_string();
 }
 
 void
@@ -84,7 +83,7 @@ from_json(
     json::value const& jv)
 {
     auto& jo = jv.as_object();
-    jo.at("name").store(cfg.name);
+    cfg.name = jo.at("name").as_string();
     jo.at("address").store(cfg.address);
     jo.at("port_num").store(cfg.port_num);
 }
@@ -96,7 +95,7 @@ namespace {
 struct server_config
 {
     unsigned num_threads = 1;
-    std::string doc_root;
+    json::string doc_root;
 
     void
     from_json(
@@ -106,7 +105,7 @@ struct server_config
         jo.at("threads").store(num_threads);
         if(num_threads < 1)
             num_threads = 1;
-        jo.at("doc-root").store(doc_root);
+        doc_root = jo.at("doc-root").as_string();
     }
 };
 
@@ -359,11 +358,12 @@ public:
 
         // Notify users of impending shutdown
         auto c = this->channel_list().at(1);
-        json::value jv;
-        jv["verb"] = "say";
-        jv["cid"] = c->cid();
-        jv["name"] = c->name();
-        jv["message"] = "Server is shutting down in " +
+        json::value jv(json::object_kind);
+        auto& obj = jv.get_object();
+        obj["verb"] = "say";
+        obj["cid"] = c->cid();
+        obj["name"] = c->name();
+        obj["message"] = "Server is shutting down in " +
             std::to_string(remain.count()) + " seconds";
         c->send(jv);
         timer_.expires_after(amount);
@@ -492,14 +492,16 @@ make_server(
     // Read the server configuration
     std::unique_ptr<server_impl> srv;
     {
-        auto& jo = jv["server"];
-        if(! jo.is_object())
+        if( ! jv.is_object() ||
+            ! jv.get_object().contains("server") ||
+            ! jv.get_object()["server"].is_object())
         {
             ec = json::error::not_object;
             log->cerr() <<
                 "server_config: " << ec.message() << "\n";
             return nullptr;
         }
+        auto& jo = jv.get_object()["server"];
         server_config cfg;
         try
         {
@@ -524,13 +526,15 @@ make_server(
 
     // Create listeners
     {
-        auto& ja = jv["listeners"];
-        if(! ja.is_array())
+        if( ! jv.is_object() ||
+            ! jv.get_object().contains("listeners") ||
+            ! jv.get_object()["listeners"].is_array())
         {
             ec = json::error::not_array;
             return nullptr;
         }
-        for(auto& e : ja.as_array())
+        for(auto& e :
+            jv.get_object()["listeners"].get_array())
         {
             listener_config cfg;
             try

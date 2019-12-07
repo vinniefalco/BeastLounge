@@ -14,6 +14,7 @@
 #include "server.hpp"
 #include "session.hpp"
 #include <boost/beast/core/error.hpp>
+#include <boost/json/string.hpp>
 #include <boost/asio/ip/tcp.hpp>
 #include <memory>
 #include <string>
@@ -25,7 +26,7 @@
 struct listener_config
 {
     // name of this port for logs
-    std::string name;
+    json::string name;
 
     // endpoint to bind to
     net::ip::address address;

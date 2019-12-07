@@ -71,11 +71,12 @@ insert(user& u)
     }
     {
         // broadcast: join
-        json::value jv;
-        jv["cid"] = cid();
-        jv["verb"] = "join";
-        jv["name"] = name();
-        jv["user"] = u.name;
+        json::value jv(json::object_kind);
+        auto& obj = jv.get_object();
+        obj["cid"] = cid();
+        obj["verb"] = "join";
+        obj["name"] = name();
+        obj["user"] = u.name;
         send(jv);
     }
     u.on_insert(*this);
@@ -97,11 +98,12 @@ erase(user& u)
     // Notify channel participants
     {
         // broadcast: leave
-        json::value jv;
-        jv["cid"] = cid();
-        jv["verb"] = "leave";
-        jv["name"] = name();
-        jv["user"] = u.name;
+        json::value jv(json::object_kind);
+        auto& obj = jv.get_object();
+        obj["cid"] = cid();
+        obj["verb"] = "leave";
+        obj["name"] = name();
+        obj["user"] = u.name;
         send(jv);
 
         // Also notify the user, if

@@ -167,14 +167,6 @@ public:
     rpc_call(rpc_call&&) = default;
     rpc_call& operator=(rpc_call&&) = delete;
 
-    /** Construct an empty request using the default storage.
-
-        The method, params, and id will be null,
-        and version will be 2.
-    */
-    explicit
-    rpc_call(::user& u);
-
     /** Construct an empty request using the specified storage.
 
         The method, params, and id will be null,
@@ -182,7 +174,7 @@ public:
     */
     rpc_call(
         ::user& u,
-        json::storage_ptr sp);
+        json::storage_ptr sp = {});
 
     /** Extract a JSON-RPC request or return an error.
     */
@@ -237,8 +229,8 @@ json::string&
 checked_string(json::value& jv);
 
 extern
-json::number&
-checked_number(json::value& jv);
+std::uint64_t&
+checked_uint64(json::value& jv);
 
 extern
 bool&
@@ -273,8 +265,8 @@ checked_string(
     beast::string_view key);
 
 extern
-json::number&
-checked_number(
+std::uint64_t&
+checked_uint64(
     json::value& jv,
     beast::string_view key);
 

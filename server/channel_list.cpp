@@ -102,19 +102,8 @@ public:
     dispatch(rpc_call& rpc) override
     {
         // Validate and extract the channel id
-        auto& jv_cid = checked_number(
+        auto const cid = checked_uint64(
             rpc.params, "cid");
-        if(! jv_cid.is_uint64())
-            rpc.fail(
-                rpc_code::invalid_params,
-                "Invalid cid");
-        if(jv_cid.get_uint64() >
-            (std::numeric_limits<std::size_t>::max)())
-            rpc.fail(
-                rpc_code::invalid_params,
-                "Invalid cid");
-        auto const cid = static_cast<std::size_t>(
-            jv_cid.get_uint64());
 
         // Lookup cid
         auto c = at(cid);

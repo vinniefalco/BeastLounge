@@ -93,23 +93,18 @@ rpc_error::
 to_json(
     boost::optional<json::value> const& id) const
 {
-    json::value jv;
-    jv["jsonrpc"] = "2.0";
-    auto& err = jv["error"].emplace_object();
+    json::value jv(json::object_kind);
+    auto& obj = jv.get_object();
+    obj["jsonrpc"] = "2.0";
+    auto& err = obj["error"].emplace_object();
     err["code"] = code_;
     err["message"] = msg_;
     if(id.has_value())
-        jv["id"] = *id;
+        obj["id"] = *id;
     return jv;
 }
 
 //------------------------------------------------------------------------------
-
-rpc_call::
-rpc_call(::user& u)
-    : rpc_call(u, json::default_storage())
-{
-}
 
 rpc_call::
 rpc_call(
@@ -142,7 +137,7 @@ extract(
     {
         auto it = obj.find("id");
         if(it != obj.end())
-            id_.emplace(std::move(it->second));
+            id_.emplace(std::move(it->value()));
     }
 
     // now check the version
@@ -150,13 +145,13 @@ extract(
         auto it = obj.find("jsonrpc");
         if(it != obj.end())
         {
-            if(! it->second.is_string())
+            if(! it->value().is_string())
             {
                 ec = rpc_code::expected_string_version;
                 return;
             }
             auto const& s =
-                it->second.as_string();
+                it->value().as_string();
             if(s != "2.0")
             {
                 ec = rpc_code::unknown_version;
@@ -211,13 +206,13 @@ extract(
             ec = rpc_code::missing_method;
             return;
         }
-        if(! it->second.is_string())
+        if(! it->value().is_string())
         {
             ec = rpc_code::expected_string_method;
             return;
         }
         method = std::move(
-            it->second.as_string());
+            it->value().as_string());
     }
 
     // extract params
@@ -227,13 +222,13 @@ extract(
         {
             if(it != obj.end())
             {
-                if( ! it->second.is_object() &&
-                    ! it->second.is_array())
+                if( ! it->value().is_object() &&
+                    ! it->value().is_array())
                 {
                     ec = rpc_code::expected_structured_params;
                     return;
                 }
-                params = std::move(it->second);
+                params = std::move(it->value());
             }
         }
         else
@@ -243,12 +238,12 @@ extract(
                 ec = rpc_code::missing_params;
                 return;
             }
-            if(! it->second.is_array())
+            if(! it->value().is_array())
             {
                 ec = rpc_code::expected_array_params;
                 return;
             }
-            params = std::move(it->second);
+            params = std::move(it->value());
         }
     }
 }
@@ -260,10 +255,11 @@ complete()
     if(! id_.has_value())
         return;
     json::value res(
-        json::object{},
-        result.get_storage());
-    res.emplace("id", *id_);
-    res.emplace("result", std::move(result));
+        json::object_kind,
+        result.storage());
+    auto& obj = res.get_object();
+    obj.emplace("id", *id_);
+    obj.emplace("result", std::move(result));
     u->send(res);
 }
 
@@ -305,13 +301,13 @@ checked_string(json::value& jv)
     return jv.as_string();
 }
 
-json::number&
-checked_number(json::value& jv)
+std::uint64_t&
+checked_uint64(json::value& jv)
 {
     if(! jv.is_number())
         throw rpc_error{
             "expected number"};
-    return jv.as_number();
+    return jv.get_uint64();
 }
 
 bool&
@@ -342,7 +338,7 @@ checked_value(
     if(it == obj.end())
         throw rpc_error{
             "key '" + key.to_string() + "' not found"};
-    return it->second;
+    return it->value();
 }
 
 json::object&
@@ -372,12 +368,12 @@ checked_string(
         checked_value(jv, key));
 }
 
-json::number&
-checked_number(
+std::uint64_t&
+checked_uint64(
     json::value& jv,
     beast::string_view key)
 {
-    return checked_number(
+    return checked_uint64(
         checked_value(jv, key));
 }
 

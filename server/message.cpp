@@ -18,7 +18,7 @@ make_message(json::value const& jv)
 {
     char buf[16384];
     json::serializer sr(jv);
-    auto const n = sr.next(buf, sizeof(buf));
+    auto const n = sr.read(buf, sizeof(buf));
     if(! sr.is_done())
     {
         // buffer overflow!

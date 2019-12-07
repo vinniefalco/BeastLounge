@@ -76,12 +76,13 @@ public:
             checked_string(rpc.params, "message");
         {
             // broadcast: say
-            json::value jv;
-            jv["verb"] = "say";
-            jv["cid"] = cid();
-            jv["name"] = name();
-            jv["user"] = rpc.u->name;
-            jv["message"] = text;
+            json::value jv(json::object_kind);
+            auto& obj = jv.get_object();
+            obj["verb"] = "say";
+            obj["cid"] = cid();
+            obj["name"] = name();
+            obj["user"] = rpc.u->name;
+            obj["message"] = text;
             send(jv);
         }
         rpc.complete();
