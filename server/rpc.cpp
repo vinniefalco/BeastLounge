@@ -64,8 +64,7 @@ public:
         case rpc_code::expected_array_params: return
             "Expected array params in JSON-RPC request version 1";
         }
-        if( ev >= -32099 &&
-            ev <= -32099)
+        if( ev >= -32099 && ev <= -32000)
             return "An implementation defined server error was received";
         return "Unknown RPC error #" + std::to_string(ev);
     }
