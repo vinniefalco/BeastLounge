@@ -85,8 +85,6 @@ endif()
 
 find_package (Threads)
 
-add_definitions (-D_ITERATOR_DEBUG_LEVEL=0)
-
 #-------------------------------------------------------------------------------
 #
 # Boost / Beast

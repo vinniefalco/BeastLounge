@@ -14,7 +14,7 @@ GroupSources (server "/")
 
 file (GLOB_RECURSE SERVER_HEADERS . *.hpp)
 
-add_definitions(-DBOOST_JSON_HEADER_ONLY=1)
+#add_definitions(-DBOOST_JSON_HEADER_ONLY=1)
 
 add_executable (lounge-server
     ${BEAST_FILES}

@@ -14,7 +14,7 @@
 #include "server.hpp"
 #include "service.hpp"
 #include "user.hpp"
-#include <boost/json/parser.hpp>
+#include <boost/json.hpp>
 #include <boost/container/flat_set.hpp>
 #include <boost/thread/lock_guard.hpp>
 #include <boost/thread/shared_lock_guard.hpp>
@@ -102,8 +102,9 @@ public:
     dispatch(rpc_call& rpc) override
     {
         // Validate and extract the channel id
-        auto const cid = checked_uint64(
-            rpc.params, "cid");
+        auto const cid =
+            json::number_cast<std::size_t>(
+                checked_value(rpc.params, "cid"));
 
         // Lookup cid
         auto c = at(cid);

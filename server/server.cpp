@@ -14,8 +14,7 @@
 #include "server.hpp"
 #include "service.hpp"
 #include "utility.hpp"
-#include <boost/json/parser.hpp>
-#include <boost/json/string.hpp>
+#include <boost/json.hpp>
 #include <boost/asio/basic_waitable_timer.hpp>
 #include <boost/asio/basic_signal_set.hpp>
 #include <boost/assert.hpp>
@@ -49,43 +48,26 @@ namespace boost {
 namespace json {
 
 template<>
-struct value_exchange<net::ip::address>
+struct value_cast_traits<net::ip::address>
 {
     static
-    void
-    from_json(
-        net::ip::address& t,
+    net::ip::address
+    construct(
         json::value const& jv)
     {
-        if(! jv.is_string())
-            throw beast::system_error(
-                json::error::not_string);
-        t = net::ip::make_address(
-            jv.as_string().c_str());
+        return net::ip::make_address(jv.as_string().c_str());
     }
 };
 
 } // json
 } // boost
 
-void
-from_json(
-    logger_config& cfg,
-    json::value const& jv)
+listener_config::
+listener_config(json::value&& jv)
+    : name(std::move(jv.at("name").as_string()))
+    , address(json::value_cast<net::ip::address>(jv.at("address")))
+    , port_num(json::number_cast<unsigned short>(jv.at("port_num")))
 {
-    cfg.path = jv.as_object().at("log")
-        .as_object().at("path").as_string();
-}
-
-void
-from_json(
-    listener_config& cfg,
-    json::value const& jv)
-{
-    auto& jo = jv.as_object();
-    cfg.name = jo.at("name").as_string();
-    jo.at("address").store(cfg.address);
-    jo.at("port_num").store(cfg.port_num);
 }
 
 //------------------------------------------------------------------------------
@@ -97,29 +79,29 @@ struct server_config
     unsigned num_threads = 1;
     json::string doc_root;
 
-    void
-    from_json(
-        json::value const& jv)
+    server_config() = default;
+
+    explicit
+    server_config(json::value&& jv)
+        : num_threads(json::number_cast<unsigned>(jv.at("threads")))
+        , doc_root(jv.at("doc-root").as_string())
     {
-        auto& jo = jv.as_object();
-        jo.at("threads").store(num_threads);
-        if(num_threads < 1)
+        if( num_threads < 1)
             num_threads = 1;
-        doc_root = jo.at("doc-root").as_string();
     }
 };
 
 //------------------------------------------------------------------------------
 
-void
+json::value
 parse_file(
     char const* path,
-    json::basic_parser& parser,
     beast::error_code& ec)
 {
+    ec = {};
     auto const& gc =
         boost::system::generic_category();
-    
+  
     struct cleanup
     {
         FILE* f;
@@ -133,7 +115,7 @@ parse_file(
     if(! f)
     {
         ec = beast::error_code(errno, gc);
-        return;
+        return nullptr;
     }
     cleanup c{f};
     std::size_t result;
@@ -141,23 +123,31 @@ parse_file(
     if(result != 0)
     {
         ec = beast::error_code(errno, gc);
-        return;
+        return nullptr;
     }
     auto const size = ::ftell(f);
     if(size == -1L)
     {
         ec = beast::error_code(errno, gc);
-        return;
+        return nullptr;
     }
-    char* buf = new char[size];
-    result = ::fread(buf, 1, size, f);
+    result = ::fseek(f, 0, SEEK_SET);
     if(result != 0)
     {
         ec = beast::error_code(errno, gc);
-        return;
+        return nullptr;
     }
-    parser.write(buf, size, ec);
+    char* buf = new char[size];
+    auto nread = ::fread(buf, 1, size, f);
+    if(std::ferror(f))
+    {
+        ec = beast::error_code(errno, gc);
+        return nullptr;
+    }
+
+    auto jv = json::parse({ buf, nread }, ec);
     delete[] buf;
+    return jv;
 }
 
 //------------------------------------------------------------------------------
@@ -458,18 +448,14 @@ make_server(
     std::unique_ptr<logger> log)
 {
     beast::error_code ec;
+
     // Read the JSON configuration file
-    json::value jv;
+    json::value jv = parse_file(config_path, ec);
+    if(ec)
     {
-        json::parser p;
-        parse_file(config_path, p, ec);
-        if(ec)
-        {
-            log->cerr() <<
-                "json::parse_file: " << ec.message() << "\n";
-            return nullptr;
-        }
-        jv = p.release();
+        log->cerr() <<
+            "json::parse_file: " << ec.message() << "\n";
+        return nullptr;
     }
 
     // Read the log configuration
@@ -477,7 +463,7 @@ make_server(
         logger_config cfg;
         try
         {
-            jv.store(cfg);
+            cfg = logger_config(std::move(jv));
             if(! log->open(std::move(cfg)))
                 return nullptr;
         }
@@ -501,11 +487,10 @@ make_server(
                 "server_config: " << ec.message() << "\n";
             return nullptr;
         }
-        auto& jo = jv.get_object()["server"];
-        server_config cfg;
         try
         {
-            jo.store(cfg);
+            auto& jo = jv.get_object()["server"];
+            server_config cfg(std::move(jo));
 
             // Create the server
             srv = boost::make_unique<server_impl>(
@@ -536,11 +521,9 @@ make_server(
         for(auto& e :
             jv.get_object()["listeners"].get_array())
         {
-            listener_config cfg;
             try
             {
-                e.store(cfg);
-                if(! run_listener(*srv, std::move(cfg)))
+                if(! run_listener(*srv, listener_config(std::move(e))))
                     return nullptr;
             }
             catch(beast::system_error const& e)

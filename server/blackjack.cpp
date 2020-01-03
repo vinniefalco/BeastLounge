@@ -21,70 +21,6 @@
 #include <vector>
 #include <utility>
 
-namespace boost {
-namespace json {
-
-#if 0
-namespace detail {
-
-template<class T, class = void>
-struct is_range : std::false_type
-{
-};
-
-template<class T>
-struct is_range<T, void_t<
-    typename T::value_type,
-    decltype(
-        std::declval<T const&>().begin(),
-        std::declval<T const&>().end()
-    )>> : std::true_type
-{
-};
-
-} // detail
-#endif
-
-template<class T, class A
-#if 0
-    ,class = typename std::enable_if<
-        has_from_json<T>::value>::type
-#endif
->
-void
-from_json(
-    std::vector<T, A>& t,
-    value const& v)
-{
-    auto& arr = v.as_array();
-    t.resize(0);
-    t.resize(arr.size());
-    auto it = t.begin();
-    for(auto const& e : arr)
-        e.store(*it++);
-}
-
-// range
-template<class T
-    ,class = typename std::enable_if<
-        detail::is_range<T>::value
-        && ! std::is_same<T, typename object::value_type>::value
-        && ! std::is_same<typename T::value_type, char>::value
-        && has_to_json<typename T::value_type>::value
-            >::type
->
-void
-to_json(T const& t, value& v)
-{
-    array arr(v.storage());
-    for(auto const& e : t)
-        arr.emplace_back(e);
-    v = std::move(arr);
-}
-
-} // json
-} // boost
-
 namespace {
 
 //------------------------------------------------------------------------------
@@ -318,7 +254,7 @@ struct seat
     to_json(json::value& jv) const
     {
         auto& obj = jv.emplace_object();
-        obj.emplace("hands", hands);
+        obj.emplace("hands", json::to_value(hands));
         switch(state)
         {
         case dealer:
@@ -504,24 +440,28 @@ public:
     void
     to_json(json::value& jv) const
     {
-        auto& obj = jv.emplace_object();
         switch(s_)
         {
         case state::wait:
-            obj["message"] = "Waiting for players";
+            jv = {
+                { "message", "Waiting for players" }
+            };
             break;
 
         case state::play:
-            obj["message"] = "Playing";
+            jv = {
+                { "message", "Playing" }
+            };
             break;
         }
+        auto& obj = jv.as_object();
         {
             auto& arr = obj.emplace(
                 "seats", json::array{})
                     .first->value().emplace_array();
             for(std::size_t i = 0;
                 i < seat_.size(); ++i)
-                arr.emplace_back(seat_[i]);
+                arr.emplace_back(json::to_value(seat_[i]));
         }
     }
 
@@ -676,7 +616,7 @@ private:
         obj["cid"] = cid();
         obj["verb"] = "update";
         obj["action"] = action;
-        obj["game"] = g_;
+        obj["game"] = json::to_value(g_);
         send(jv);
     }
 
@@ -715,7 +655,7 @@ private:
         obj["cid"] = cid();
         obj["verb"] = "update";
         obj["action"] = "init";
-        obj["game"] = g_;
+        obj["game"] = json::to_value(g_);
         sp->send(jv);
     }
 

@@ -145,6 +145,12 @@ public:
 
 //------------------------------------------------------------------------------
 
+logger_config::
+logger_config(json::value&& jv)
+    : path(std::move(jv.at("log").at("path").as_string()))
+{
+}
+
 std::unique_ptr<logger>
 make_logger()
 {

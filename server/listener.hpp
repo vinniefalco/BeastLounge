@@ -25,6 +25,9 @@
 */
 struct listener_config
 {
+    explicit
+    listener_config(json::value&& jv);
+
     // name of this port for logs
     json::string name;
 
