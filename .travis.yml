@@ -28,6 +28,7 @@ matrix:
         - BEAST_LOUNGE_BUILD_TYPE=Debug
         - CXX=g++
         - CC=gcc
+        - B2_TOOLSET=gcc
       after_success:
         - tools/coverage.sh && curl -s https://codecov.io/bash -o codecov && bash ./codecov -X gcov -f build/coverage.info -t $CODECOV_TOKEN
 
@@ -46,6 +47,7 @@ matrix:
         - UBSAN_OPTIONS=print_stacktrace=1
         - CXX=g++-7
         - CC=gcc-7
+        - B2_TOOLSET=gcc
 
     - name: "GCC-8 Release asan,ubsan"
       os: linux
@@ -62,6 +64,7 @@ matrix:
         - UBSAN_OPTIONS=print_stacktrace=1
         - CXX=g++-8
         - CC=gcc-8
+        - B2_TOOLSET=gcc
 
     - name: "clang Release asan,ubsan"
       dist: xenial
@@ -71,8 +74,9 @@ matrix:
         - UBSAN_OPTIONS=print_stacktrace=1
         - CXX=clang++
         - CC=clang++
+        - B2_TOOLSET=clang
       after_failure:
-        - cat bootstrap.log
+        - cat $TRAVIS_BUILD_DIR/../boost-root/bootstrap.log
 
 install:
   - cd ..
