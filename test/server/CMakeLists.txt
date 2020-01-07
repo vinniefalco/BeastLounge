@@ -17,14 +17,16 @@ GroupSources(test/server "/")
 
 include_directories (${PROJECT_SOURCE_DIR}/server)
 
+add_definitions(-DBOOST_ALL_NO_LIB=1)
+
 add_executable (server-tests
     ${BEAST_FILES}
     ${BEAST_EXTRA_FILES}
     message_test.cpp
 )
-
 target_link_libraries (server-tests
     lib-asio
     lib-beast
+    lib-json
     lib-test
 )

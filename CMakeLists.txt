@@ -181,6 +181,15 @@ set_property (TARGET lib-beast PROPERTY FOLDER "static-libs")
 #-------------------------------------------------------------------------------
 
 add_library (
+    lib-json STATIC
+    test/lib_json.cpp
+)
+
+set_property (TARGET lib-json PROPERTY FOLDER "static-libs")
+
+#-------------------------------------------------------------------------------
+
+add_library (
     lib-test STATIC
     test/lib_test.cpp
 )
