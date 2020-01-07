@@ -67,7 +67,7 @@ git submodule update --init \
     libs/utility \
     libs/align
 
-./bootstrap.sh
+CXX= ./bootstrap.sh
 ./b2 install --with-system --with-thread variant=$variant cxxstd=11 threadapi=pthread link=static
 
 echo Submodule update complete
