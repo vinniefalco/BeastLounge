@@ -10,10 +10,11 @@
 // Test that header file is self-contained.
 #include "core/message.hpp"
 
-#include <boost/beast/_experimental/unit_test/suite.hpp>
 #include <boost/beast/core/buffers_to_string.hpp>
 
-class message_test : public beast::unit_test::suite
+#include "test_suite.hpp"
+
+class message_test
 {
 public:
     void
@@ -21,19 +22,18 @@ public:
     {
         net::const_buffer cb("Hello, world!", 13);
         auto m = message(cb);
-        BEAST_EXPECT(
+        BOOST_TEST(
             beast::buffer_bytes(m) == cb.size());
-        BEAST_EXPECT(
+        BOOST_TEST(
             beast::buffers_to_string(m) ==
                 "Hello, world!");
     }
 
     void
-    run() override
+    run()
     {
         testMessage();
-        pass();
     }
 };
 
-BEAST_DEFINE_TESTSUITE(lounge,server,message);
+TEST_SUITE(message_test, "lounge.server.message");

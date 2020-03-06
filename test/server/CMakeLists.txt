@@ -7,21 +7,19 @@
 # Official repository: https://github.com/boostorg/beast
 #
 
-set (TEST_MAIN ${Boost_INCLUDE_DIRS}/boost/beast/_experimental/unit_test/main.cpp)
-
 source_group (TREE ${Boost_INCLUDE_DIRS}/boost/beast PREFIX beast FILES ${BEAST_FILES})
 source_group (TREE ${PROJECT_SOURCE_DIR}/include/boost/beast PREFIX beast FILES ${BEAST_EXTRA_FILES})
-source_group ("beast-test" FILES ${TEST_MAIN})
 
 GroupSources(test/server "/")
 
 include_directories (${PROJECT_SOURCE_DIR}/server)
-
-add_definitions(-DBOOST_ALL_NO_LIB=1)
+include_directories (${PROJECT_SOURCE_DIR}/test)
 
 add_executable (server-tests
     ${BEAST_FILES}
     ${BEAST_EXTRA_FILES}
+    ${PROJECT_SOURCE_DIR}/test/test_suite.hpp
+    ${PROJECT_SOURCE_DIR}/test/main.cpp
     message_test.cpp
 )
 target_link_libraries (server-tests
