@@ -20,6 +20,7 @@ add_executable (server-tests
     ${BEAST_EXTRA_FILES}
     ${PROJECT_SOURCE_DIR}/test/test_suite.hpp
     ${PROJECT_SOURCE_DIR}/test/main.cpp
+    blackjack.cpp
     message_test.cpp
 )
 target_link_libraries (server-tests

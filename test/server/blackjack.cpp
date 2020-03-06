@@ -7,17 +7,17 @@
 // Official repository: https://github.com/vinniefalco/BeastLounge
 //
 
-#ifndef LOUNGE_BLACKJACK_GAME_HPP
-#define LOUNGE_BLACKJACK_GAME_HPP
+#include "blackjack/game.hpp"
 
-#include "core/config.hpp"
+#include "test_suite.hpp"
 
-//----------------------------------------------------------
+class blackjack_test
+{
+public:
+    void
+    run()
+    {
+    }
+};
 
-namespace blackjack {
-
-} // blackjack
-
-//----------------------------------------------------------
-
-#endif
+TEST_SUITE(blackjack_test, "lounge.server.blackjack");
