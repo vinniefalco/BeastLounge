@@ -7,9 +7,9 @@
 # Official repository: https://github.com/vinniefalco/BeastLounge
 #
 
-source_group (TREE ${Boost_INCLUDE_DIRS}/boost/beast PREFIX beast FILES ${BEAST_FILES})
-source_group (TREE ${PROJECT_SOURCE_DIR}/include/boost/beast PREFIX beast FILES ${BEAST_EXTRA_FILES})
-source_group (TREE ${PROJECT_SOURCE_DIR}/json/include/boost/json PREFIX json FILES ${JSON_FILES})
+source_group (TREE ${Boost_INCLUDE_DIRS}/boost/beast PREFIX _beast FILES ${BEAST_FILES})
+source_group (TREE ${PROJECT_SOURCE_DIR}/include/boost/beast PREFIX _beast FILES ${BEAST_EXTRA_FILES})
+source_group (TREE ${PROJECT_SOURCE_DIR}/json/include/boost/json PREFIX _json FILES ${JSON_FILES})
 GroupSources (server "/")
 
 file (GLOB_RECURSE SERVER_HEADERS . *.hpp)
@@ -23,20 +23,20 @@ add_executable (lounge-server
     ${SERVER_HEADERS}
     Jamfile
     README.md
-    blackjack.cpp
-    channel.cpp
-    channel_list.cpp
-    http_session.cpp
-    listener.cpp
-    logger.cpp
-    main.cpp
-    message.cpp
-    room.cpp
-    rpc.cpp
-    server.cpp
-    system.cpp
-    user.cpp
-    ws_user.cpp
+    core/blackjack.cpp
+    core/channel.cpp
+    core/channel_list.cpp
+    core/http_session.cpp
+    core/listener.cpp
+    core/logger.cpp
+    core/main.cpp
+    core/message.cpp
+    core/room.cpp
+    core/rpc.cpp
+    core/server.cpp
+    core/system.cpp
+    core/user.cpp
+    core/ws_user.cpp
     )
 
 target_link_libraries (

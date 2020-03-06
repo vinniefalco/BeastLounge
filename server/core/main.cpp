@@ -53,7 +53,8 @@ main(int argc, char* argv[])
     }
 #endif
 
-    // Create the logger
+    // Create the logger as early as possible
+    // so we can report more things to the log.
     auto log = make_logger();
     if(! log)
         return EXIT_FAILURE;

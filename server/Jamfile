@@ -8,20 +8,20 @@
 #
 
 local SOURCES =
-    blackjack.cpp
-    channel.cpp
-    channel_list.cpp
-    http_session.cpp
-    listener.cpp
-    logger.cpp
-    main.cpp
-    message.cpp
-    room.cpp
-    rpc.cpp
-    server.cpp
-    system.cpp
-    user.cpp
-    ws_user.cpp
+    core/blackjack.cpp
+    core/channel.cpp
+    core/channel_list.cpp
+    core/http_session.cpp
+    core/listener.cpp
+    core/logger.cpp
+    core/main.cpp
+    core/message.cpp
+    core/room.cpp
+    core/rpc.cpp
+    core/server.cpp
+    core/system.cpp
+    core/user.cpp
+    core/ws_user.cpp
     ;
 
 exe lounge-server :

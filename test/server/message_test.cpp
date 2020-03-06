@@ -8,7 +8,7 @@
 //
 
 // Test that header file is self-contained.
-#include "message.hpp"
+#include "core/message.hpp"
 
 #include <boost/beast/_experimental/unit_test/suite.hpp>
 #include <boost/beast/core/buffers_to_string.hpp>
