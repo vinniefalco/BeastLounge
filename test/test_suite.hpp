@@ -234,6 +234,8 @@ public:
         current() = saved_;
     }
 
+    virtual std::ostream& log() = 0;
+
     virtual void on_begin(char const* name) = 0;
     virtual void on_end() = 0;
 
@@ -378,6 +380,12 @@ public:
     success() const noexcept
     {
         return all_.failed.load() == 0;
+    }
+
+    std::ostream&
+    log() noexcept override
+    {
+        return log_;
     }
 
     void
@@ -620,11 +628,19 @@ current_function_helper()
 
 } // detail
 
-//----------------------------------------------------------
-
 /** The type of log for output to the currently running suite.
 */
-using log_type = detail::log_ostream<char>;
+using log_type = std::ostream&;
+
+/// Return the current output stream for logging
+inline
+log_type
+log()
+{
+    return detail::current()->log();
+}
+
+//----------------------------------------------------------
 
 #define BOOST_TEST_CHECKPOINT(...) \
     ::test_suite::detail::checkpoint \
