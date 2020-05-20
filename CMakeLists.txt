@@ -7,7 +7,7 @@
 # Official repository: https://github.com/vinniefalco/BeastLounge
 #
 
-cmake_minimum_required (VERSION 3.9.2 FATAL_ERROR)
+cmake_minimum_required (VERSION 3.9...3.17 FATAL_ERROR)
 if(NOT ${CMAKE_VERSION} VERSION_LESS "3.12.0")
     cmake_policy (SET CMP0074 NEW)
 endif()
@@ -51,7 +51,7 @@ set (CMAKE_CXX_EXTENSIONS OFF)
 set (Boost_USE_STATIC_LIBS ON)
 
 if (MSVC)
-  set (Boost_USE_STATIC_RUNTIME ON)
+  #set (Boost_USE_STATIC_RUNTIME ON)
   set (CMAKE_VERBOSE_MAKEFILE FALSE)
 
   add_definitions (
@@ -91,11 +91,7 @@ find_package (Threads)
 #
 #-------------------------------------------------------------------------------
 
-find_package (
-  Boost 1.71 REQUIRED COMPONENTS
-    system
-    thread
-    )
+find_package (Boost 1.73 CONFIG REQUIRED system thread json)
 include_directories (${Boost_INCLUDE_DIRS})
 link_directories (${Boost_LIBRARY_DIRS})
 
@@ -106,21 +102,6 @@ add_definitions (-DBOOST_ASIO_DISABLE_BOOST_DATE_TIME=1)
 add_definitions (-DBOOST_ASIO_DISABLE_BOOST_REGEX=1)
 add_definitions (-DBOOST_ASIO_SEPARATE_COMPILATION=1)
 add_definitions (-DBOOST_BEAST_SEPARATE_COMPILATION=1)
-
-file (GLOB_RECURSE BEAST_FILES
-  ${Boost_INCLUDE_DIRS}/boost/beast/*.hpp
-  ${Boost_INCLUDE_DIRS}/boost/beast/*.ipp)
-
-file (GLOB_RECURSE BEAST_EXTRA_FILES
-  ${PROJECT_SOURCE_DIR}/include/boost/beast/*.hpp
-  ${PROJECT_SOURCE_DIR}/include/boost/beast/*.ipp
-  ${PROJECT_SOURCE_DIR}/include/boost/beast/*.*
-  )
-
-file (GLOB_RECURSE JSON_FILES
-  ${PROJECT_SOURCE_DIR}/json/include/boost/json/*.hpp
-  ${PROJECT_SOURCE_DIR}/json/include/boost/json/*.ipp
-  )
 
 #-------------------------------------------------------------------------------
 #
@@ -181,15 +162,6 @@ set_property (TARGET lib-beast PROPERTY FOLDER "static-libs")
 #-------------------------------------------------------------------------------
 
 add_library (
-    lib-json STATIC
-    test/lib_json.cpp
-)
-
-set_property (TARGET lib-json PROPERTY FOLDER "static-libs")
-
-#-------------------------------------------------------------------------------
-
-add_library (
     lib-test STATIC
     test/lib_test.cpp
 )
@@ -207,7 +179,6 @@ if (OPENSSL_FOUND)
 endif()
 
 include_directories (${PROJECT_SOURCE_DIR}/include)
-include_directories (${PROJECT_SOURCE_DIR}/json/include)
 
 include(CTest)
 

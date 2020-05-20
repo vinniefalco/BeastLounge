@@ -7,9 +7,7 @@
 # Official repository: https://github.com/vinniefalco/BeastLounge
 #
 
-source_group (TREE ${Boost_INCLUDE_DIRS}/boost/beast PREFIX _beast FILES ${BEAST_FILES})
 source_group (TREE ${PROJECT_SOURCE_DIR}/include/boost/beast PREFIX _beast FILES ${BEAST_EXTRA_FILES})
-source_group (TREE ${PROJECT_SOURCE_DIR}/json/include/boost/json PREFIX _json FILES ${JSON_FILES})
 GroupSources (server "/")
 
 file (GLOB_RECURSE SERVER_HEADERS . *.hpp)
@@ -17,9 +15,7 @@ file (GLOB_RECURSE SERVER_HEADERS . *.hpp)
 add_definitions(-DBOOST_JSON_NO_LIB=1)
 
 add_executable (lounge-server
-    ${BEAST_FILES}
     ${BEAST_EXTRA_FILES}
-    ${JSON_FILES}
     ${SERVER_HEADERS}
     Jamfile
     README.md
@@ -41,12 +37,12 @@ add_executable (lounge-server
 
 target_link_libraries (
     lounge-server PRIVATE
-        lib-json
         lib-beast
         lib-asio
         lib-asio-ssl
         Boost::system
         Boost::thread
+        Boost::json
         OpenSSL::SSL
         OpenSSL::Crypto
         Threads::Threads
