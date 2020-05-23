@@ -93,7 +93,8 @@ class logger_impl : public logger
         }
     };
 
-    boost::container::set<section_impl, less> sections_;
+    boost::container::set<
+        section_impl, less> sections_;
 
     //--------------------------------------------------------------------------
 
