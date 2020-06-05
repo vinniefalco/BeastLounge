@@ -37,22 +37,21 @@ main(int argc, char* argv[])
     // Create the server.
     auto server = lounge::server::create();
 
-    // (Add user-defined services)
+    // (Add additional services)
 
-    // Start the services.
-    server->start();
+    // Run config/admin RPC commands
 
-    // Run configuration RPC commands
     server->do_rpc(
         "http.create_port",
         {
             { "address" , "127.0.0.1" },
             { "port" , 8080 }
         });
+
     server->do_rpc(
         "http.set_doc_root",
         {
-            { "path" , "" },
+            { "path" , "C:\\Users\\vinnie\\src\\lounge\\static\\wwwroot" },
         });
 
     // Run the server on this many threads.

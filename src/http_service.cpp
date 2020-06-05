@@ -271,12 +271,11 @@ public:
             params.at("address").as_string().c_str());
         auto port = json::number_cast<unsigned short>(
             params.at("port"));
-        auto p = listener::create(
-            srv_,
-            *this,
-            tcp::endpoint(addr, port));
-        p->on_start();
-        v_.emplace_back(std::move(p));
+        v_.emplace_back(
+            listener::create(
+                srv_,
+                *this,
+                tcp::endpoint(addr, port)));
     }
 
     void

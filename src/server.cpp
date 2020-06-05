@@ -89,18 +89,6 @@ private:
     }
 
     void
-    start() override
-    {
-        BOOST_ASSERT(! started_);
-
-        // start all the services
-        for(auto& svc : services_)
-            svc.second->on_start();
-
-        started_ = true;
-    }
-
-    void
     do_run()
     {
         try
@@ -125,6 +113,17 @@ private:
     void
     run(int threads) override
     {
+        BOOST_ASSERT(! started_);
+
+        // start all the services
+        for(auto& svc : services_)
+            svc.second->on_start();
+
+        started_ = true;
+
+        // VFALCO Do we need to give the services
+        //        a way to fail the startup?
+
         // determine how many threads to run
         if(threads == 0)
         {

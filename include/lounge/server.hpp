@@ -25,6 +25,22 @@
 namespace lounge {
 
 /** A server instance.
+
+    Order of events during lifetime:
+
+    1. Construction
+    2. Insert services in an order-dependent fashion (services
+       can look up other services they depend on here).
+    3. The caller submits administrative RPC commands to
+       configure the services (at this point, no more services
+       may be added)
+    4. server::run() is invoked:
+       - service::on_start() is called for each service
+       - io_context::run() is called from each I/O thread
+    5. When the server gets the signal to stop:
+       - service::on_stop() is called for each service
+    6. When io_context::run() returns from the thread that
+       called server::run that thread calls join on each I/O thread.
 */
 class server
 {
@@ -83,21 +99,19 @@ public:
     bool
     is_started() const noexcept = 0;
 
-    /** Start the services.
-
-        The services must be started before
-        configuration RPC commands are issued,
-        and before the server runs.
-    */
-    virtual
-    void
-    start() = 0;
-
     /** Run the server.
 
         This call will block until the server is fully stopped.
         After the server has stopped, the only valid operation
         on the server is destruction.
+
+        @par Effects
+
+        @li @ref service::on_start is called for each
+            installed service.
+
+        @li `io_context::run` is called for the specified number
+            of I/O threads, including the caller's thread.
 
         @param threads The number of threads to use for I/O,
         including the caller's thread.
