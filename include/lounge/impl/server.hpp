@@ -86,26 +86,6 @@ add_rpc(
                     handler))));
 }
 
-template<class Service>
-void
-server::
-add_rpc(
-    string_view method,
-    void (Service::*mf)(
-        rpc_response&,
-        json::value const&),
-    Service* svc)
-{
-    add_rpc(
-        method,
-        [svc, mf](
-            rpc_response& res,
-            json::value const& params)
-        {
-            (svc->*mf)(res, params);
-        });
-}
-
 } // lounge
 
 #endif

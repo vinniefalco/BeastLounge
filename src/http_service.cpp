@@ -20,6 +20,8 @@
 #include <utility>
 #include <vector>
 
+#include <lounge/bind_mf.hpp>
+
 #define BEAST_LOUNGE_VERSION_STRING "BeastLounge/1.0b"
 
 namespace lounge {
@@ -258,8 +260,8 @@ public:
     void
     install_rpcs()
     {
-        srv_.add_rpc("http.create_port", &http_service_impl::do_create_port, this);
-        srv_.add_rpc("http.set_doc_root", &http_service_impl::do_set_doc_root, this);
+        srv_.add_rpc("http.create_port", bind_mf(&http_service_impl::do_create_port, this));
+        srv_.add_rpc("http.set_doc_root", bind_mf(&http_service_impl::do_set_doc_root, this));
     }
 
     void
