@@ -12,17 +12,9 @@
 
 #include <lounge/config.hpp>
 #include <boost/json/storage_ptr.hpp>
-#include <boost/json/value.hpp>
-#include <boost/optional.hpp>
-#include <stdexcept>
-#include <utility>
+//#include <boost/json/value.hpp>
 
 namespace lounge {
-
-class rpc_request
-{
-public:
-};
 
 class rpc_response
 {
@@ -33,52 +25,6 @@ public:
     {
     }
 };
-
-#if 0
-/** Represents a JSON-RPC request
-*/
-class rpc_request
-{
-    /** The request id
-
-        If set, this will be string, number, or null
-    */
-    boost::optional<json::value> id_;
-
-public:
-    /// Version of the request (1 or 2)
-    int version = 2;
-
-    /// The request method
-    json::string method;
-
-    /** The request parameters
-
-        This will be object, array, or null
-    */
-    json::value params;
-
-public:
-    request(rpc_request&&) = default;
-    request& rpc_request=(rpc_request&&) = delete;
-
-    /** Construct an empty request using the specified storage.
-
-        The method, params, and id will be null,
-        and version will be 2.
-    */
-    explicit
-    request(
-        json::storage_ptr sp = {});
-
-    /** Extract a JSON-RPC request or return an error.
-    */
-    void
-    extract(
-        json::value&& jv,
-        error_code& ec);
-};
-#endif
 
 } // lounge
 

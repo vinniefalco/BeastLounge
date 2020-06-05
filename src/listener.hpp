@@ -44,7 +44,8 @@ public:
     std::unique_ptr<listener>
     create(
         server& srv,
-        handler& h);
+        handler& h,
+        tcp::endpoint ep);
 };
 
 } // lounge

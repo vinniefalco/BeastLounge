@@ -28,7 +28,8 @@ class listener_impl
 
     asio::ssl::context ctx_;
 
-    tcp::endpoint ep_;
+    tcp::endpoint local_ep_;
+    tcp::endpoint remote_ep_;
     net::basic_socket_acceptor<
         tcp, executor_type> acceptor_;
 
@@ -38,11 +39,13 @@ class listener_impl
 public:
     listener_impl(
         server& srv,
-        handler& h)
+        handler& h,
+        tcp::endpoint ep)
         : srv_(srv)
         , h_(h)
         , log_(srv.get_log("listener"))
         , ctx_(asio::ssl::context::tlsv12)
+        , local_ep_(ep)
         , acceptor_(
             srv.make_executor())
         , list_(any_connection::list::create())
@@ -59,7 +62,7 @@ public:
 
         acceptor_.async_accept(
             srv_.make_executor(),
-            ep_,
+            remote_ep_,
             beast::bind_front_handler(
                 &listener_impl::do_accept,
                 this));
@@ -85,12 +88,9 @@ public:
     open()
     {
         error_code ec;
-        //tcp::endpoint ep(cfg_.address, cfg_.port_num);
-// VFALCO Temporary
-tcp::endpoint ep(net::ip::address_v4(0x7f000001), 8080);
 
         // Open the acceptor
-        acceptor_.open(ep.protocol(), ec);
+        acceptor_.open(local_ep_.protocol(), ec);
         if(ec)
         {
             LOG_DBG(log_,
@@ -109,7 +109,7 @@ tcp::endpoint ep(net::ip::address_v4(0x7f000001), 8080);
         }
 
         // Bind to the server address
-        acceptor_.bind(ep, ec);
+        acceptor_.bind(local_ep_, ec);
         if(ec)
         {
            LOG_DBG(log_,
@@ -166,7 +166,7 @@ tcp::endpoint ep(net::ip::address_v4(0x7f000001), 8080);
         // Accept the next connection
         acceptor_.async_accept(
             srv_.make_executor(),
-            ep_,
+            remote_ep_,
             beast::bind_front_handler(
                 &listener_impl::do_accept,
                 this));
@@ -179,10 +179,11 @@ std::unique_ptr<listener>
 listener::
 create(
     server& srv,
-    handler& h)
+    handler& h,
+    tcp::endpoint ep)
 {
     return boost::make_unique<
-        listener_impl>(srv, h);
+        listener_impl>(srv, h, ep);
 }
 
 } // lounge

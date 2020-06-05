@@ -45,7 +45,8 @@ class server_impl : public server
 
     std::unordered_map<
         string_view,
-        std::unique_ptr<rpc>,
+        std::unique_ptr<
+            rpc_handler>,
         string_view_hash
             > rpcs_;
 
@@ -183,6 +184,8 @@ private:
     do_one_rpc(
         json::value jv)
     {
+        rpc_response res;
+
         auto const& obj =
             jv.as_object();
         auto const& method =
@@ -196,7 +199,7 @@ private:
         }
         else
         {
-            it->second->invoke();
+            it->second->invoke(res, params);
         }
     }
 
@@ -219,7 +222,8 @@ private:
     void
     add_rpc_impl(
         string_view method,
-        std::unique_ptr<rpc> p) override
+        std::unique_ptr<
+            rpc_handler> p) override
     {
         rpcs_.emplace(
             method,

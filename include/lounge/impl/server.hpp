@@ -41,10 +41,12 @@ get_service(
                 Service))));
 }
 
-struct server::rpc
+struct server::rpc_handler
 {
-    virtual ~rpc() = default;
-    virtual void invoke() const = 0;
+    virtual ~rpc_handler() = default;
+    virtual void invoke(
+        rpc_response&,
+        json::value const&) const = 0;
 };
 
 template<class Handler>
@@ -54,29 +56,34 @@ add_rpc(
     string_view method,
     Handler&& handler)
 {
-    struct rpc_impl : rpc
+    struct rpc_handler_impl : rpc_handler
     {
         Handler h;
 
         explicit
-        rpc_impl(Handler&& h_)
+        rpc_handler_impl(
+            Handler&& h_)
             : h(std::forward<
                 Handler>(h_))
         {
         }
 
         void
-        invoke() const override
+        invoke(
+            rpc_response& res,
+            json::value const& params
+                ) const override
         {
-            h();
+            h(res, params);
         }
     };
 
     this->add_rpc_impl(
         method,
-        std::unique_ptr<rpc_impl>(
-            new rpc_impl(std::forward<
-                Handler>(handler))));
+        std::unique_ptr<rpc_handler>(
+            new rpc_handler_impl(
+                std::forward<Handler>(
+                    handler))));
 }
 
 template<class Service>
@@ -84,13 +91,18 @@ void
 server::
 add_rpc(
     string_view method,
-    void (Service::*mf)(),
+    void (Service::*mf)(
+        rpc_response&,
+        json::value const&),
     Service* svc)
 {
-    add_rpc(method,
-        [svc, mf]()
+    add_rpc(
+        method,
+        [svc, mf](
+            rpc_response& res,
+            json::value const& params)
         {
-            (svc->*mf)();
+            (svc->*mf)(res, params);
         });
 }
 

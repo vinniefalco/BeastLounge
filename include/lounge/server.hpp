@@ -13,6 +13,7 @@
 #include <lounge/config.hpp>
 #include <lounge/executor_type.hpp>
 #include <lounge/log.hpp>
+#include <lounge/rpc.hpp>
 #include <lounge/service.hpp>
 #include <lounge/detail/key_type.hpp>
 #include <boost/asio/io_context.hpp>
@@ -117,6 +118,13 @@ public:
     //------------------------------------------------------
 
     /** Add an RPC command to the server.
+
+        The handler must be invokable with
+        this equivalent signature:
+        @code
+        void handler( rpc_response&, json::value const& )
+        @endcode
+
     */
     template<class Handler>
     void
@@ -130,7 +138,9 @@ public:
     void
     add_rpc(
         string_view method,
-        void (Service::*mf)(),
+        void (Service::*mf)(
+            rpc_response&,
+            json::value const&),
         Service* svc);
 
     /** Execute an RPC command with admin privileges.
@@ -142,13 +152,13 @@ public:
         json::object params = {}) = 0;
 
 protected:
-    struct rpc;
+    struct rpc_handler;
 
     virtual
     void
     add_rpc_impl(
         string_view method,
-        std::unique_ptr<rpc>) = 0;
+        std::unique_ptr<rpc_handler>) = 0;
 
     virtual
     void*

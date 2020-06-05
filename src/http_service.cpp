@@ -15,6 +15,7 @@
 #include <boost/beast/core/detect_ssl.hpp>
 #include <boost/beast/http/empty_body.hpp>
 #include <boost/beast/http/file_body.hpp>
+#include <boost/json/number_cast.hpp>
 #include <string>
 #include <utility>
 #include <vector>
@@ -37,6 +38,7 @@ class http_service_impl
         std::unique_ptr<listener>> v_;
     std::unique_ptr<
         any_connection::list> list_;
+    std::string doc_root_;
 
 public:
     using key_type = http_service;
@@ -47,16 +49,7 @@ public:
         , log_(srv.get_log("http"))
         , list_(any_connection::list::create())
     {
-// VFALCO TEMPORARY
-v_.emplace_back(listener::create(srv_, *this));
-
-        srv_.add_rpc(
-            "http.create_port", &http_service_impl::do_create_port, this);
-    }
-
-    void
-    do_create_port()
-    {
+        install_rpcs();
     }
 
     ~http_service_impl()
@@ -164,7 +157,7 @@ v_.emplace_back(listener::create(srv_, *this));
         http::request<
             http::string_body>&& req) override
     {
-string_view doc_root = "C:\\Users\\vinnie\\src\\lounge\\static\\wwwroot";
+        string_view doc_root = doc_root_;
 
         // Returns a bad request response
         auto const bad_request =
@@ -259,6 +252,44 @@ string_view doc_root = "C:\\Users\\vinnie\\src\\lounge\\static\\wwwroot";
         res.keep_alive(req.keep_alive());
         return res;
     }
+
+    //------------------------------------------------------
+
+    void
+    install_rpcs()
+    {
+        srv_.add_rpc("http.create_port", &http_service_impl::do_create_port, this);
+        srv_.add_rpc("http.set_doc_root", &http_service_impl::do_set_doc_root, this);
+    }
+
+    void
+    do_create_port(
+        rpc_response& res,
+        json::value const& params)
+    {
+        auto addr = net::ip::make_address(
+            params.at("address").as_string().c_str());
+        auto port = json::number_cast<unsigned short>(
+            params.at("port"));
+        auto p = listener::create(
+            srv_,
+            *this,
+            tcp::endpoint(addr, port));
+        p->on_start();
+        v_.emplace_back(std::move(p));
+    }
+
+    void
+    do_set_doc_root(
+        rpc_response& res,
+        json::value const& params)
+    {
+// VFALCO TEMPORARY
+doc_root_ =
+    "C:\\Users\\vinnie\\src\\lounge\\static\\wwwroot";
+    }
+
+    //------------------------------------------------------
 };
 
 } // (anon)

@@ -49,6 +49,11 @@ main(int argc, char* argv[])
             { "address" , "127.0.0.1" },
             { "port" , 8080 }
         });
+    server->do_rpc(
+        "http.set_doc_root",
+        {
+            { "path" , "" },
+        });
 
     // Run the server on this many threads.
     server->run(1);
