@@ -11,7 +11,10 @@
 #define LOUNGE_CHANNEL_HPP
 
 #include <lounge/server.hpp>
+#include <boost/shared_ptr.hpp>
+#include <boost/smart_ptr/shared_ptr.hpp>
 #include <boost/smart_ptr/enable_shared_from.hpp>
+#include <memory>
 
 namespace lounge {
 
@@ -22,9 +25,23 @@ public:
     virtual ~channel() = default;
 
     template<class Handler>
+    static
+    boost::shared_ptr<channel>
+    create(
+        Handler&& handler);
 
+protected:
+    struct handler;
+
+    LOUNGE_DECL
+    static
+    boost::shared_ptr<channel>
+    create_impl(
+        std::unique_ptr<handler>);
 };
 
 } // lounge
+
+#include <lounge/impl/channel.hpp>
 
 #endif

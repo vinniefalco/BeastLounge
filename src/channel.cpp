@@ -7,7 +7,9 @@
 // Official repository: https://github.com/vinniefalco/BeastLounge
 //
 
-#include "channel_service.hpp"
+#include <lounge/channel.hpp>
+#include <boost/smart_ptr/make_shared.hpp>
+#include <utility>
 
 namespace lounge {
 
@@ -15,33 +17,16 @@ namespace {
 
 //----------------------------------------------------------
 
-class channel_service_impl
-    : public channel_service
+class channel_impl
+    : public channel
 {
-    server& srv_;
-    log& log_;
+    std::unique_ptr<handler> h_;
 
 public:
-    using key_type = channel_service;
-
-    channel_service_impl(
-        server& srv)
-        : srv_(srv)
-        , log_(srv.get_log("channel"))
-    {
-    }
-
-    ~channel_service_impl()
-    {
-    }
-
-    void
-    on_start() override
-    {
-    }
-
-    void
-    on_stop() override
+    explicit
+    channel_impl(
+        std::unique_ptr<handler> h)
+        : h_(std::move(h))
     {
     }
 
@@ -50,12 +35,12 @@ public:
 
 } // (anon)
 
-void
-channel_service::
-install(
-    server& srv)
+boost::shared_ptr<channel>
+channel::
+create_impl(std::unique_ptr<handler> h)
 {
-    emplace_service<channel_service_impl>(srv);
+    return boost::make_shared<
+        channel_impl>(std::move(h));
 }
 
 } // lounge

@@ -37,7 +37,7 @@ struct bind_mf_wrapper
 */
 template<class T, class FP>
 detail::bind_mf_wrapper<T, FP>
-bind_mf(FP fp, T* t)
+bind_mf(FP fp, T* t) noexcept
 {
     return { t, fp };
 }
