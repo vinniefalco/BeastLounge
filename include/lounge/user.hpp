@@ -16,6 +16,8 @@
 
 namespace lounge {
 
+//class user_service;
+
 class user
     : public boost::enable_shared_from
 {
@@ -27,6 +29,11 @@ public:
     virtual
     void
     send(message m) = 0;
+
+protected:
+    friend class user_service;
+
+    struct handler;
 };
 
 } // lounge
