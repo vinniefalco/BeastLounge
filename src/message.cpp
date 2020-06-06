@@ -26,7 +26,7 @@ message(json::value const& jv)
     else
     {
         json::string s;
-        s.append(string_view(buf, n));
+        s.append({ buf, n });
         do
         {
             if(s.size() >= s.capacity())

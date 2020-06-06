@@ -9,7 +9,10 @@
 
 #include "ws_connection.hpp"
 #include "http_service.hpp"
+#include <lounge/user.hpp>
 #include <boost/beast/websocket/stream.hpp>
+#include <boost/asio/dispatch.hpp>
+#include <vector>
 
 namespace lounge {
 
@@ -24,6 +27,7 @@ class connection
     server& srv_;
     http_service& svc_;
     log& log_;
+    std::vector<message> mq_;
 
     Derived&
     derived() noexcept
@@ -56,6 +60,60 @@ public:
     {
     }
 
+    void
+    send(message m)
+    {
+        net::dispatch(
+            derived().stream().get_executor(),
+            beast::bind_front_handler(
+                &connection::do_send,
+                boost::shared_from(this),
+                std::move(m)));
+    }
+
+    void
+    do_send(message m)
+    {
+        if(! beast::get_lowest_layer(
+            derived().stream()).is_open())
+            return;
+        mq_.emplace_back(std::move(m));
+        if(mq_.size() == 1)
+            do_write();
+    }
+
+    void
+    do_write()
+    {
+        BOOST_ASSERT(! mq_.empty());
+        derived().stream().async_write(
+            mq_.back(),
+            beast::bind_front_handler(
+                &connection::on_write,
+                boost::shared_from(this),
+                mq_.size() - 1));
+
+    }
+
+    void
+    on_write(
+        std::size_t idx,
+        beast::error_code ec,
+        std::size_t)
+    {
+        BOOST_ASSERT(! mq_.empty());
+        if(ec)
+        {
+            LOG_INF(log_, "on_write: ", ec.message());
+            return;
+        }
+        auto const last = mq_.size() - 1;
+        if(idx != last)
+            swap(mq_[idx], mq_[last]);
+        mq_.resize(last);
+        if(! mq_.empty())
+            do_write();
+    }
 };
 
 //----------------------------------------------------------

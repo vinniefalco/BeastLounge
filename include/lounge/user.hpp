@@ -11,6 +11,7 @@
 #define LOUNGE_USER_HPP
 
 #include <lounge/config.hpp>
+#include <lounge/message.hpp>
 #include <boost/smart_ptr/enable_shared_from.hpp>
 
 namespace lounge {
@@ -18,6 +19,14 @@ namespace lounge {
 class user
     : public boost::enable_shared_from
 {
+public:
+    virtual ~user() = default;
+
+    /** Send a message.
+    */
+    virtual
+    void
+    send(message m) = 0;
 };
 
 } // lounge
