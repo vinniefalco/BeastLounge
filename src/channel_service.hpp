@@ -11,6 +11,7 @@
 #define SRC_CHANNEL_SERVICE_HPP
 
 #include <lounge/server.hpp>
+#include <lounge/user.hpp>
 
 namespace lounge {
 

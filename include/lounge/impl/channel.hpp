@@ -15,12 +15,15 @@ namespace lounge {
 struct channel::handler
 {
     virtual ~handler() = default;
+    virtual void on_insert(user& u) = 0;
+    virtual void on_erase(user& u) = 0;
 };
 
 template<class Handler>
 boost::shared_ptr<channel>
 channel::
 create(
+    server& srv,
     Handler&& h)
 {
     struct handler_impl : handler
@@ -34,9 +37,24 @@ create(
                 Handler>(h_))
         {
         }
+
+        void
+        on_insert(
+            user& u) override
+        {
+            h(u);
+        }
+
+        void
+        on_erase(
+            user& u) override
+        {
+            h(u);
+        }
     };
 
     return create_impl(
+        srv,
         std::unique_ptr(
             new handler_impl(
                 std::forward<Handler>(h))));
