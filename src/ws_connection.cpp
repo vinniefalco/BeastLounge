@@ -10,8 +10,13 @@
 #include "ws_connection.hpp"
 #include "http_service.hpp"
 #include <lounge/user.hpp>
+#include <lounge/user_service.hpp>
+#include <boost/beast/core/buffers_to_string.hpp>
+#include <boost/beast/core/flat_buffer.hpp>
 #include <boost/beast/websocket/stream.hpp>
 #include <boost/asio/dispatch.hpp>
+#include <boost/smart_ptr/enable_shared_from.hpp>
+#include <utility>
 #include <vector>
 
 namespace lounge {
@@ -27,7 +32,9 @@ class connection
     server& srv_;
     http_service& svc_;
     log& log_;
+    beast::flat_buffer buf_;
     std::vector<message> mq_;
+    boost::shared_ptr<user> user_;
 
     Derived&
     derived() noexcept
@@ -35,6 +42,20 @@ class connection
         return static_cast<
             Derived&>(*this);
     }
+
+    struct user_handler
+    {
+        boost::weak_ptr<
+            connection> wp;
+
+        void
+        do_send(message m)
+        {
+            auto sp = wp.lock();
+            if(sp)
+                sp->send(std::move(m));
+        }
+    };
 
 public:
     connection(
@@ -46,18 +67,71 @@ public:
     }
 
     void
-    run()
+    run(beast::websocket::request_type req)
     {
+        // can't use weak_from in ctor
+        user_ = get_service<
+            user_service>(srv_).create_user(
+                user_handler{
+                    boost::weak_from(this)});
+
         net::post(
             derived().stream().get_executor(),
             beast::bind_front_handler(
                 &connection::do_accept,
+                boost::shared_from(this),
+                std::move(req)));
+    }
+
+    void
+    do_accept(
+        beast::websocket::request_type req)
+    {
+        derived().stream().async_accept(
+            std::move(req),
+            beast::bind_front_handler(
+                &connection::on_accept,
                 boost::shared_from(this)));
     }
 
     void
-    do_accept()
+    on_accept(error_code ec)
     {
+        if(ec)
+        {
+            LOG_ERR(log_, "on_accept: ", ec.message());
+            return;
+        }
+
+        do_read();
+    }
+
+    void
+    do_read()
+    {
+        buf_.clear();
+        derived().stream().async_read(
+            buf_,
+            beast::bind_front_handler(
+                &connection::on_read,
+                boost::shared_from(this)));
+    }
+
+    void
+    on_read(error_code ec, std::size_t)
+    {
+        if(ec)
+        {
+            LOG_ERR(log_, "on_read: ", ec.message());
+            return;
+        }
+
+        // process message
+        LOG_INF(log_, "on_read: ",
+            beast::buffers_to_string(
+                buf_.data()));
+
+        do_read();
     }
 
     void
@@ -86,13 +160,13 @@ public:
     do_write()
     {
         BOOST_ASSERT(! mq_.empty());
+
         derived().stream().async_write(
             mq_.back(),
             beast::bind_front_handler(
                 &connection::on_write,
                 boost::shared_from(this),
                 mq_.size() - 1));
-
     }
 
     void
@@ -172,7 +246,8 @@ void
 create_ws_connection(
     any_connection::list& list,
     server& srv,
-    socket_type sock)
+    socket_type sock,
+    beast::websocket::request_type req)
 {
     auto sp = emplace_any_connection<
         plain_ws>(
@@ -180,7 +255,7 @@ create_ws_connection(
             srv,
             std::move(sock));
     if(sp)
-        sp->run();
+        sp->run(std::move(req));
 }
 
 } // lounge

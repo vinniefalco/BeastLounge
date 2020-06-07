@@ -1,186 +1,60 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html>
 <head>
-  <meta content="text/html;charset=utf-8" http-equiv="Content-Type">
-  <meta content="utf-8" http-equiv="encoding">
-  <title>Beast Lounge</title>
-  <script type="text/javascript" src="lounge-chat.js"></script>
+  <meta charset="utf-8" />
+  <title>Boost.Beast WebSocket Chat Client</title>
 </head>
 <body>
-<div>
-  <h1>Beast Lounge</h1>
-  <p>Source code: <a href="https://github.com/vinniefalco/BeastLounge">https://github.com/vinniefalco/BeastLounge</a></p>
-
+  <h1>Boost.Beast WebSocket Chat Client</h1>
+  <p>
+    <a href="http://www.boost.org/libs/beast">Boost.Beast</a>
+    <a href="http://www.boost.org/libs/beast/example/websocket/server/chat-multi">Source Code</a>
+  </p>
   Server URI: <input class="draw-border" id="uri" size="47" value="ws://localhost:8080" style="margin-bottom: 5px;">
   <button class="echo-button" id="connect">Connect</button>
   <button class="echo-button" id="disconnect">Disconnect</button><br>
   Your Name: <input class="draw-border" id="userName" size=47 style="margin-bottom: 5px;"><br>
-
-  <pre id="messages" style="height: 200px; border: solid 1px #cccccc; margin-bottom: 5px; white-space: pre-wrap; overflow-y: scroll"></pre>
-
+  <pre id="messages" style="width: 600px; height: 400px; white-space: normal; overflow: auto; border: solid 1px #cccccc; margin-bottom: 5px;"></pre>
   <div style="margin-bottom: 5px;">
     Message<br>
     <input class="draw-border" id="sendMessage" size="74" value="">
     <button class="echo-button" id="send">Send</button>
   </div>
-
-  <div id="blackjack">
-  <h2>Blackjack</h2>
-  <table>
-    <tr><td><div class="message"></div></td></tr>
-    <tr><td><div class="seat">x</div></td></tr>
-    <tr><td><div class="seat">x</div></td></tr>
-    <tr><td><div class="seat">x</div></td></tr>
-    <tr><td><div class="seat">x</div></td></tr>
-    <tr><td><div class="seat">x</div></td></tr>
-    <tr><td><div class="seat">x</div></td></tr>
-  </table>
-  <button id="bj_join">Join</button>
-  <button id="bj_leave">Leave</button>
-  &nbsp;&nbsp;&nbsp;&nbsp;
-  <button id="bj_play">Play</button>
-  <button id="bj_watch">Watch</button>
-  &nbsp;&nbsp;&nbsp;&nbsp;
-  <button id="bj_bet">Bet</button>
-  <button id="bj_start">Start</button>
-  &nbsp;&nbsp;&nbsp;&nbsp;
-  <button id="bj_hit">Hit</button>
-  <button id="bj_stand">Stand</button>
-  </div>
-
   <script>
-
-
-
-let ws = null
-
-function close_ws() {
-  if (ws !== null) {
-      ws.disconnect()
-      ws == null
-  }
-}
-
-connect.onclick = function() {
-    close_ws()
-
-    ws = new LoungeChat(uri.value, userName.value);
-    ws.on_open = function() {
-        messages.innerText += "[connection opened]\n";
-    }
-    ws.on_close = function() {
-        messages.innerText += "[connection closed]\n";
-    }
-    ws.on_error = function(error) {
-        messages.innerText += "[error]\n";
-        console.log(error);
-    }
-
-    ws.on_message = function(jv) {
-        if (jv.error !== undefined && jv.error !== null) {
-            messages.innerText += "Error: " + jv.error.message + "(" + jv.error.code + ")\n"
-        } else {
-            var prefix = "[" + jv.cid + ". " + jv.name + "] ";
-            if (jv.user)
-                prefix += jv.user + " ";
-            switch (jv.verb) {
-            case "join":
-                messages.innerText += prefix + "joins\n";
-                break;
-            case "leave":
-                messages.innerText += prefix + "leaves\n";
-                break;
-            case "say":
-                messages.innerText += prefix + jv.message + "\n";
-                break;
-            case "update":
-                //messages.innerText += JSON.stringify(jv) + "\n";
-                UpdateTable(jv["game"], blackjack);
-          }
+    var ws = null;
+    function showMessage(msg) {
+      messages.innerText += msg + "\n";
+      messages.scrollTop = messages.scrollHeight - messages.clientHeight;
+    };
+    connect.onclick = function() {
+      ws = new WebSocket(uri.value);
+      ws.onopen = function(ev) {
+        showMessage("[connection opened]");
+      };
+      ws.onclose = function(ev) {
+        showMessage("[connection closed]");
+      };
+      ws.onmessage = function(ev) {
+        showMessage(ev.data);
+      };
+      ws.onerror = function(ev) {
+        showMessage("[error]");
+        console.log(ev);
+      };
+    };
+    disconnect.onclick = function() {
+      ws.close();
+    };
+    send.onclick = function() {
+      ws.send(userName.value + ": " + sendMessage.value);
+      sendMessage.value = "";
+    };
+    sendMessage.onkeyup = function(ev) {
+      ev.preventDefault();
+      if (ev.keyCode === 13) {
+        send.click();
       }
-  }
-}
-
-disconnect.addEventListener('click', close_ws)
-
-send.addEventListener('click', function() {
-    if (ws !== null) {
-        if (sendMessage.value.charAt(0) !== '/') {
-            ws.send_message('say', {
-                cid: 2,
-                message: sendMessage.value
-            })
-        } else {
-            ws.send_message('slash', {
-              cid: 2,
-              command: sendMessage.value,
-          })
-        }
-
-      sendMessage.value = ""
     }
-})
-
-sendMessage.addEventListener('keyup', function(ev) {
-  ev.preventDefault()
-  if (event.keyCode === 13) {
-      send.click()
-  }
-})
-
-//------------------------------------------------------------------------------
-
-bj_join.onclick = function() {
-    if (ws == null) 
-        return;
-    ws.send_message('join', { cid: 3 });
-}
-
-bj_leave.onclick = function() {
-    if (ws == null) 
-        return;
-    ws.send_message('leave', { cid: 3 });
-}
-
-bj_play.onclick = function() {
-    if (ws == null) 
-        return;
-    ws.send_message('play', { cid: 3 });
-}
-
-bj_watch.onclick = function() {
-    if (ws == null) 
-        return;
-    ws.send_message('watch', { cid: 3 });
-}
-
-bj_bet.onclick = function() {
-    if (ws == null) 
-        return;
-    ws.send_message('bet', { cid: 3 });
-}
-
-bj_start.onclick = function() {
-    if (ws == null) 
-        return;
-    ws.send_message('start', { cid: 3 });
-}
-
-bj_hit.onclick = function () {
-    if (ws == null) 
-        return;
-    ws.send_message('hit', { cid: 3 });
-}
-
-bj_stand.onclick = function () {
-    if (ws == null) 
-        return;
-    ws.send_message('stand', { cid: 3 });
-}
-
-
-
   </script>
-</div>
 </body>
 </html>

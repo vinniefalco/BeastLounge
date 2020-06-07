@@ -14,6 +14,7 @@
 
 #include <lounge/server.hpp>
 #include <lounge/service.hpp>
+#include <lounge/user_service.hpp>
 
 #include <boost/assert.hpp>
 
@@ -64,6 +65,7 @@ public:
         // Order matters here, for services
         // which depend on other services.
         http_service::install(*this);
+        user_service::install(*this);
         sigint_service::install(*this);
     }
 

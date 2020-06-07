@@ -42,11 +42,11 @@ create_user(
         do_send(
             message m) override
         {
-            h(std::move(m));
+            h.do_send(std::move(m));
         }
     };
 
-    return create_impl(
+    return create_user_impl(
         std::unique_ptr<handler_impl>(
             new handler_impl(
                 std::forward<Handler>(h))));

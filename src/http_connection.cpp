@@ -139,7 +139,8 @@ public:
             create_ws_connection(
                 this->get_list(),
                 srv_,
-                std::move(derived().stream().release_socket()));
+                std::move(derived().stream().release_socket()),
+                std::move(req));
             return;
         }
 

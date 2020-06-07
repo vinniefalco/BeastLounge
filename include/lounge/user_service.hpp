@@ -27,6 +27,14 @@ public:
     create_user(
         Handler&& h);
 
+    class data
+    {
+    };
+
+    /** Create a new user data key using the type T.
+    */
+    //template<class T>
+    
     static
     user_service&
     install(

@@ -13,6 +13,7 @@
 #include "any_connection.hpp"
 #include "socket_type.hpp"
 #include <lounge/server.hpp>
+#include <boost/beast/websocket/rfc6455.hpp>
 
 namespace lounge {
 
@@ -20,7 +21,8 @@ void
 create_ws_connection(
     any_connection::list& list,
     server& srv,
-    socket_type sock);
+    socket_type sock,
+    beast::websocket::request_type req);
 
 } // lounge
 
