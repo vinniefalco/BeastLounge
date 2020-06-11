@@ -16,8 +16,6 @@
 
 namespace lounge {
 
-//class user_service;
-
 class user
     : public boost::enable_shared_from
 {

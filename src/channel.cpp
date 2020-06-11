@@ -26,7 +26,8 @@ class channel_impl
     server& srv_;
     executor_type ex_;
     std::unique_ptr<handler> h_;
-    boost::container::flat_set<user*> users_;
+    boost::container::flat_set<
+        boost::shared_ptr<user>> users_;
 
 public:
     channel_impl(
@@ -38,44 +39,52 @@ public:
     {
     }
 
+    std::size_t
+    size() override
+    {
+        return users_.size();
+    }
+
+    user&
+    at(std::size_t i) override
+    {
+        return **users_.nth(i);
+    }
+
     void
     insert(user& u) override
     {
-        auto wp = boost::weak_from(&u);
         net::post(ex_,
             beast::bind_front_handler(
                 &channel_impl::do_insert,
                 this,
-                std::move(wp)));
+                boost::shared_from(&u)));
     }
 
     void
     erase(user& u) override
     {
-        auto wp = boost::weak_from(&u);
         net::post(ex_,
             beast::bind_front_handler(
                 &channel_impl::do_erase,
                 this,
-                std::move(wp)));
+                boost::shared_from(&u)));
     }
 
     void
     do_insert(
-        boost::weak_ptr<user> wp)
+        boost::shared_ptr<user> sp)
     {
-        auto sp = wp.lock();
-        users_.insert(sp.get());
-        h_->on_insert(*sp);
+        users_.emplace(std::move(sp));
+        h_->on_insert(*this, *sp);
     }
 
     void
     do_erase(
-        boost::weak_ptr<user> wp)
+        boost::shared_ptr<user> sp)
     {
-        auto sp = wp.lock();
-        users_.erase(sp.get());
-        h_->on_erase(*sp);
+        users_.erase(sp);
+        h_->on_erase(*this, *sp);
     }
 
     //------------------------------------------------------

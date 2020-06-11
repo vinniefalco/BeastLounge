@@ -15,8 +15,8 @@ namespace lounge {
 struct channel::handler
 {
     virtual ~handler() = default;
-    virtual void on_insert(user& u) = 0;
-    virtual void on_erase(user& u) = 0;
+    virtual void on_insert(channel& ch, user& u) = 0;
+    virtual void on_erase(channel& ch, user& u) = 0;
 };
 
 template<class Handler>
@@ -40,16 +40,18 @@ create(
 
         void
         on_insert(
+            channel& ch,
             user& u) override
         {
-            h(u);
+            h(ch, u);
         }
 
         void
         on_erase(
+            channel& ch,
             user& u) override
         {
-            h(u);
+            h(ch, u);
         }
     };
 

@@ -15,6 +15,7 @@
 #include <boost/shared_ptr.hpp>
 #include <boost/smart_ptr/shared_ptr.hpp>
 #include <boost/smart_ptr/enable_shared_from.hpp>
+#include <cstdlib>
 #include <memory>
 
 namespace lounge {
@@ -25,12 +26,26 @@ class channel
 public:
     virtual ~channel() = default;
 
-    LOUNGE_DECL
+    /** Return the number of users.
+    */
+    virtual
+    std::size_t
+    size() = 0;
+
+    /** Return the nth user.
+    */
+    virtual
+    user&
+    at(std::size_t i) = 0;
+
+    /** Insert a user to the channel.
+    */
     virtual
     void
     insert(user& u) = 0;
 
-    LOUNGE_DECL
+    /** Remove a user from the channel.
+    */
     virtual
     void
     erase(user& u) = 0;
