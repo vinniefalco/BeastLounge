@@ -27,10 +27,6 @@ public:
     create_user(
         Handler&& h);
 
-    class data
-    {
-    };
-
     /** Create a new user data key using the type T.
     */
     //template<class T>
@@ -43,7 +39,6 @@ public:
 protected:
     using handler = user::handler;
 
-    LOUNGE_DECL
     virtual
     boost::shared_ptr<user>
     create_user_impl(

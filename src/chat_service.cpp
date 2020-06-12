@@ -8,10 +8,28 @@
 //
 
 #include <lounge/chat_service.hpp>
+#include <lounge/channel.hpp>
 
 namespace lounge {
 
 namespace {
+
+struct channel_handler
+{
+    void
+    on_insert(
+        channel&,
+        user&)
+    {
+    }
+
+    void
+    on_erase(
+        channel&,
+        user&)
+    {
+    }
+};
 
 //----------------------------------------------------------
 

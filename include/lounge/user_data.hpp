@@ -7,35 +7,32 @@
 // Official repository: https://github.com/vinniefalco/BeastLounge
 //
 
-#ifndef LOUNGE_USER_HPP
-#define LOUNGE_USER_HPP
+#ifndef LOUNGE_USER_DATA_HPP
+#define LOUNGE_USER_DATA_HPP
 
 #include <lounge/config.hpp>
-#include <lounge/message.hpp>
-#include <lounge/server.hpp>
-#include <boost/smart_ptr/enable_shared_from.hpp>
-#include <type_traits>
 
 namespace lounge {
 
-//class user_service;
+class user;
 
-class user
-    : public boost::enable_shared_from
+namespace detail {
+
+class user_data_base
 {
-public:
-    virtual ~user() = default;
-
-    /** Send a message.
-    */
-    virtual
-    void
-    send(message m) = 0;
-
 protected:
     friend class user_service;
 
     struct handler;
+};
+
+} // detail
+
+template<class T>
+class user_data
+    : public user_data_base
+{
+public:
 };
 
 } // lounge
