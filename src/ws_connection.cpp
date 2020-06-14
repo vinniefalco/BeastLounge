@@ -19,6 +19,8 @@
 #include <utility>
 #include <vector>
 
+#include <lounge/chat_service.hpp>
+
 namespace lounge {
 
 namespace {
@@ -66,15 +68,14 @@ public:
     {
     }
 
+    ~connection()
+    {
+        user_->on_disconnect();
+    }
+
     void
     run(beast::websocket::request_type req)
     {
-        // can't use weak_from in ctor
-        user_ = get_service<
-            user_service>(srv_).create_user(
-                user_handler{
-                    boost::weak_from(this)});
-
         net::post(
             derived().stream().get_executor(),
             beast::bind_front_handler(
@@ -103,6 +104,13 @@ public:
             return;
         }
 
+        // can't use weak_from in ctor
+        user_ = get_service<
+            user_service>(srv_).create_user(
+                user_handler{
+                    boost::weak_from(this)});
+        get_service<chat_service>(srv_).insert(*user_);
+
         do_read();
     }
 
@@ -130,6 +138,11 @@ public:
         LOG_INF(log_, "on_read: ",
             beast::buffers_to_string(
                 buf_.data()));
+        std::string const s =
+            beast::buffers_to_string(
+                buf_.data());
+
+get_service<chat_service>(srv_).on_msg(s);
 
         do_read();
     }

@@ -14,19 +14,28 @@
 
 namespace lounge {
 
+/*
 class user;
-
-namespace detail {
 
 class user_data_base
 {
 protected:
     friend class user_service;
 
-    struct handler;
-};
+    struct any_data
+    {
+        virtual ~any_data() = default;
 
-} // detail
+        virtual
+        void*
+        data() noexcept = 0;
+
+        virtual
+        void
+        on_disconnect(
+            user& u) = 0;
+    };
+};
 
 template<class T>
 class user_data
@@ -34,6 +43,7 @@ class user_data
 {
 public:
 };
+*/
 
 } // lounge
 

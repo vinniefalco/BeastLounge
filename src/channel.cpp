@@ -26,8 +26,14 @@ class channel_impl
     server& srv_;
     executor_type ex_;
     std::unique_ptr<handler> h_;
-    boost::container::flat_set<
-        boost::shared_ptr<user>> users_;
+
+/* 
+    The connection controls the lifetime of the user.
+    When the connection is destroyed, work is posted
+    to each channel with shared ownership of the user,
+    to remove the user from the channel's list.
+*/
+    boost::container::flat_set<user*> users_;
 
 public:
     channel_impl(
@@ -39,16 +45,10 @@ public:
     {
     }
 
-    std::size_t
-    size() override
+    executor_type
+    get_executor() override
     {
-        return users_.size();
-    }
-
-    user&
-    at(std::size_t i) override
-    {
-        return **users_.nth(i);
+        return ex_;
     }
 
     void
@@ -71,11 +71,35 @@ public:
                 boost::shared_from(&u)));
     }
 
+    std::size_t
+    size() override
+    {
+        return users_.size();
+    }
+
+    user&
+    at(std::size_t i) override
+    {
+        return **users_.nth(i);
+    }
+
+    void
+    send(message m) override
+    {
+        net::post(ex_,
+            beast::bind_front_handler(
+                &channel_impl::do_send,
+                this,
+                std::move(m)));
+    }
+
+    //------------------------------------------------------
+
     void
     do_insert(
         boost::shared_ptr<user> sp)
     {
-        users_.emplace(std::move(sp));
+        users_.emplace(sp.get());
         h_->on_insert(*this, *sp);
     }
 
@@ -83,11 +107,16 @@ public:
     do_erase(
         boost::shared_ptr<user> sp)
     {
-        users_.erase(sp);
+        users_.erase(sp.get());
         h_->on_erase(*this, *sp);
     }
 
-    //------------------------------------------------------
+    void
+    do_send(message m)
+    {
+        for(auto& u : users_)
+            u->send(m);
+    }
 };
 
 } // (anon)

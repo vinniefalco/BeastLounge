@@ -43,7 +43,7 @@ create(
             channel& ch,
             user& u) override
         {
-            h(ch, u);
+            h.on_insert(ch, u);
         }
 
         void
@@ -51,13 +51,13 @@ create(
             channel& ch,
             user& u) override
         {
-            h(ch, u);
+            h.on_erase(ch, u);
         }
     };
 
     return create_impl(
         srv,
-        std::unique_ptr(
+        std::unique_ptr<handler>(
             new handler_impl(
                 std::forward<Handler>(h))));
 }

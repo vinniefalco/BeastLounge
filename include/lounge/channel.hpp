@@ -26,17 +26,11 @@ class channel
 public:
     virtual ~channel() = default;
 
-    /** Return the number of users.
+    /** Return the executor.
     */
     virtual
-    std::size_t
-    size() = 0;
-
-    /** Return the nth user.
-    */
-    virtual
-    user&
-    at(std::size_t i) = 0;
+    executor_type
+    get_executor() = 0;
 
     /** Insert a user to the channel.
     */
@@ -49,6 +43,24 @@ public:
     virtual
     void
     erase(user& u) = 0;
+
+    /** Return the number of users.
+    */
+    virtual
+    std::size_t
+    size() = 0;
+
+    /** Return the nth user.
+    */
+    virtual
+    user&
+    at(std::size_t i) = 0;
+
+    /** Send a message to all users.
+    */
+    virtual
+    void
+    send(message m) = 0;
 
     template<class Handler>
     static

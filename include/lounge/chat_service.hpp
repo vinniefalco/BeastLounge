@@ -15,10 +15,20 @@
 
 namespace lounge {
 
+class user;
+
 class chat_service
     : public service
 {
 public:
+    virtual
+    void
+    insert(user& u) = 0;
+
+    virtual
+    void
+    on_msg(string_view s) = 0;
+
     static
     chat_service&
     install(

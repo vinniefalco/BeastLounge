@@ -12,6 +12,7 @@
 
 #include <lounge/server.hpp>
 #include <lounge/user.hpp>
+#include <lounge/user_data.hpp>
 #include <memory>
 
 namespace lounge {
@@ -38,6 +39,7 @@ public:
 
 protected:
     using handler = user::handler;
+    //using any_data = user_data_base::any_data;
 
     virtual
     boost::shared_ptr<user>

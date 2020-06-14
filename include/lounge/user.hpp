@@ -32,6 +32,12 @@ public:
     void
     send(message m) = 0;
 
+    /** Called when the associated connection is destroyed.
+    */
+    virtual
+    void
+    on_disconnect() = 0;
+
 protected:
     friend class user_service;
 

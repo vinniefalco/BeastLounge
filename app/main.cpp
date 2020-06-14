@@ -9,6 +9,7 @@
 
 #include <boost/config.hpp>
 #include <lounge/server.hpp>
+#include <lounge/chat_service.hpp>
 #include <boost/json/value.hpp>
 
 #ifdef BOOST_MSVC
@@ -38,6 +39,7 @@ main(int argc, char* argv[])
     auto server = lounge::server::create();
 
     // (Add additional services)
+    lounge::chat_service::install(*server);
 
     // Run config/admin RPC commands
 

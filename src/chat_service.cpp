@@ -39,6 +39,9 @@ class chat_service_impl
     server& srv_;
     log& log_;
 
+    // temporary hard-coded channel for now
+    boost::shared_ptr<channel> ch_;
+
 public:
     using key_type = chat_service;
 
@@ -46,6 +49,8 @@ public:
         server& srv)
         : srv_(srv)
         , log_(srv.get_log("chat"))
+        , ch_(channel::create(
+            srv, channel_handler{}))
     {
     }
 
@@ -64,6 +69,19 @@ public:
     }
 
     //------------------------------------------------------
+
+    void
+    insert(user& u)
+    {
+        ch_->insert(u);
+    }
+
+    void
+    on_msg(string_view s)
+    {
+        ch_->send(net::const_buffer(
+            s.data(), s.size()));
+    }
 };
 
 } // (anon)
