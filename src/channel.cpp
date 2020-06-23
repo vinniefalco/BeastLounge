@@ -107,7 +107,14 @@ public:
     do_erase(
         boost::shared_ptr<user> sp)
     {
-        users_.erase(sp.get());
+        auto it = users_.find(sp.get());
+        if(it == users_.end())
+        {
+            // already removed
+            // VFALCO Can this happen?
+            return;
+        }
+        users_.erase(it);
         h_->on_erase(*this, *sp);
     }
 

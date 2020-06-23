@@ -22,10 +22,15 @@ class user_service
 {
 public:
     /** Create a new user.
+
+        @param c The connection object.
+
+        @param h The handler to process events.
     */
     template<class Handler>
     boost::shared_ptr<user>
     create_user(
+        boost::weak_ptr<void> c,
         Handler&& h);
 
     /** Create a new user data key using the type T.
@@ -44,6 +49,7 @@ protected:
     virtual
     boost::shared_ptr<user>
     create_user_impl(
+        boost::weak_ptr<void> c,
         std::unique_ptr<handler>) = 0;
 };
 

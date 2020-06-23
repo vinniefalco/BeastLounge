@@ -21,6 +21,7 @@ namespace {
 
 class user_impl : public user
 {
+    boost::weak_ptr<void> c_;
     std::unique_ptr<handler> h_;
     boost::container::flat_set<
         boost::shared_ptr<channel>> channels_;
@@ -28,8 +29,10 @@ class user_impl : public user
 public:
     explicit
     user_impl(
+        boost::weak_ptr<void> c,
         std::unique_ptr<handler> h)
-        : h_(std::move(h))
+        : c_(std::move(c))
+        , h_(std::move(h))
     {
     }
 
@@ -83,10 +86,11 @@ public:
 
     boost::shared_ptr<user>
     create_user_impl(
+        boost::weak_ptr<void> c,
         std::unique_ptr<handler> h) override
     {
         return boost::make_shared<user_impl>(
-            std::move(h));
+            std::move(c), std::move(h));
     }
 };
 

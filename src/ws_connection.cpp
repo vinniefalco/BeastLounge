@@ -107,6 +107,7 @@ public:
         // can't use weak_from in ctor
         user_ = get_service<
             user_service>(srv_).create_user(
+                boost::weak_from(this),
                 user_handler{
                     boost::weak_from(this)});
         get_service<chat_service>(srv_).insert(*user_);

@@ -24,6 +24,7 @@ template<class Handler>
 boost::shared_ptr<user>
 user_service::
 create_user(
+    boost::weak_ptr<void> c,
     Handler&& h)
 {
     struct handler_impl : user::handler
@@ -47,6 +48,7 @@ create_user(
     };
 
     return create_user_impl(
+        std::move(c),
         std::unique_ptr<handler_impl>(
             new handler_impl(
                 std::forward<Handler>(h))));
