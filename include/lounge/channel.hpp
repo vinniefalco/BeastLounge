@@ -20,6 +20,23 @@
 
 namespace lounge {
 
+/** A channel.
+
+    @par Notes
+
+    @li Only the user can ask to join a channel
+
+    @li Only the channel handler can insert the user
+
+    @li The user can demand to leave the channel at
+        any time
+
+    @li The channel handler can remove the user at
+        any time.
+
+    @li When the user is removed, they are notified
+        by message.
+*/
 class channel
     : public boost::enable_shared_from
 {
