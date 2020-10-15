@@ -30,6 +30,15 @@
       ws = new WebSocket(uri.value);
       ws.onopen = function(ev) {
         showMessage("[connection opened]");
+
+        ws.send(JSON.stringify(
+            {
+                "jsonrpc" : "2.0",
+                "method" : "channel.join",
+                "id" : 1
+            }
+        ));
+
       };
       ws.onclose = function(ev) {
         showMessage("[connection closed]");

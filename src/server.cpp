@@ -165,6 +165,14 @@ private:
     }
 
     //------------------------------------------------------
+/*
+    {
+        "jsonrpc" : 2.0",
+        "method" : $method,
+        "params" : $params
+        "id" : $id,
+    }
+*/
 
     void
     do_rpc(
